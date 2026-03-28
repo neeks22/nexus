@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nexus ROI Calculator — See What Agent Failures Are Costing You</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface-2: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #f4f4f5;
+      --muted: #71717a;
+      --green: #22c55e;
+      --green-dim: #16a34a;
+      --green-glow: rgba(34, 197, 94, 0.15);
+      --red: #f43f5e;
+      --red-dim: #be123c;
+      --red-glow: rgba(244, 63, 94, 0.15);
+      --yellow: #eab308;
+      --accent: #6366f1;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      text-align: center;
+      padding: 64px 24px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(34,197,94,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--green-glow);
+      border: 1px solid rgba(34,197,94,0.3);
+      color: var(--green);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 99px;
+      margin-bottom: 20px;
+    }
+    header h1 {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    header h1 span { color: var(--green); }
+    header p {
+      color: var(--muted);
+      font-size: 17px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── Layout ── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 24px;
+    }
+
+    /* ── Inputs ── */
+    .input-group {
+      margin-bottom: 28px;
+    }
+    .input-group:last-child { margin-bottom: 0; }
+    .input-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+    .input-label span {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .input-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      min-width: 80px;
+      text-align: right;
+    }
+    .slider-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type=range] {
+      -webkit-appearance: none;
+      appearance: none;
+      flex: 1;
+      height: 6px;
+      border-radius: 99px;
+      background: var(--border);
+      outline: none;
+      cursor: pointer;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--green);
+      border: 3px solid var(--surface);
+      box-shadow: 0 0 0 2px var(--green);
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    input[type=range]:hover::-webkit-slider-thumb {
+      transform: scale(1.2);
+      box-shadow: 0 0 0 4px var(--green-glow), 0 0 12px var(--green);
+    }
+    input[type=range]::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--green);
+      border: 3px solid var(--surface);
+      cursor: pointer;
+    }
+    .range-limits {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+      padding: 0 2px;
+    }
+    input[type=number] {
+      width: 80px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 6px 10px;
+      text-align: center;
+      outline: none;
+      -moz-appearance: textfield;
+    }
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+    input[type=number]:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 3px var(--green-glow);
+    }
+
+    /* ── Results panel ── */
+    .results-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Big savings number */
+    .savings-hero {
+      background: linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(34,197,94,0.04) 100%);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+    }
+    .savings-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--green);
+      margin-bottom: 6px;
+    }
+    .savings-amount {
+      font-size: clamp(36px, 6vw, 56px);
+      font-weight: 900;
+      color: var(--green);
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      margin-bottom: 4px;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .savings-sub {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ROI + Payback row */
+    .metrics-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .metric-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 16px;
+      text-align: center;
+    }
+    .metric-box.highlight {
+      border-color: rgba(34,197,94,0.3);
+      background: rgba(34,197,94,0.05);
+    }
+    .metric-box.payback {
+      border-color: rgba(234,179,8,0.3);
+      background: rgba(234,179,8,0.05);
+    }
+    .metric-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .metric-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+      transition: all 0.3s ease;
+    }
+    .metric-value.green { color: var(--green); }
+    .metric-value.yellow { color: var(--yellow); }
+    .metric-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* 3-year value */
+    .three-year {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .three-year-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+    }
+    .three-year-value {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--accent);
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+      transition: all 0.3s ease;
+    }
+
+    /* Before / After comparison */
+    .comparison {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .comparison-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+    .comp-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .comp-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .comp-name { color: var(--muted); font-weight: 500; }
+    .comp-amounts {
+      display: flex;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .comp-before { color: var(--red); }
+    .comp-after { color: var(--green); }
+    .progress-wrap {
+      position: relative;
+      height: 8px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-before {
+      position: absolute;
+      top: 0; left: 0; height: 100%;
+      background: var(--red);
+      border-radius: 99px;
+      opacity: 0.5;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .progress-after {
+      position: absolute;
+      top: 0; left: 0; height: 100%;
+      background: var(--green);
+      border-radius: 99px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Full-width breakdown section */
+    .breakdown-section {
+      margin-top: 24px;
+    }
+    .breakdown-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 600px) {
+      .breakdown-grid { grid-template-columns: 1fr; }
+    }
+    .breakdown-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px;
+    }
+    .breakdown-card.before {
+      border-color: rgba(244,63,94,0.2);
+    }
+    .breakdown-card.after {
+      border-color: rgba(34,197,94,0.2);
+    }
+    .breakdown-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+    .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .breakdown-header-title {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .breakdown-header-title.red { color: var(--red); }
+    .breakdown-header-title.green { color: var(--green); }
+    .breakdown-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .breakdown-line:last-child { border-bottom: none; padding-bottom: 0; }
+    .breakdown-line-label { color: var(--muted); }
+    .breakdown-line-value {
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+    .breakdown-line-value.red { color: var(--red); }
+    .breakdown-line-value.green { color: var(--green); }
+    .breakdown-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0 0;
+      margin-top: 4px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .breakdown-total-label { color: var(--text); }
+    .breakdown-total-value.red { color: var(--red); }
+    .breakdown-total-value.green { color: var(--green); }
+
+    /* ROI Gauge */
+    .gauge-section {
+      display: flex;
+      justify-content: center;
+      margin-top: 8px;
+    }
+    .gauge-wrap {
+      position: relative;
+      width: 140px;
+      height: 80px;
+    }
+    .gauge-svg { width: 140px; height: 80px; overflow: visible; }
+    .gauge-text {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+    .gauge-pct {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--green);
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+      display: block;
+      line-height: 1;
+    }
+    .gauge-pct-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+
+    /* CTA */
+    .cta-section {
+      margin-top: 32px;
+      text-align: center;
+      padding: 48px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 120%, rgba(34,197,94,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-section h2 {
+      font-size: clamp(22px, 4vw, 32px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+    .cta-section p {
+      color: var(--muted);
+      font-size: 15px;
+      margin-bottom: 28px;
+      max-width: 440px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .cta-buttons {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      position: relative;
+      z-index: 1;
+    }
+    .btn-primary {
+      background: var(--green);
+      color: #000;
+    }
+    .btn-primary:hover {
+      background: #4ade80;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(34,197,94,0.35);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      border-color: var(--green);
+      color: var(--green);
+      transform: translateY(-2px);
+    }
+
+    /* Disclaimer */
+    .disclaimer {
+      text-align: center;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 20px;
+      opacity: 0.7;
+    }
+
+    /* Pulse animation on big savings */
+    @keyframes pulse-green {
+      0%, 100% { text-shadow: 0 0 0 transparent; }
+      50% { text-shadow: 0 0 30px rgba(34,197,94,0.5); }
+    }
+    .savings-amount { animation: pulse-green 3s ease-in-out infinite; }
+
+    /* Number transition */
+    .flash {
+      animation: flash-update 0.3s ease;
+    }
+    @keyframes flash-update {
+      0% { opacity: 0.4; transform: scale(0.97); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">Nexus ROI Calculator</div>
+  <h1>See exactly how much<br><span>agent failures are costing you</span></h1>
+  <p>Adjust the inputs below to your reality. Watch the savings update live as you drag.</p>
+</header>
+
+<div class="container">
+
+  <div class="grid">
+
+    <!-- LEFT: Inputs -->
+    <div class="card">
+      <div class="card-title">Your Current Setup</div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>Team size</span>
+          <span class="input-value" id="val-team">5 employees</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="slider-team" min="1" max="50" value="5" step="1" />
+          <input type="number" id="num-team" min="1" max="50" value="5" />
+        </div>
+        <div class="range-limits"><span>1</span><span>50 employees</span></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>Hours/week on manual agent monitoring</span>
+          <span class="input-value" id="val-hours">10 hrs/wk</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="slider-hours" min="1" max="40" value="10" step="1" />
+          <input type="number" id="num-hours" min="1" max="40" value="10" />
+        </div>
+        <div class="range-limits"><span>1</span><span>40 hrs/wk</span></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>Average hourly cost per employee</span>
+          <span class="input-value" id="val-rate">$75/hr</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="slider-rate" min="25" max="200" value="75" step="5" />
+          <input type="number" id="num-rate" min="25" max="200" value="75" />
+        </div>
+        <div class="range-limits"><span>$25</span><span>$200/hr</span></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>Monthly API spend</span>
+          <span class="input-value" id="val-api">$2,000/mo</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="slider-api" min="100" max="50000" value="2000" step="100" />
+          <input type="number" id="num-api" min="100" max="50000" value="2000" />
+        </div>
+        <div class="range-limits"><span>$100</span><span>$50,000/mo</span></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>Current agent failure rate</span>
+          <span class="input-value" id="val-fail">15%</span>
+        </div>
+        <div class="slider-wrap">
+          <input type="range" id="slider-fail" min="1" max="50" value="15" step="1" />
+          <input type="number" id="num-fail" min="1" max="50" value="15" />
+        </div>
+        <div class="range-limits"><span>1%</span><span>50% failure rate</span></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div class="results-card">
+
+      <div class="savings-hero">
+        <div class="savings-label">Annual savings with Nexus</div>
+        <div class="savings-amount" id="out-savings">$0</div>
+        <div class="savings-sub">vs. operating without Nexus today</div>
+      </div>
+
+      <div class="metrics-row">
+        <div class="metric-box highlight">
+          <div class="metric-label">ROI</div>
+          <div class="metric-value green" id="out-roi">0%</div>
+          <div class="metric-sub">return on investment</div>
+        </div>
+        <div class="metric-box payback">
+          <div class="metric-label">Payback period</div>
+          <div class="metric-value yellow" id="out-payback">0 days</div>
+          <div class="metric-sub">on $299/mo Pro plan</div>
+        </div>
+      </div>
+
+      <div class="three-year">
+        <div class="three-year-label">3-year value captured</div>
+        <div class="three-year-value" id="out-3yr">$0</div>
+      </div>
+
+      <div class="comparison">
+        <div class="comparison-title">Before vs. After — Cost Breakdown</div>
+
+        <div class="comp-row">
+          <div class="comp-labels">
+            <span class="comp-name">Monitoring labor</span>
+            <div class="comp-amounts">
+              <span class="comp-before" id="cmp-mon-before">$0</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="comp-after" id="cmp-mon-after">$0</span>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-before" id="bar-mon-before" style="width:100%"></div>
+            <div class="progress-after" id="bar-mon-after" style="width:20%"></div>
+          </div>
+        </div>
+
+        <div class="comp-row">
+          <div class="comp-labels">
+            <span class="comp-name">Wasted API spend</span>
+            <div class="comp-amounts">
+              <span class="comp-before" id="cmp-api-before">$0</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="comp-after" id="cmp-api-after">$0</span>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-before" id="bar-api-before" style="width:100%"></div>
+            <div class="progress-after" id="bar-api-after" style="width:11%"></div>
+          </div>
+        </div>
+
+        <div class="comp-row">
+          <div class="comp-labels">
+            <span class="comp-name">Total API cost (with caching)</span>
+            <div class="comp-amounts">
+              <span class="comp-before" id="cmp-cache-before">$0</span>
+              <span style="color:var(--muted)">→</span>
+              <span class="comp-after" id="cmp-cache-after">$0</span>
+            </div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-before" id="bar-cache-before" style="width:100%"></div>
+            <div class="progress-after" id="bar-cache-after" style="width:50%"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Breakdown section -->
+  <div class="breakdown-section">
+    <div class="breakdown-grid">
+
+      <div class="breakdown-card before">
+        <div class="breakdown-header">
+          <div class="dot red"></div>
+          <div class="breakdown-header-title red">Without Nexus — Annual Costs</div>
+        </div>
+        <div class="breakdown-line">
+          <span class="breakdown-line-label">Monitoring labor</span>
+          <span class="breakdown-line-value red" id="bd-mon-before">—</span>
+        </div>
+        <div class="breakdown-line">
+          <span class="breakdown-line-label">Wasted API from failures</span>
+          <span class="breakdown-line-value red" id="bd-api-before">—</span>
+        </div>
+        <div class="breakdown-line">
+          <span class="breakdown-line-label">Total API spend (no caching)</span>
+          <span class="breakdown-line-value red" id="bd-full-api-before">—</span>
+        </div>
+        <div class="breakdown-total">
+          <span class="breakdown-total-label">Total annual waste</span>
+          <span class="breakdown-total-value red" id="bd-total-before">—</span>
+        </div>
+      </div>
+
+      <div class="breakdown-card after">
+        <div class="breakdown-header">
+          <div class="dot green"></div>
+          <div class="breakdown-header-title green">With Nexus — Annual Costs</div>
+        </div>
+        <div class="breakdown-line">
+          <span class="breakdown-line-label">Monitoring labor (–80%)</span>
+          <span class="breakdown-line-value green" id="bd-mon-after">—</span>
+        </div>
+        <div class="breakdown-line">
+          <span class="breakdown-line-label">Wasted API from failures (–89%)</span>
+          <span class="breakdown-line-value green" id="bd-api-after">—</span>
+        </div>
+        <div class="breakdown-line">
+          <span class="breakdown-line-label">Total API spend (50% cache savings)</span>
+          <span class="breakdown-line-value green" id="bd-full-api-after">—</span>
+        </div>
+        <div class="breakdown-line">
+          <span class="breakdown-line-label">Nexus Pro plan cost</span>
+          <span class="breakdown-line-value" style="color:var(--muted)" id="bd-nexus-cost">$3,588</span>
+        </div>
+        <div class="breakdown-total">
+          <span class="breakdown-total-label">Total annual cost</span>
+          <span class="breakdown-total-value green" id="bd-total-after">—</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-section">
+    <h2>Ready to stop losing money?</h2>
+    <p>Your agents are failing right now. Nexus catches them, heals them, and bills you less than a coffee a day.</p>
+    <div class="cta-buttons">
+      <a href="#" class="btn btn-primary">Start Free Trial</a>
+      <a href="#" class="btn btn-secondary">Book a Demo</a>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    * Calculations based on industry averages. Results may vary depending on your specific environment and agent workloads.
+    Monitoring reduction assumes self-healing replaces manual intervention. API savings assume Nexus intelligent caching and
+    failure recovery. ROI calculated against $299/mo Nexus Pro plan.
+  </div>
+
+</div>
+
+<script>
+  // ── Helpers ──────────────────────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+
+  function fmt(n, prefix = '$') {
+    if (n >= 1_000_000) return prefix + (n / 1_000_000).toFixed(2) + 'M';
+    if (n >= 1_000)     return prefix + Math.round(n).toLocaleString();
+    return prefix + Math.round(n).toLocaleString();
+  }
+
+  function fmtK(n) {
+    if (n >= 1_000_000) return '$' + (n / 1_000_000).toFixed(2) + 'M';
+    if (n >= 10_000)    return '$' + (n / 1_000).toFixed(0) + 'k';
+    return '$' + Math.round(n).toLocaleString();
+  }
+
+  function flash(el) {
+    el.classList.remove('flash');
+    void el.offsetWidth; // reflow
+    el.classList.add('flash');
+  }
+
+  // ── Slider ↔ Number sync ─────────────────────────────────────────────────
+  const pairs = [
+    ['slider-team',  'num-team'],
+    ['slider-hours', 'num-hours'],
+    ['slider-rate',  'num-rate'],
+    ['slider-api',   'num-api'],
+    ['slider-fail',  'num-fail'],
+  ];
+
+  pairs.forEach(([sliderId, numId]) => {
+    const slider = $(sliderId);
+    const num    = $(numId);
+    slider.addEventListener('input', () => { num.value = slider.value; calculate(); });
+    num.addEventListener('input', () => {
+      const v = Math.min(Number(num.max), Math.max(Number(num.min), Number(num.value) || 0));
+      slider.value = v;
+      calculate();
+    });
+  });
+
+  // Update slider fill color based on value position
+  function updateSliderFill(slider) {
+    const min = Number(slider.min), max = Number(slider.max), val = Number(slider.value);
+    const pct = ((val - min) / (max - min)) * 100;
+    slider.style.background = `linear-gradient(to right, var(--green) ${pct}%, var(--border) ${pct}%)`;
+  }
+
+  // ── Core calculation ──────────────────────────────────────────────────────
+  const NEXUS_MONTHLY = 299;
+  const NEXUS_ANNUAL  = NEXUS_MONTHLY * 12; // $3,588
+
+  function calculate() {
+    const team  = Number($('num-team').value)  || 5;
+    const hours = Number($('num-hours').value) || 10;
+    const rate  = Number($('num-rate').value)  || 75;
+    const api   = Number($('num-api').value)   || 2000;
+    const fail  = Number($('num-fail').value)  || 15;
+
+    // Update display labels
+    $('val-team').textContent  = `${team} employee${team !== 1 ? 's' : ''}`;
+    $('val-hours').textContent = `${hours} hr${hours !== 1 ? 's' : ''}/wk`;
+    $('val-rate').textContent  = `$${rate}/hr`;
+    $('val-api').textContent   = `$${api.toLocaleString()}/mo`;
+    $('val-fail').textContent  = `${fail}%`;
+
+    // Update slider fills
+    pairs.forEach(([sliderId]) => updateSliderFill($(sliderId)));
+
+    // ── BEFORE Nexus ──
+    const monitoringAnnual      = team * hours * rate * 52;          // labor
+    const wastedApiAnnual       = (api * (fail / 100)) * 12;         // failures
+    const fullApiAnnual         = api * 12;                          // full API
+    const totalBefore           = monitoringAnnual + wastedApiAnnual + fullApiAnnual;
+
+    // ── WITH Nexus ──
+    const monitoringAfter       = monitoringAnnual * 0.20;           // –80%
+    const wastedApiAfter        = wastedApiAnnual  * 0.11;           // –89%
+    const fullApiAfter          = fullApiAnnual    * 0.50;           // –50% caching
+    const totalAfter            = monitoringAfter + wastedApiAfter + fullApiAfter + NEXUS_ANNUAL;
+
+    // ── Savings ──
+    const annualSavings  = Math.max(0, totalBefore - totalAfter);
+    const roiPct         = NEXUS_ANNUAL > 0 ? (annualSavings / NEXUS_ANNUAL) * 100 : 0;
+    const paybackDays    = annualSavings > 0 ? Math.round((NEXUS_ANNUAL / annualSavings) * 365) : 999;
+    const threeYearValue = annualSavings * 3;
+
+    // ── DOM Updates ──
+
+    // Big savings
+    const savingsEl = $('out-savings');
+    savingsEl.textContent = fmtK(annualSavings);
+    flash(savingsEl);
+
+    // ROI
+    const roiEl = $('out-roi');
+    roiEl.textContent = roiPct >= 1000
+      ? Math.round(roiPct / 100) * 100 + '%+'
+      : Math.round(roiPct) + '%';
+    flash(roiEl);
+
+    // Payback
+    const payEl = $('out-payback');
+    if (paybackDays <= 365) {
+      payEl.textContent = paybackDays + (paybackDays === 1 ? ' day' : ' days');
+    } else {
+      payEl.textContent = '> 1 yr';
+    }
+    flash(payEl);
+
+    // 3-year
+    const yr3El = $('out-3yr');
+    yr3El.textContent = fmtK(threeYearValue);
+    flash(yr3El);
+
+    // Progress bars — normalize to 100% = monitoringAnnual (largest bucket usually)
+    const maxVal = Math.max(monitoringAnnual, wastedApiAnnual, fullApiAnnual, 1);
+
+    const pctMonBefore   = Math.min(100, (monitoringAnnual / maxVal) * 100);
+    const pctMonAfter    = Math.min(100, (monitoringAfter   / maxVal) * 100);
+    const pctApiBefore   = Math.min(100, (wastedApiAnnual   / maxVal) * 100);
+    const pctApiAfter    = Math.min(100, (wastedApiAfter    / maxVal) * 100);
+    const pctCacheBefore = Math.min(100, (fullApiAnnual     / maxVal) * 100);
+    const pctCacheAfter  = Math.min(100, (fullApiAfter      / maxVal) * 100);
+
+    $('bar-mon-before').style.width   = pctMonBefore   + '%';
+    $('bar-mon-after').style.width    = pctMonAfter    + '%';
+    $('bar-api-before').style.width   = pctApiBefore   + '%';
+    $('bar-api-after').style.width    = pctApiAfter    + '%';
+    $('bar-cache-before').style.width = pctCacheBefore + '%';
+    $('bar-cache-after').style.width  = pctCacheAfter  + '%';
+
+    // Comparison labels
+    $('cmp-mon-before').textContent   = fmtK(monitoringAnnual);
+    $('cmp-mon-after').textContent    = fmtK(monitoringAfter);
+    $('cmp-api-before').textContent   = fmtK(wastedApiAnnual);
+    $('cmp-api-after').textContent    = fmtK(wastedApiAfter);
+    $('cmp-cache-before').textContent = fmtK(fullApiAnnual);
+    $('cmp-cache-after').textContent  = fmtK(fullApiAfter);
+
+    // Detailed breakdown
+    $('bd-mon-before').textContent      = fmtK(monitoringAnnual);
+    $('bd-api-before').textContent      = fmtK(wastedApiAnnual);
+    $('bd-full-api-before').textContent = fmtK(fullApiAnnual);
+    $('bd-total-before').textContent    = fmtK(totalBefore);
+
+    $('bd-mon-after').textContent       = fmtK(monitoringAfter);
+    $('bd-api-after').textContent       = fmtK(wastedApiAfter);
+    $('bd-full-api-after').textContent  = fmtK(fullApiAfter);
+    $('bd-nexus-cost').textContent      = fmtK(NEXUS_ANNUAL);
+    $('bd-total-after').textContent     = fmtK(totalAfter);
+
+    // Payback box highlight: < 30 days gets extra glow
+    const paybackBox = $('out-payback').closest('.metric-box');
+    if (paybackDays <= 30) {
+      paybackBox.style.borderColor = 'rgba(234,179,8,0.6)';
+      paybackBox.style.background  = 'rgba(234,179,8,0.1)';
+      $('out-payback').style.color = '#fde047';
+    } else {
+      paybackBox.style.borderColor = 'rgba(234,179,8,0.3)';
+      paybackBox.style.background  = 'rgba(234,179,8,0.05)';
+      $('out-payback').style.color = 'var(--yellow)';
+    }
+  }
+
+  // ── Init ─────────────────────────────────────────────────────────────────
+  pairs.forEach(([sliderId]) => updateSliderFill($(sliderId)));
+  calculate();
+</script>
+</body>
+</html>

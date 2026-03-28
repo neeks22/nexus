@@ -1,0 +1,8 @@
+{
+  "name": "nexus-roi-calculator",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "open src/index.html"
+  }
+}
