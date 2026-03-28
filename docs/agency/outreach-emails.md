@@ -1,5 +1,7 @@
 # Outreach Email Templates
 
+> **CASL Compliance Notice:** Under Canada's Anti-Spam Legislation (CASL), you may only send commercial electronic messages to recipients who have given express or implied consent. For cold outreach, **only contact business email addresses that are conspicuously published on a company's website or professional directory** (this constitutes implied consent under CASL s.10(9)(b)). Do not email personal addresses sourced from data brokers or scraped directories. Always include an unsubscribe mechanism in every email — the footer below satisfies this requirement. When in doubt, consult a CASL-qualified lawyer before sending.
+
 These templates are starting points, not scripts. Personalize every email before sending — especially the first line. If it reads like a template, it gets deleted.
 
 **Ground rules:**
@@ -38,6 +40,11 @@ Nexus AI Agency
 [Calendar link]
 
 ---
+Nico Sayah | Nexus AI Agency
+Ottawa, ON, Canada
+Reply STOP to unsubscribe from future messages.
+
+---
 
 *Personalization notes:*
 - *[Company]'s AI tool or agent system* — find this on their website, job postings, or recent LinkedIn posts. If they're posting "AI Engineer" jobs, they're building. If their website mentions a chatbot, they're running agents. Specific is everything.
@@ -64,6 +71,11 @@ I ask because that single question usually reveals whether a team has self-heali
 Happy to show you what the alternative looks like — no pitch, just a look at how the self-healing layer works. 15 minutes on [day or two options].
 
 [Your name]
+
+---
+Nico Sayah | Nexus AI Agency
+Ottawa, ON, Canada
+Reply STOP to unsubscribe from future messages.
 
 ---
 
@@ -97,6 +109,11 @@ If this sounds relevant, I've got 20 minutes open [day] or [day]. Here's my cale
 If the timing isn't right, no worries — I'll check back in a few months.
 
 [Your name]
+
+---
+Nico Sayah | Nexus AI Agency
+Ottawa, ON, Canada
+Reply STOP to unsubscribe from future messages.
 
 ---
 
@@ -140,6 +157,11 @@ One question before I build it out: Is [person you spoke with] the right person 
 [Direct phone number]
 
 ---
+Nico Sayah | Nexus AI Agency
+Ottawa, ON, Canada
+Reply STOP to unsubscribe from future messages.
+
+---
 
 *Notes: Send this fast. Fast follow-up signals that you're organized and that this is how you operate. If you wait 48 hours, they've already moved on. The question at the end is critical — if you're talking to the wrong person, you need to know now before you spend time on a proposal.*
 
@@ -177,6 +199,11 @@ Ready to move forward? Sign the proposal and I'll send the invoice for the depos
 
 [Your name]
 [Phone]
+
+---
+Nico Sayah | Nexus AI Agency
+Ottawa, ON, Canada
+Reply STOP to unsubscribe from future messages.
 
 ---
 

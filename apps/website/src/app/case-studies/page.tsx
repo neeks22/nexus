@@ -137,8 +137,13 @@ export default function CaseStudiesPage() {
             </div>
             <div className={styles.heroMetricDivider} />
             <div className={styles.heroMetric}>
-              <div className={styles.heroMetricValue}>420%</div>
-              <div className={styles.heroMetricLabel}>avg. ROI year one</div>
+              <div className={styles.heroMetricValue}>171%</div>
+              <div className={styles.heroMetricLabel}>avg. portfolio ROI</div>
+            </div>
+            <div className={styles.heroMetricDivider} />
+            <div className={styles.heroMetric}>
+              <div className={styles.heroMetricValue}>Up to 420%</div>
+              <div className={styles.heroMetricLabel}>top-client ROI year one</div>
             </div>
             <div className={styles.heroMetricDivider} />
             <div className={styles.heroMetric}>
