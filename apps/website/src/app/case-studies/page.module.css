@@ -1,0 +1,313 @@
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-green);
+  margin-bottom: 12px;
+}
+
+/* ── HERO ── */
+
+.hero {
+  padding: 96px 24px 64px;
+  text-align: center;
+}
+
+.headline {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.subline {
+  font-size: 18px;
+  color: var(--text-secondary);
+  max-width: 560px;
+  margin: 0 auto 48px;
+  line-height: 1.65;
+}
+
+.heroMetrics {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.heroMetric {
+  padding: 20px 40px;
+  text-align: center;
+}
+
+.heroMetricValue {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--accent-green);
+}
+
+.heroMetricLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+.heroMetricDivider {
+  width: 1px;
+  height: 40px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* ── CASE STUDY ── */
+
+.caseStudy {
+  padding: 80px 24px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.caseStudyAlt {
+  background: var(--bg-secondary);
+}
+
+.csHeader {
+  margin-bottom: 32px;
+}
+
+.csTag {
+  margin-bottom: 12px;
+}
+
+.csIndustry {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-green);
+  background: var(--accent-green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.csHeadline {
+  font-size: clamp(1.75rem, 4vw, 2.75rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  line-height: 1.1;
+}
+
+.csClient {
+  font-size: 15px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.csMeta {
+  display: flex;
+  gap: 40px;
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+}
+
+.csMetaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.csMetaLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.csMetaValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.csMetaRoi {
+  color: var(--accent-green);
+}
+
+.csBody {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 64px;
+  align-items: start;
+}
+
+.csNarrative {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+
+.csSection {}
+
+.csSectionTitle {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.csSectionText {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.75;
+  white-space: pre-line;
+}
+
+.csSidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: sticky;
+  top: 80px;
+}
+
+.csResults {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+}
+
+.csResultsTitle {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.csResultsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.csResult {}
+
+.csResultMetric {
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--accent-green);
+  line-height: 1;
+}
+
+.csResultLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.csQuote {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-green);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.csQuoteText {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  font-style: italic;
+  margin-bottom: 16px;
+}
+
+.csQuoteAuthor {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.csQuoteAvatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--accent-green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent-green);
+  flex-shrink: 0;
+}
+
+.csQuoteName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.csQuoteTitle {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 1024px) {
+  .csBody {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .csSidebar {
+    position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .heroMetrics {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .heroMetricDivider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .csMeta {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .csResultsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

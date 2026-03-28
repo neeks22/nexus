@@ -72,3 +72,29 @@ export {
 // ── Multi-client management ──────────────────────
 export { ClientManager } from './multi-client/index.js';
 export type { ClientConfig, ClientStatus, ClientRunResult, ManagerSummary, LogEntry } from './multi-client/index.js';
+
+// ── Integrations ──────────────────────────────────
+export {
+  EmailIntegration,
+  NexusEmailError,
+  WebhookIntegration,
+  NexusWebhookError,
+  SlackIntegration,
+  NexusSlackError,
+  CRMIntegration,
+  NexusCRMError,
+  StorageIntegration,
+  NexusStorageError,
+} from './integrations/index.js';
+export type {
+  EmailConfig,
+  EmailMessage,
+  EmailSendResult,
+  WebhookConfig,
+  WebhookSendResult,
+  SlackConfig,
+  CRMConfig,
+  CRMContact,
+  CRMLead,
+  StorageConfig,
+} from './integrations/index.js';
