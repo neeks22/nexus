@@ -1,0 +1,22 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
+  "permissions": {
+    "allow": [
+      "Read", "Write", "Edit",
+      "Grep", "Glob",
+      "WebSearch", "WebFetch",
+      "Bash(npm *)", "Bash(npx *)", "Bash(node *)",
+      "Bash(git *)", "Bash(cat *)", "Bash(mkdir *)",
+      "Bash(cp *)", "Bash(mv *)", "Bash(echo *)",
+      "Bash(curl *)", "Bash(ls *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /)",
+      "Bash(sudo *)",
+      "Read(.env)",
+      "Read(./secrets/**)"
+    ]
+  }
+}
