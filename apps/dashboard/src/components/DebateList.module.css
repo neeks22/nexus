@@ -1,0 +1,127 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.item {
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  transition: background 0.1s ease;
+  cursor: pointer;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.item:hover {
+  background: var(--bg-hover);
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.topicRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.topic {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  flex: 1;
+}
+
+.outcomeBadge {
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.completed {
+  color: var(--healthy-color);
+  background: var(--healthy-bg);
+  border-color: var(--healthy-border);
+}
+
+.partial {
+  color: var(--degraded-color);
+  background: var(--degraded-bg);
+  border-color: var(--degraded-border);
+}
+
+.failed {
+  color: var(--failed-color);
+  background: var(--failed-bg);
+  border-color: var(--failed-border);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.metaItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.metaLabel {
+  color: var(--text-muted);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.metaDivider {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+
+.protocol {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+}
+
+.cost {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.agents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.agentTag {
+  padding: 2px 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 10px;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}

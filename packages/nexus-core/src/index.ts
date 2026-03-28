@@ -41,3 +41,26 @@ export type * from './types.js';
 // ── Orchestration ────────────────────────────────
 export { Team } from './team/index.js';
 export { Graph } from './graph/index.js';
+
+// ── Persistence & replay ──────────────────────────
+export { NexusStore, ReplayEngine, Exporter } from './persistence/index.js';
+export type { StoredRun, RunListEntry, ReplayOptions } from './persistence/index.js';
+
+// ── Reporting ────────────────────────────────────
+export { ReportGenerator, CostCalculator } from './reporting/index.js';
+export type { NexusReport, AgentReport, ReportConfig } from './reporting/index.js';
+
+// ── Alerts ────────────────────────────────────────
+export { AlertManager, WebhookHandler } from './alerts/index.js';
+export type { Alert, AlertHandler } from './alerts/index.js';
+
+// ── Templates ─────────────────────────────────────
+export { TemplateRegistry, defaultRegistry } from './templates/index.js';
+export type { AgentTemplate } from './templates/index.js';
+export {
+  DEBATE_ARENA_TEMPLATE,
+  CODE_REVIEW_TEMPLATE,
+  RESEARCH_TEAM_TEMPLATE,
+  BRAINSTORM_TEAM_TEMPLATE,
+  CUSTOMER_SUPPORT_TEMPLATE,
+} from './templates/index.js';

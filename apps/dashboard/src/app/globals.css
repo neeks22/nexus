@@ -1,0 +1,102 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   Nexus Dashboard — Global Styles
+   Dark monitoring UI theme
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* Background layers */
+  --bg-base:      #0a0a0a;
+  --bg-surface:   #111111;
+  --bg-elevated:  #1a1a1a;
+  --bg-hover:     #222222;
+
+  /* Borders */
+  --border-subtle:  rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.10);
+  --border-strong:  rgba(255, 255, 255, 0.18);
+
+  /* Text */
+  --text-primary:   #e0e0e0;
+  --text-secondary: #888888;
+  --text-muted:     #555555;
+  --text-inverse:   #0a0a0a;
+
+  /* Health state colors */
+  --healthy-color:    #22c55e;
+  --healthy-bg:       rgba(34, 197, 94, 0.10);
+  --healthy-border:   rgba(34, 197, 94, 0.25);
+
+  --degraded-color:   #eab308;
+  --degraded-bg:      rgba(234, 179, 8, 0.10);
+  --degraded-border:  rgba(234, 179, 8, 0.25);
+
+  --recovering-color: #f97316;
+  --recovering-bg:    rgba(249, 115, 22, 0.10);
+  --recovering-border:rgba(249, 115, 22, 0.25);
+
+  --failed-color:     #ef4444;
+  --failed-bg:        rgba(239, 68, 68, 0.10);
+  --failed-border:    rgba(239, 68, 68, 0.25);
+
+  /* Accent */
+  --accent:           #6366f1;
+  --accent-glow:      rgba(99, 102, 241, 0.15);
+
+  /* Typography */
+  --font-mono: 'Berkeley Mono', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+html, body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Selection */
+::selection {
+  background: var(--accent-glow);
+  color: var(--text-primary);
+}

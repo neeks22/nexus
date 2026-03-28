@@ -1,0 +1,77 @@
+.wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.table thead tr {
+  border-bottom: 1px solid var(--border-default);
+}
+
+.table th {
+  padding: var(--space-3) var(--space-4);
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.row {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.1s ease;
+}
+
+.row:hover {
+  background: var(--bg-hover);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row td {
+  padding: var(--space-3) var(--space-4);
+  vertical-align: middle;
+}
+
+.agentCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.agentName {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.agentModel {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.rate, .latency {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.calls {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.lastSeen {
+  color: var(--text-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
