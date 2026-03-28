@@ -90,6 +90,11 @@ export interface LogEntry {
 
 type LogHandler = (entry: LogEntry) => void;
 
+// ── Constants ──────────────────────────────────────
+
+const MAX_LOG_ENTRIES = 10_000;
+const MAX_CONCURRENT_CLIENTS = 5;
+
 // ── ClientManager ─────────────────────────────────
 
 export class ClientManager {
@@ -267,18 +272,27 @@ export class ClientManager {
   async runMultiple(
     runs: Array<{ clientId: string; input: TeamRunInput }>,
   ): Promise<Array<ClientRunResult | { clientId: string; error: string }>> {
-    const promises = runs.map(async ({ clientId, input }) => {
-      try {
-        return await this.runClient(clientId, input);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        return { clientId, error: message };
-      }
-    });
+    const results: Array<ClientRunResult | { clientId: string; error: string }> = [];
 
-    return Promise.allSettled(promises).then((results) =>
-      results.map((r) => (r.status === 'fulfilled' ? r.value : { clientId: 'unknown', error: String(r.reason) })),
-    );
+    // Process in batches of MAX_CONCURRENT_CLIENTS to bound concurrency
+    for (let i = 0; i < runs.length; i += MAX_CONCURRENT_CLIENTS) {
+      const chunk = runs.slice(i, i + MAX_CONCURRENT_CLIENTS);
+      const chunkPromises = chunk.map(async ({ clientId, input }) => {
+        try {
+          return await this.runClient(clientId, input);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return { clientId, error: message };
+        }
+      });
+
+      const settled = await Promise.allSettled(chunkPromises);
+      for (const r of settled) {
+        results.push(r.status === 'fulfilled' ? r.value : { clientId: 'unknown', error: String(r.reason) });
+      }
+    }
+
+    return results;
   }
 
   // ── Status & reporting ──────────────────────────
@@ -376,6 +390,9 @@ export class ClientManager {
       data,
     };
     this.#logs.push(entry);
+    if (this.#logs.length > MAX_LOG_ENTRIES) {
+      this.#logs.splice(0, this.#logs.length - MAX_LOG_ENTRIES);
+    }
 
     for (const handler of this.#logHandlers) {
       try {

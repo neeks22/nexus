@@ -7,6 +7,7 @@
 import { AnthropicProvider } from '../provider/anthropic.js';
 import { CircuitBreaker } from '../healing/circuit-breaker.js';
 import { HealthTracker } from '../healing/health-tracker.js';
+import { CostCalculator } from '../reporting/cost-calculator.js';
 import { classifyError, classifyOutputError } from '../healing/error-taxonomy.js';
 import { getRecoveryAction } from '../healing/recovery-strategies.js';
 import { validateOutput } from '../healing/output-validator.js';
@@ -21,7 +22,7 @@ import type {
   TokenUsage,
   OutputErrorType,
 } from '../types.js';
-import { DEFAULT_MODEL, DEFAULT_MAX_TOKENS, RETRY_OUTPUT_QUALITY_MAX } from '../config/thresholds.js';
+import { DEFAULT_MODEL, DEFAULT_MAX_TOKENS, RETRY_OUTPUT_QUALITY_MAX, MAX_COST_PER_RUN_CENTS } from '../config/thresholds.js';
 
 // ── Token ceiling for pre-flight truncation (chars) ─
 // Rough heuristic: 1 token ≈ 4 chars.
@@ -112,6 +113,7 @@ export class Agent {
   private readonly provider: AnthropicProvider;
   private readonly circuitBreaker: CircuitBreaker;
   private readonly healthTracker: HealthTracker;
+  private readonly costCalculator: CostCalculator;
 
   constructor(config: AgentConfig, provider?: AnthropicProvider) {
     this.config = config;
@@ -123,6 +125,7 @@ export class Agent {
     this.provider = provider ?? new AnthropicProvider();
     this.circuitBreaker = new CircuitBreaker();
     this.healthTracker = new HealthTracker();
+    this.costCalculator = new CostCalculator();
   }
 
   // ── Public API ───────────────────────────────────
@@ -199,9 +202,28 @@ export class Agent {
     let totalLatencyMs = 0;
     let infraAttempt = 0;
     let outputAttempt = 0;
+    let cumulativeCostCents = 0;
 
     // Outer loop for infrastructure retries
     while (infraAttempt <= maxInfraRetries) {
+      // ── COST CEILING CHECK ───────────────────────
+      if (cumulativeCostCents >= MAX_COST_PER_RUN_CENTS) {
+        this.circuitBreaker.recordFailure();
+        this.healthTracker.recordFailure();
+        const tombstone = createTombstone(
+          `${this.id}:round-${round}`,
+          this.id,
+          'unrecoverable_error',
+          {
+            prompt,
+            reason: 'cost_ceiling_exceeded',
+            cumulativeCostCents,
+            maxCostCents: MAX_COST_PER_RUN_CENTS,
+          },
+          infraAttempt,
+        );
+        return this.buildTombstoneResult(tombstone, Date.now() - startMs);
+      }
       let request: ProviderRequest;
       if (outputAttempt === 0) {
         request = buildProviderRequest(this.config, prompt, safeContext);
@@ -244,6 +266,12 @@ export class Agent {
 
       totalLatencyMs += Date.now() - callStart;
       lastResponse = response;
+
+      // Accumulate cost for this attempt
+      cumulativeCostCents += this.costCalculator.calculateCost(
+        response.tokensUsed,
+        resolveModel(this.config),
+      );
 
       // ── VALIDATE ────────────────────────────────
       const outputError: OutputErrorType | null = validateOutput(

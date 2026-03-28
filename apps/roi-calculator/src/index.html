@@ -669,7 +669,7 @@
         <div class="metric-box payback">
           <div class="metric-label">Payback period</div>
           <div class="metric-value yellow" id="out-payback">0 days</div>
-          <div class="metric-sub">on $299/mo Pro plan</div>
+          <div class="metric-sub">on build + year-1 retainer</div>
         </div>
       </div>
 
@@ -776,8 +776,12 @@
           <span class="breakdown-line-value green" id="bd-full-api-after">—</span>
         </div>
         <div class="breakdown-line">
-          <span class="breakdown-line-label">Nexus Pro plan cost</span>
-          <span class="breakdown-line-value" style="color:var(--muted)" id="bd-nexus-cost">$3,588</span>
+          <span class="breakdown-line-label">Nexus build (amortized yr 1)</span>
+          <span class="breakdown-line-value" style="color:var(--muted)" id="bd-nexus-build">$25,000</span>
+        </div>
+        <div class="breakdown-line">
+          <span class="breakdown-line-label">Nexus managed operations (optional)</span>
+          <span class="breakdown-line-value" style="color:var(--muted)" id="bd-nexus-retainer">$90,000/yr</span>
         </div>
         <div class="breakdown-total">
           <span class="breakdown-total-label">Total annual cost</span>
@@ -791,17 +795,18 @@
   <!-- CTA -->
   <div class="cta-section">
     <h2>Ready to stop losing money?</h2>
-    <p>Your agents are failing right now. Nexus catches them, heals them, and bills you less than a coffee a day.</p>
+    <p>Your agents are failing right now. Nexus catches them, heals them, and pays back your build investment in months — not years.</p>
     <div class="cta-buttons">
-      <a href="#" class="btn btn-primary">Start Free Trial</a>
-      <a href="#" class="btn btn-secondary">Book a Demo</a>
+      <a href="/contact" class="btn btn-primary">Get a Custom Build Quote</a>
+      <a href="/contact" class="btn btn-secondary">Book a Discovery Call</a>
     </div>
   </div>
 
   <div class="disclaimer">
     * Calculations based on industry averages. Results may vary depending on your specific environment and agent workloads.
     Monitoring reduction assumes self-healing replaces manual intervention. API savings assume Nexus intelligent caching and
-    failure recovery. ROI calculated against $299/mo Nexus Pro plan.
+    failure recovery. Payback calculated against a $25,000 build investment plus $7,500/month managed operations (year 1).
+    Managed operations retainer is optional.
   </div>
 
 </div>
@@ -856,8 +861,10 @@
   }
 
   // ── Core calculation ──────────────────────────────────────────────────────
-  const NEXUS_MONTHLY = 299;
-  const NEXUS_ANNUAL  = NEXUS_MONTHLY * 12; // $3,588
+  const NEXUS_BUILD_COST    = 25_000;        // one-time build investment
+  const NEXUS_RETAINER_MO   = 7_500;         // optional managed operations/month
+  const NEXUS_RETAINER_YR   = NEXUS_RETAINER_MO * 12; // $90,000/yr
+  const NEXUS_TOTAL_YR1     = NEXUS_BUILD_COST + NEXUS_RETAINER_YR; // $115,000
 
   function calculate() {
     const team  = Number($('num-team').value)  || 5;
@@ -886,12 +893,14 @@
     const monitoringAfter       = monitoringAnnual * 0.20;           // –80%
     const wastedApiAfter        = wastedApiAnnual  * 0.11;           // –89%
     const fullApiAfter          = fullApiAnnual    * 0.50;           // –50% caching
-    const totalAfter            = monitoringAfter + wastedApiAfter + fullApiAfter + NEXUS_ANNUAL;
+    const totalAfter            = monitoringAfter + wastedApiAfter + fullApiAfter + NEXUS_RETAINER_YR;
 
     // ── Savings ──
     const annualSavings  = Math.max(0, totalBefore - totalAfter);
-    const roiPct         = NEXUS_ANNUAL > 0 ? (annualSavings / NEXUS_ANNUAL) * 100 : 0;
-    const paybackDays    = annualSavings > 0 ? Math.round((NEXUS_ANNUAL / annualSavings) * 365) : 999;
+    // ROI = savings over year 1 relative to total year-1 investment (build + retainer)
+    const roiPct         = NEXUS_TOTAL_YR1 > 0 ? (annualSavings / NEXUS_TOTAL_YR1) * 100 : 0;
+    // Payback = (build cost + year-1 retainer) / annual savings, in days
+    const paybackDays    = annualSavings > 0 ? Math.round((NEXUS_TOTAL_YR1 / annualSavings) * 365) : 999;
     const threeYearValue = annualSavings * 3;
 
     // ── DOM Updates ──
@@ -956,8 +965,9 @@
     $('bd-mon-after').textContent       = fmtK(monitoringAfter);
     $('bd-api-after').textContent       = fmtK(wastedApiAfter);
     $('bd-full-api-after').textContent  = fmtK(fullApiAfter);
-    $('bd-nexus-cost').textContent      = fmtK(NEXUS_ANNUAL);
-    $('bd-total-after').textContent     = fmtK(totalAfter);
+    $('bd-nexus-build').textContent     = fmtK(NEXUS_BUILD_COST);
+    $('bd-nexus-retainer').textContent  = fmtK(NEXUS_RETAINER_YR) + '/yr';
+    $('bd-total-after').textContent     = fmtK(totalAfter + NEXUS_BUILD_COST);
 
     // Payback box highlight: < 30 days gets extra glow
     const paybackBox = $('out-payback').closest('.metric-box');

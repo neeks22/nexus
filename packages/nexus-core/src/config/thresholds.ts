@@ -61,3 +61,8 @@ export const LATENCY_POOR_MS = 20_000;
 // ── Debate Defaults ───────────────────────────────
 export const DEFAULT_DEBATE_ROUNDS = 3;
 export const DEFAULT_MAX_AGENTS = 10;
+
+// ── Cost Ceiling ──────────────────────────────────
+// Maximum spend per single agent run. Prevents runaway retries from
+// burning unlimited money. 500 cents = $5.
+export const MAX_COST_PER_RUN_CENTS = 500;

@@ -14,6 +14,7 @@ export class CircuitBreaker {
   private openedAt: number | null = null;
   private readonly failureThreshold: number;
   private readonly resetMs: number;
+  #probeInFlight: boolean = false;
 
   constructor(
     failureThreshold: number = CIRCUIT_BREAKER_FAILURE_THRESHOLD,
@@ -42,7 +43,11 @@ export class CircuitBreaker {
       return false;
     }
 
-    // HALF_OPEN — allow the single probe
+    // HALF_OPEN — allow only one probe at a time
+    if (this.#probeInFlight) {
+      return false;
+    }
+    this.#probeInFlight = true;
     return true;
   }
 
@@ -54,6 +59,7 @@ export class CircuitBreaker {
     this.failureCount = 0;
     this.openedAt = null;
     this.state = 'CLOSED';
+    this.#probeInFlight = false;
   }
 
   /**
@@ -73,6 +79,7 @@ export class CircuitBreaker {
       this.state = 'OPEN';
       this.openedAt = Date.now();
     }
+    this.#probeInFlight = false;
   }
 
   getState(): CircuitBreakerState {
@@ -106,5 +113,6 @@ export class CircuitBreaker {
     this.state = 'CLOSED';
     this.failureCount = 0;
     this.openedAt = null;
+    this.#probeInFlight = false;
   }
 }
