@@ -68,3 +68,7 @@ export {
   SUPPORT_BOT_TEMPLATE,
   DOC_PROCESSOR_TEMPLATE,
 } from './templates/index.js';
+
+// ── Multi-client management ──────────────────────
+export { ClientManager } from './multi-client/index.js';
+export type { ClientConfig, ClientStatus, ClientRunResult, ManagerSummary, LogEntry } from './multi-client/index.js';
