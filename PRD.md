@@ -1,41 +1,41 @@
 # Nexus PRD — Self-Healing Multi-Agent Orchestration Framework
 
 ## Epic 1: Foundation
-- [ ] TypeScript config (tsconfig.json, package.json workspaces)
-- [ ] All interfaces and types in packages/nexus-core/src/types.ts
-- [ ] Named constants in packages/nexus-core/src/config/thresholds.ts
-- [ ] Package setup for nexus-core and nexus-cli
+- [x] TypeScript config (tsconfig.json, package.json workspaces)
+- [x] All interfaces and types in packages/nexus-core/src/types.ts
+- [x] Named constants in packages/nexus-core/src/config/thresholds.ts
+- [x] Package setup for nexus-core and nexus-cli
 
 ## Epic 2: Self-Healing Engine
-- [ ] ErrorTaxonomy (infra + output quality split)
-- [ ] CircuitBreaker (CLOSED/OPEN/HALF_OPEN state machine)
-- [ ] HealthTracker (composite score, rolling window)
-- [ ] OutputValidator (sync validation checks)
-- [ ] RecoveryStrategies (all recovery actions)
-- [ ] ReflectionLoop (cap at 2, tombstone on breach)
-- [ ] Step.tombstone implementation
+- [x] ErrorTaxonomy (infra + output quality split)
+- [x] CircuitBreaker (CLOSED/OPEN/HALF_OPEN state machine)
+- [x] HealthTracker (composite score, rolling window)
+- [x] OutputValidator (sync validation checks)
+- [x] RecoveryStrategies (all recovery actions)
+- [x] ReflectionLoop (cap at 2, tombstone on breach)
+- [x] Step.tombstone implementation
 - [ ] Self-healing unit tests
 
 ## Epic 3: Provider Layer
-- [ ] AnthropicProvider with prompt caching
-- [ ] Pre-flight token counting
+- [x] AnthropicProvider with prompt caching
+- [x] Pre-flight token counting
 - [ ] Provider unit tests
 
 ## Epic 4: Transcript
-- [ ] Immutable append-only Transcript class
-- [ ] Serialization/deserialization
-- [ ] toMessages() for API calls
+- [x] Immutable append-only Transcript class
+- [x] Serialization/deserialization
+- [x] toMessages() for API calls
 - [ ] Transcript unit tests
 
 ## Epic 5: Agent Core
-- [ ] Agent class with full self-healing pipeline
-- [ ] PRE-FLIGHT → EXECUTE → VALIDATE → DIAGNOSE → RECOVER → RETRY → UPDATE HEALTH
+- [x] Agent class with full self-healing pipeline
+- [x] PRE-FLIGHT → EXECUTE → VALIDATE → DIAGNOSE → RECOVER → RETRY → UPDATE HEALTH
 - [ ] Agent unit tests
 
 ## Epic 6: Team + Graph
-- [ ] Team class (sequential, parallel, debate, parallel-then-synthesize)
-- [ ] Graph class (nodes, edges, conditions)
-- [ ] Graceful degradation (skip failed agents)
+- [x] Team class (sequential, parallel, debate, parallel-then-synthesize)
+- [x] Graph class (nodes, edges, conditions)
+- [x] Graceful degradation (skip failed agents)
 - [ ] Team/Graph unit tests
 
 ## Epic 7: CLI
@@ -45,10 +45,10 @@
 - [ ] --dry-run flag (no API key required)
 
 ## Epic 8: Debate Arena Demo
-- [ ] 5 agent definitions (Researcher, Philosopher, Contrarian, Pragmatist, Synthesizer)
-- [ ] Multi-round debate protocol
-- [ ] Beautiful terminal output (colors, spinners)
-- [ ] Self-healing report at end
+- [x] 5 agent definitions (Researcher, Philosopher, Contrarian, Pragmatist, Synthesizer)
+- [x] Multi-round debate protocol
+- [x] Beautiful terminal output (colors, spinners)
+- [x] Self-healing report at end
 
 ## Epic 9: Code Review Team Demo
 - [ ] SecurityAgent, StyleAgent, LogicAgent
