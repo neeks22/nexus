@@ -1,0 +1,12 @@
+# Security Fixes — Build Progress
+
+Started: 2026-03-29
+PRD: PRD-security-fixes.md
+
+## Build Log
+
+### [2026-03-29 07:46] Epic 1, Item 1: Fix timingSafeEqual in activix-client.ts
+- Replaced `===` with `crypto.timingSafeEqual(Buffer.from(...), Buffer.from(...))` in `verifyWebhookSignature`
+- Added length check before `timingSafeEqual` to prevent throw on mismatched buffer lengths
+- Added test: "rejects signature with different length (timing-safe)"
+- All 29 activix-client tests pass

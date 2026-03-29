@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type {
   ActivixLead,
   ActivixLeadCreate,
@@ -110,7 +110,12 @@ export class ActivixClient {
   ): boolean {
     const body = typeof rawBody === "string" ? rawBody : rawBody.toString("utf-8");
     const expected = createHmac("sha256", secret).update(body).digest("hex");
-    return expected === signature;
+    const expectedBuf = Buffer.from(expected, "utf-8");
+    const signatureBuf = Buffer.from(signature, "utf-8");
+    if (expectedBuf.length !== signatureBuf.length) {
+      return false;
+    }
+    return timingSafeEqual(expectedBuf, signatureBuf);
   }
 
   // --- Circuit breaker state (for external checks) ---

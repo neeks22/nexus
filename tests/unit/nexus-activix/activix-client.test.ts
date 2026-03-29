@@ -342,6 +342,16 @@ describe("ActivixClient", () => {
       ).toBe(false);
     });
 
+    it("rejects signature with different length (timing-safe)", () => {
+      const secret = "webhook-secret-123";
+      const body = '{"event":"lead.created"}';
+
+      // Short signature — different length from expected HMAC hex
+      expect(
+        ActivixClient.verifyWebhookSignature(body, "ab", secret),
+      ).toBe(false);
+    });
+
     it("works with Buffer body", () => {
       const secret = "my-secret";
       const body = Buffer.from('{"test":true}');
