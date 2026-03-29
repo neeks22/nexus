@@ -1,0 +1,20 @@
+{
+  "name": "nexus-inventory",
+  "version": "0.1.0",
+  "description": "Inventory service for the Nexus dealership automation platform",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "npx tsup src/index.ts --format esm --dts",
+    "test": "npx vitest run"
+  },
+  "keywords": ["inventory", "dealership", "automotive", "vehicles"],
+  "license": "MIT"
+}

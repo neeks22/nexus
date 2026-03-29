@@ -1,0 +1,21 @@
+{
+  "name": "nexus-i18n",
+  "version": "0.1.0",
+  "description": "Language detection and message templates for Nexus dealership automation",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "npx tsup src/index.ts --format esm --dts",
+    "test": "npx vitest run"
+  },
+  "keywords": ["i18n", "language-detection", "templates", "dealership", "bilingual"],
+  "license": "MIT",
+  "dependencies": {}
+}

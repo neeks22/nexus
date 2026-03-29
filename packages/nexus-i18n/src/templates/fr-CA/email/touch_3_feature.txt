@@ -1,0 +1,18 @@
+Objet: Un apercu du {{vehicleModel}} {{vehicleYear}} {{vehicleTrim}}
+
+Bonjour {{firstName}},
+
+Je voulais partager quelques points forts du {{vehicleModel}} {{vehicleYear}} {{vehicleTrim}} que vous allez surement apprecier:
+
+{{featureHighlight}}
+
+Ce ne sont que quelques-unes des raisons pour lesquelles ce modele est l'un de nos choix les plus populaires. Selon notre inventaire actuel, nous avons plusieurs configurations disponibles.
+
+Si vous aimeriez venir le voir en personne, je serais heureux de vous trouver un moment qui vous convient. Un essai routier est la meilleure facon de decouvrir tout ce qu'il a a offrir.
+
+Faites-moi signe quand ca vous arrange!
+
+Cordialement,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}

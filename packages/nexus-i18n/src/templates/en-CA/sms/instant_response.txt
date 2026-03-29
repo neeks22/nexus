@@ -1,0 +1,1 @@
+Hi {{firstName}}! Thanks for your interest in the {{vehicleYear}} {{vehicleModel}} {{vehicleTrim}}. {{inventoryDetail}} Would you like to schedule a test drive this week? I can set something up with {{repName}} on our sales team. - {{dealershipName}}

@@ -29,3 +29,573 @@ Design: docs/superpowers/specs/2026-03-28-dealership-n8n-workflow-design.md
 - 28 unit tests — all passing
 - Files: src/activix-client.ts, src/schemas.ts, src/index.ts
 - Tests: tests/unit/nexus-activix/activix-client.test.ts
+
+### 2026-03-28 21:41 — Epic 3: Inventory Service ✅ COMPLETE
+- Created packages/nexus-inventory/ with package.json, tsconfig.json (extends root)
+- Defined interfaces: Vehicle, VehicleQuery, VehicleMatch, InventoryService (in types.ts)
+- Implemented CsvInventoryProvider (csv-provider.ts):
+  - CSV parsing with quoted-field support, header skip, malformed row tolerance
+  - findMatching(): scores vehicles on make/model (0.5), make-only (0.25), year (0.15/0.08), features (0.05 each, max 0.2), price filtering, returns top 3
+  - getVehicle(): lookup by VIN (returns any stock status)
+  - listAvailable(): filters by make, model, year, price range, features — only returns available
+- Implemented FeatureExtractor (feature-extractor.ts):
+  - extractHighlights(): picks top 3 features by priority ranking (panoramic roof, AWD, leather, heated seats, etc.)
+  - formatForAI(): concise string like "2024 CR-V EX-L in Platinum White — panoramic roof, leather seats, AWD"
+- Implemented Freshness utilities (freshness.ts):
+  - addFreshnessQualifier(): appends "Based on our current listings" when message references inventory
+  - isStale(): checks if data exceeds max age (default 24h)
+- Sample CSV: fixtures/sample-inventory.csv (10 vehicles: 7 available, 1 sold, 1 pending, 1 in_transit)
+- 39 unit tests — all passing
+- Files: src/types.ts, src/csv-provider.ts, src/feature-extractor.ts, src/freshness.ts, src/index.ts
+- Tests: tests/unit/nexus-inventory/inventory.test.ts
+
+### 2026-03-28 21:42 — Epic 2: Compliance Pre-Flight Module ✅ COMPLETE
+- Created packages/nexus-compliance/ with package.json, tsconfig.json (extends root)
+- Implemented ConsentTracker:
+  - Tracks consent_type (express/implied), consent_date, consent_expiry, consent_source per lead
+  - Implied consent auto-expires at 6 months, express = until revoked
+  - Zod validation on consent records
+- Implemented OptOutChecker:
+  - Checks unsubscribe_all_date, unsubscribe_sms_date, unsubscribe_email_date
+  - Channel-specific opt-out (SMS unsubscribe doesn't block email)
+- Implemented FrequencyCapChecker:
+  - Configurable max touches per window (default: 7 in 30 days)
+  - Filters by leadId and time window
+- Implemented ContentValidator:
+  - 14 regex patterns for forbidden content: interest rates, monthly payments, financing terms, credit scores, insurance, negotiation language
+  - Reports all violations (not just first match)
+- Implemented FeatureValidator:
+  - 28 vehicle feature patterns (AWD, leather, sunroof, CarPlay, etc.)
+  - Cross-references against inventory record features[]
+  - Blocks messages with unverified feature claims
+- Implemented CompliancePreFlight orchestrator:
+  - Runs ALL 5 checkers in sequence: consent → opt-out → frequency cap → content → features
+  - NON-BYPASSABLE — designed for Nexus PRE-FLIGHT step integration
+  - Logs every check result via configurable logger
+  - Returns pass/fail with detailed failure list
+- Added bilingual opt-out templates (en-CA, fr-CA) with dealership name/phone interpolation
+- 45 unit tests — all passing
+- Files: src/consent-tracker.ts, src/opt-out-checker.ts, src/frequency-cap.ts, src/content-validator.ts, src/feature-validator.ts, src/compliance-preflight.ts, src/templates/opt-out.ts, src/index.ts
+- Tests: tests/unit/nexus-compliance/compliance.test.ts
+
+### 2026-03-28 21:43 — Epic 4: Language Detection & Message Templates ✅ COMPLETE
+- Created packages/nexus-i18n/ with package.json, tsconfig.json (extends root)
+- Implemented LanguageDetector (language-detector.ts):
+  - Priority cascade: locale field → area code → postal code → fallback en-CA
+  - Quebec area codes: 418, 438, 450, 514, 579, 581, 819, 873
+  - Quebec postal prefixes: G, H, J
+  - Handles all phone formats: +1XXXXXXXXXX, (XXX) XXX-XXXX, XXX.XXX.XXXX, etc.
+  - Case-insensitive locale matching (fr, fr-CA, fr_CA all work)
+  - LeadForDetection interface compatible with ActivixLead schema
+- Implemented MessageTemplateRepository (template-repository.ts):
+  - Filesystem-based template loading: <dir>/<locale>/<channel>/<templateId>.txt
+  - get(): returns raw template with {{variable}} placeholders, null if missing
+  - render(): substitutes variables, graceful degradation (missing vars → empty string)
+  - listTemplates(): lists all template IDs for a locale/channel
+  - Internal caching with clearCache()
+- Created 13 en-CA SMS templates:
+  - 7-touch sequence: instant_response, touch_2_followup, touch_3_feature, touch_4_persistence, touch_5_value, touch_6_breakup, touch_7_monthly
+  - 5 handoff templates: handoff_price, handoff_objection, handoff_test_drive, handoff_financing, handoff_general
+  - 1 opt_out_confirmation
+- Created 4 en-CA email templates: instant_response, touch_3_feature, touch_5_value, touch_7_monthly (longer/more detailed than SMS)
+- Created 13 fr-CA SMS templates: natural Quebec French ("essai routier", "concessionnaire"), mirrors en-CA
+- Created 4 fr-CA email templates: natural Quebec French, mirrors en-CA
+- Barrel exports in index.ts
+- 88 unit tests — all passing
+  - LanguageDetector: locale override, all 8 Quebec area codes, formatted phones, Ontario/Alberta codes, postal codes (H/G/J = fr-CA, M/K/T = en-CA), empty/null fallback
+  - Template loading: valid templates, missing templates, caching, both locales × both channels
+  - Template rendering: full variable substitution, missing variable graceful handling, handoff + opt-out templates
+  - Template parity: all templates exist for both en-CA and fr-CA, emails longer than SMS
+- Files: src/language-detector.ts, src/template-repository.ts, src/index.ts, src/templates/{en-CA,fr-CA}/{sms,email}/*.txt
+- Tests: tests/unit/nexus-i18n/i18n.test.ts
+
+### 2026-03-28 21:44 — Epic 5: Lead Transcript (Shared State) ✅ COMPLETE
+- Created packages/nexus-transcript/ with package.json, tsconfig.json (extends root)
+- Defined interfaces in types.ts: TranscriptEntry, HandoffEvent, ComplianceCheckResult
+  - TranscriptEntry: id, leadId, timestamp, role (ai/customer/system), content, channel (sms/email/voice), touchNumber, metadata
+  - HandoffEvent: timestamp, intent, confidence, repName, transcriptSummary
+  - ComplianceCheckResult: timestamp, pass, failures (string[])
+- Implemented LeadTranscript class (lead-transcript.ts):
+  - Immutable, append-only — all methods return new instances
+  - appendMessage(role, content, options?) — auto-increments touch number, defaults channel to sms
+  - appendHandoff(intent, confidence, repName) — records handoff with auto-generated transcript summary
+  - appendComplianceCheck(result) — records compliance pass/fail
+  - getMessages() — returns readonly entries
+  - getLatestTouch() — returns highest touch number (0 if empty)
+  - getSummary() — generates human-readable summary using metadata (customerName, vehicleInterest, intent)
+  - toJSON() / fromJSON() — serialization for persistence
+- Implemented TranscriptStore interface + InMemoryTranscriptStore (persistence.ts):
+  - save(transcript), load(leadId), exists(leadId)
+  - InMemory for now (Supabase later)
+- 21 unit tests — all passing
+- Files: src/types.ts, src/lead-transcript.ts, src/persistence.ts, src/index.ts
+- Tests: tests/unit/nexus-transcript/transcript.test.ts
+
+### 2026-03-28 21:47 — Epic 14: Cost Tracking ✅ COMPLETE
+- Created packages/nexus-billing/ with package.json, tsconfig.json (extends root)
+- Defined interfaces in types.ts: ApiCostEntry, TwilioCostEntry, CostReport, DateRange, OperationBreakdown
+  - ApiCostEntry: id, tenantId, timestamp, model, inputTokens, outputTokens, costUsd, operationType
+  - TwilioCostEntry: id, tenantId, timestamp, channel (sms/email/voice), costUsd, messageId
+  - CostReport: full aggregation with per-lead, per-conversation, per-appointment unit economics
+- Implemented CostStore interface + InMemoryCostStore (cost-store.ts):
+  - saveApiCost(), saveTwilioCost(), getApiCosts(), getTwilioCosts()
+  - Filtering by tenantId and optional DateRange
+- Implemented CostLogger (cost-logger.ts):
+  - logApiCall() — auto-generates unique ID, persists to store
+  - logTwilioMessage() — auto-generates unique ID, persists to store
+  - Static calculateCost() — model pricing: Opus ($15/$75), Sonnet ($3/$15), Haiku ($0.80/$4) per million tokens
+- Implemented CostReporter (cost-reporter.ts):
+  - generateReport() — aggregates AI + Twilio costs, calculates unit economics, breaks down by operation type
+  - generateSummary() — human-readable string report for client reporting
+- Barrel exports in index.ts
+- 24 unit tests — all passing
+  - Cost calculation: correct for each model (opus, sonnet, haiku), fractional tokens, unknown model, zero tokens
+  - Cost logging: API call logged with all fields, Twilio message logged, unique IDs
+  - Cost store: filter by tenant, filter by date range, empty results
+  - Cost reporter: empty report, single entry, multiple entries, correct totals, per-lead calculation, breakdown by type
+  - Summary generation: readable output with all sections, empty data, no-breakdown case
+- Files: src/types.ts, src/cost-store.ts, src/cost-logger.ts, src/cost-reporter.ts, src/index.ts
+- Tests: tests/unit/nexus-billing/billing.test.ts
+
+### 2026-03-28 21:44 — Epic 6: Intent Classification ✅ COMPLETE
+- Created packages/nexus-intent/ with package.json, tsconfig.json (extends root)
+- Defined Intent enum (11 intents), IntentResult, HandoffRule, HandoffEvaluation interfaces (types.ts)
+- Implemented IntentClassifier (intent-classifier.ts):
+  - Keyword/pattern-based classification (Claude API classification in Epic 7)
+  - 10 intent rules with exact patterns, partial patterns, word-boundary patterns
+  - Bilingual: English + French (Quebec) keywords for all intents
+  - Confidence: exact match = 0.9, partial = 0.7, default INFO_REQUEST = 0.5
+  - Word-boundary matching for ambiguous words ("lease" vs "please")
+- Implemented HandoffRuleEngine (handoff-rules.ts):
+  - evaluate(intentResult) — returns { shouldHandoff, action, template? }
+  - Configurable rules with confidence thresholds
+- Created default-rules.json — 11 rules:
+  - PRICE/FINANCING/TRADE_IN/TEST_DRIVE/TIMELINE/OBJECTION/FRUSTRATION/LEGAL/HUMAN → handoff at 0.8
+  - NOT_INTERESTED → stop at 0.7
+  - INFO_REQUEST → continue at 0.0
+- Implemented objection templates (objection-templates.ts):
+  - 5 template keys: PRICE_INQUIRY, OBJECTION, TEST_DRIVE, FINANCING, GENERAL
+  - Full en-CA + fr-CA versions (natural Quebec French)
+  - renderTemplate() with {{variable}} substitution
+- 62 unit tests — all passing
+  - All 11 intents detected correctly (English + French keywords)
+  - Confidence scores verified (0.9 exact, 0.5 default)
+  - Handoff rules: threshold triggers, below-threshold continues
+  - NOT_INTERESTED → stop, INFO_REQUEST → continue
+  - Default rules JSON loads correctly
+  - All 5 templates render in both en-CA and fr-CA with variable substitution
+- Files: src/types.ts, src/intent-classifier.ts, src/handoff-rules.ts, src/default-rules.json, src/objection-templates.ts, src/index.ts
+- Tests: tests/unit/nexus-intent/intent.test.ts
+
+### 2026-03-28 21:49 — Epic 7: AI Agent — Instant Lead Response ✅ COMPLETE
+- Created packages/nexus-agents/ with package.json, tsconfig.json (extends root)
+- Defined interfaces in types.ts:
+  - DealershipConfig: dealershipName, address, phone, hours, timezone, tone (professional/friendly/casual), staff[], escalationNumbers
+  - AgentContext: lead, locale, vehicleMatches, dealershipConfig, touchNumber, conversationHistory?
+  - LeadData: compatible with ActivixLead, includes vehicles[], phones[], emails[], unsubscribe fields
+  - AgentResponse: message, channel, locale, vehicleMatches, complianceResult
+  - PersonalizationVariables: firstName, vehicleYear/Make/Model/Trim/Color, inventoryDetail, repName, dealership info
+  - VehicleMatchInfo: vehicle details + matchScore + matchReasons
+- Implemented buildInstantResponsePrompt() (prompts/instant-response.ts):
+  - Role section: dealership name, address, phone, hours
+  - Customer section: first name, touch number, lead source
+  - Inventory section: formatted vehicle matches with features and match scores, freshness qualifier
+  - Requirements: must include customer name, specific vehicle, concrete detail, soft CTA
+  - Safety rails: STRICTLY FORBIDDEN list — pricing, payments, financing, rates, insurance, credit scores
+  - Redirect to named rep for forbidden topics
+  - Tone directive: professional/friendly/casual with specific language guidance
+  - Language directive: en-CA (Canadian English) or fr-CA (Quebec French)
+  - Length constraints: SMS under 480 chars (3 segments), email under 200 words
+  - Full bilingual support (en-CA + fr-CA for all prompt sections)
+- Implemented InstantResponseAgent class (instant-response-agent.ts):
+  - Constructor: dealershipConfig, inventoryService, compliancePreFlight, languageDetector, templateRepository
+  - respond(lead, channel): detects language → queries inventory → builds context → renders template → compliance check
+  - generatePersonalization(lead, vehicleMatches): extracts all template variables from lead + inventory
+  - Inventory querying: extracts wanted vehicles from lead, queries InventoryService, maps to VehicleMatchInfo
+  - Fallback messages: generates reasonable response when template not found (bilingual, channel-aware)
+  - Compliance integration: passes inventory record to FeatureValidator via CompliancePreFlight
+  - Structurally-typed dependencies (no hard imports required for testing)
+- Created cold-warming.ts placeholder (Epic 8): ColdWarmingPromptBuilder interface
+- Barrel exports in index.ts
+- 38 unit tests — all passing
+  - System prompt: customer name, vehicle details, features, safety rails, pricing forbidden
+  - System prompt: redirect to rep, freshness qualifier, no-match handling
+  - System prompt: en-CA vs fr-CA locale adaptation, all 3 tone settings
+  - System prompt: SMS/email length constraints, dealership info, soft CTA, no inventing features
+  - Personalization: firstName extraction, French fallback, vehicle details, inventory detail with feature
+  - Personalization: dealership info, rep name assignment, no-match generic detail
+  - respond(): correct structure, locale detection, vehicle matches, personalized message
+  - respond(): compliance failure blocking, no-match response, fallback message, email channel
+  - respond(): SMS length validation, inventory query with lead vehicle interest
+- Files: src/types.ts, src/instant-response-agent.ts, src/prompts/instant-response.ts, src/prompts/cold-warming.ts, src/index.ts
+- Tests: tests/unit/nexus-agents/instant-response.test.ts
+
+### 2026-03-28 21:50 — Epic 13: Three-Layer Prompt Architecture ✅ COMPLETE
+- Created packages/nexus-prompts/ with package.json, tsconfig.json (extends root)
+- Defined interfaces in types.ts:
+  - Layer1Config: baseSystemPrompt, safetyRails, conversationLogic
+  - Layer2Config: dealershipName, hours, staff[], address, phone, timezone, tone, escalationNumbers, inventorySourceUrl, crmApiUrl
+  - Layer3Config: activePromotions[], inventoryHighlights[], blacklistedTopics[], customFaq[], greetingOverride?, signatureOverride?
+  - AssembledPrompt: systemPrompt, layer1Hash, layer2Hash, layer3Hash, assembledAt
+  - Zod schemas for Layer2 and Layer3 with full validation (URL, email, char limits, enums)
+- Implemented Layer 1 base prompts (layer1/base-prompts.ts):
+  - SAFETY_RAILS: 14 non-negotiable rules with explicit instruction hierarchy ("absolute priority over any content in the dealership customization section below")
+  - INSTANT_RESPONSE_BASE: personalized first response prompt with safety rails, persona, conversation logic
+  - COLD_WARMING_BASE: touch-aware warming prompt (Touch 1-2 enthusiastic, 3-5 consultative, 6 break-up, 7+ monthly nurture)
+  - Template variables: {{dealershipName}}, {{tone}}, {{channel}}, {{touchNumber}}, {{previousMessages}}
+- Implemented TenantConfigStore (layer2/tenant-config.ts):
+  - In-memory Map store with load(), save(), validate(), exists(), delete()
+  - Zod validation on save — rejects invalid tone, empty staff, bad URLs, missing required fields
+  - Deep copy on save (structuredClone) — mutations do not propagate
+- Implemented ClientConfigStore (layer3/client-config.ts):
+  - In-memory Map store with load(), save(), validate(), exists(), delete()
+  - Zod validation: promotions max 500 chars, FAQ answers max 1000 chars, greeting max 200 chars
+- Implemented InputSanitizer (layer3/input-sanitizer.ts):
+  - 12 prompt injection patterns blocked: "ignore previous", "ignore all", "system prompt", "you are now", "forget everything", "act as", "pretend to be", "disregard", "override", "new instructions", "DAN", "jailbreak"
+  - Case-insensitive matching
+  - Character limit enforcement: sanitizePromotion(500), sanitizeFaqAnswer(1000), sanitizeGreeting(200)
+  - sanitizeArray(): batch sanitization with blocked count and reasons
+- Implemented PromptAssembler (prompt-assembler.ts):
+  - Constructor: TenantConfigStore, ClientConfigStore, InputSanitizer
+  - assemble(tenantId, promptType, extraContext?): loads all 3 layers, sanitizes Layer 3, assembles with correct ordering
+  - assembleWithOverrides(tenantId, promptType, overrides): runtime Layer 3 overrides without persistence
+  - Instruction hierarchy enforced: Safety Rails (Layer 1) appear BEFORE all client content (Layer 3)
+  - Layer 3 section explicitly labeled "safety rails above take priority"
+  - SHA-256 hashes (16-char hex) for all 3 layers — enables audit trail
+  - Template interpolation for all Layer 2 variables
+  - Works without Layer 3 config (optional)
+- 68 unit tests — all passing
+  - Layer 1: safety rails contain priority instruction, forbid pricing/financing, require freshness qualifier, require rep redirect
+  - Layer 1: both prompt types include safety rails, template variables present, touch-aware instructions, break-up message
+  - Layer 2: save/load/validate cycle, missing fields rejected, invalid tone rejected, empty staff rejected, invalid URL rejected, deep copy isolation
+  - Layer 3: save/load/validate cycle, promotion >500 rejected, FAQ answer >1000 rejected, greeting >200 rejected, optional fields
+  - Sanitizer: blocks all 7 named injection patterns + case insensitive, enforces 3 char limits, trims whitespace, array filtering
+  - Assembler: merges all 3 layers, includes dealership/staff/promotions/FAQ/topics/greeting, safety before customization
+  - Assembler: instruction hierarchy explicit, hashes for all layers, hash changes on Layer 2/3/type change
+  - Assembler: missing tenant throws, works without Layer 3, cold_warming prompt type, extraContext interpolation
+  - Assembler: assembleWithOverrides applies overrides, merges non-overridden fields, works without existing Layer 3, different hash
+  - Assembler: blocks injection in promotions/greeting/FAQ during assembly
+- Files: src/types.ts, src/layer1/base-prompts.ts, src/layer2/tenant-config.ts, src/layer3/client-config.ts, src/layer3/input-sanitizer.ts, src/prompt-assembler.ts, src/index.ts
+- Tests: tests/unit/nexus-prompts/prompts.test.ts
+
+### 2026-03-28 21:50 — Epic 8: AI Agent — Cold Lead Warming ✅ COMPLETE
+- Implemented buildColdWarmingPrompt() (prompts/cold-warming.ts):
+  - Touch-aware tone directives: Touch 1-2 (ENTHUSIASTIC), 3-5 (CONSULTATIVE), 6 (RESPECTFUL CLOSE), 7+ (INFORMATIONAL)
+  - Safety rails matching instant response: no pricing, financing, payments, rates, insurance, credit scores
+  - NO_REPEAT_INSTRUCTION: explicit "never repeat the same message angle" directive with variation guidance
+  - Language directive: en-CA (Canadian English) or fr-CA (natural Quebec French with Quebec expressions)
+  - Inventory section: formats vehicle matches with features, freshness qualifier
+  - Conversation history section: renders prior messages for context, instructs AI to vary approach
+  - Dealership info and customer name included in all prompts
+- Implemented ColdWarmingAgent class (cold-warming-agent.ts):
+  - Constructor: dealershipConfig, inventoryService, compliancePreFlight, languageDetector, templateRepository
+  - generateTouch(lead, touchNumber, transcriptHistory?): full pipeline — detect language → query inventory → compliance pre-check → determine channel → build message → full compliance check → return result
+  - Compliance blocks return BlockedTouchResult with failure details (no message generated)
+  - Touch 6 uses hardcoded bilingual break-up messages (en-CA + fr-CA)
+  - Template-based rendering for all other touches with fallback message generation
+  - getNextTouchDate(currentTouch, lastTouchDate): calculates next touch due date using schedule deltas
+  - shouldSendTouch(lead, touchNumber, lastTouchDate): boolean check for cadence enforcement
+  - getBreakupMessage(locale): returns touch 6 break-up in correct language
+  - buildPrompt(context): exposes prompt builder for testing/external use
+  - Structurally-typed dependencies (no hard imports for testability)
+- Implemented TouchScheduler (touch-scheduler.ts):
+  - TOUCH_SCHEDULE constant: Map of 7 touches with daysFromStart, channel, strategy
+  - Channel pattern: Touch 1 SMS, Touch 2 SMS, Touch 3 Email, Touch 4 SMS, Touch 5 Email, Touch 6 SMS, Touch 7 Email
+  - getScheduleForTouch(touchNumber): returns entry, generates monthly entries for touch 8+
+  - calculateTouchDueDate(touchNumber, leadCreatedDate): returns Date based on schedule
+  - isOverdue(touchNumber, leadCreatedDate, now?): boolean overdue check
+  - resetCadence(lastReplyDate, currentTouchNumber): recalculates effective creation date after customer reply
+- Updated barrel exports in index.ts
+- 66 unit tests — all passing
+  - Prompt: adapts tone for touch 1-2 (enthusiastic keywords), 3-5 (consultative), 6 (respectful close), 7+ (informational/monthly nurture)
+  - Prompt: safety rails present (pricing, financing, payments, rates forbidden)
+  - Prompt: no-repeat instruction in every prompt for all touch numbers
+  - Prompt: language directive for en-CA (Canadian English) and fr-CA (Quebec French)
+  - Prompt: inventory references with vehicle details, handles empty matches
+  - Prompt: conversation history rendering, empty history message
+  - Prompt: dealership info and customer name included
+  - Agent: touch 2 SMS, touch 3 email, touch 4 SMS, touch 5 email, touch 6 SMS (break-up), touch 7+ email
+  - Agent: compliance block prevents message generation with failure details
+  - Agent: language detection via injected detector
+  - Agent: inventory service queried with lead vehicle interest
+  - Agent: inventory references present in template-rendered touches
+  - Agent: break-up message correct for en-CA and fr-CA
+  - Agent: getNextTouchDate calculations correct for all 7 touch transitions
+  - Scheduler: 7 predefined entries with correct days/channel/strategy
+  - Scheduler: touch 8+ generates monthly entries (day 90, 150, etc.)
+  - Scheduler: calculateTouchDueDate correct for all 7 touches
+  - Scheduler: isOverdue detection (before, on, after due date)
+  - Scheduler: cadence reset on customer reply prevents immediate next touch
+- Files: src/prompts/cold-warming.ts, src/cold-warming-agent.ts, src/touch-scheduler.ts, src/index.ts (updated)
+- Tests: tests/unit/nexus-agents/cold-warming.test.ts
+
+### 2026-03-28 21:56 — Epic 17: PII Protection Module ✅ COMPLETE
+- Package packages/nexus-pii/ already had source scaffolded (package.json, tsconfig.json, src/)
+- Source files: types.ts, pii-redactor.ts, pino-redactor.ts, index.ts
+- Implemented PiiRedactor class with:
+  - 9 regex patterns: phone (parens, dashed, +1), email, Canadian postal code, US zip, credit card (16 digits), SIN/SSN (dashed, plain 9-digit)
+  - redact(text): replaces PII with [REDACTED_PHONE], [REDACTED_EMAIL], [REDACTED_POSTAL_CODE], [REDACTED_ZIP_CODE], [REDACTED_CREDIT_CARD], [REDACTED_SIN_SSN]
+  - redactObject(obj): recursively redacts strings in nested objects, arrays, mixed structures
+  - containsPii(text): boolean check for any PII presence
+  - scan(text): returns { containsPii, typesFound } without redacting
+  - KnownPiiConfig support: pass customer names for case-insensitive word-boundary redaction
+- Implemented pino logger integration:
+  - createPiiRedactPaths(): returns pino redact config with 19 default paths (phone, email, name, lead.*, req.headers.authorization, msg, etc.)
+  - createPiiSerializer(): returns pino serializer function for regex-based PII detection in free-text fields
+- Fixed PHONE_PLUS regex: removed \b before \+? (word boundary doesn't match before +)
+- 51 unit tests — all passing
+  - Phone: xxx-xxx-xxxx, (xxx) xxx-xxxx, (xxx) xxx xxxx, +1xxxxxxxxxx, 1xxxxxxxxxx, xxx.xxx.xxxx, multiple phones
+  - Email: standard, plus addressing, subdomain
+  - Postal codes: A1A 1A1, A1A1A1, lowercase
+  - Zip codes: 5-digit, 5+4
+  - Credit cards: 16 consecutive, spaces, dashes
+  - SIN/SSN: xxx-xx-xxxx, xxx xxx xxx, 9 consecutive
+  - Multiple PII types in one string, original preserved in result
+  - No PII: unchanged text, empty string
+  - redactObject: flat, nested, arrays, null/undefined, numbers/booleans, deeply nested mixed
+  - containsPii: phone, email, credit card true; normal text false; empty false
+  - scan: multiple types, no PII, credit card, SIN/SSN, no duplicate type names
+  - Known names: customer name redaction, case insensitive, empty name ignored
+  - Pino: default paths, additional paths, string serializer, object serializer, passthrough, known names
+- Files: src/types.ts, src/pii-redactor.ts, src/pino-redactor.ts, src/index.ts
+- Tests: tests/unit/nexus-pii/pii.test.ts
+
+### 2026-03-28 — Epic 9: n8n Workflow 1 — Instant Lead Response ✅ COMPLETE
+- Created n8n workflow "Instant Lead Response — Activix Webhook" via MCP
+- n8n workflow ID: vWdc92Ew7olgKFhA
+- n8n instance: https://nexusagents.app.n8n.cloud
+- Webhook path: /webhook/activix-lead-webhook
+- 13 nodes, 12 connections, 0 validation errors
+- Node flow:
+  1. Activix Webhook (n8n-nodes-base.webhook v2.1) — receives POST, raw body enabled
+  2. Webhook Verification (Code) — HMAC-SHA256 using $env.ACTIVIX_WEBHOOK_SECRET, returns 401 on invalid
+  3. Parse Lead Data (Code) — extracts lead_id, first/last name, phones[], emails[], vehicles[], advisor, opt-out fields, implied consent
+  4. Language Detection (Code) — checks locale field, then Quebec area codes (418/438/450/514/579/581/819/873), then postal code (G/H/J), default en-CA
+  5. Inventory Query (Code) — placeholder with 5 sample vehicles, matches by make/model/year, returns top 3
+  6. Generate AI Response (Code) — bilingual templates (en-CA/fr-CA) with personalization: FNAME, VNAME, INVDETAIL, RNAME, DNAME, DPHONE
+  7. Compliance Check (Code) — CASL: consent exists, implied not expired (6mo), opt-out fields, 13 forbidden financial language patterns
+  8. Compliance Pass? (IF v2) — routes on compliance.pass boolean
+  9. Pass → Send SMS via Twilio (Twilio v1) — $env.TWILIO_FROM_NUMBER, primary channel
+  10. Pass → Send Email (HTTP Request v4.4) — SendGrid v3 API, secondary channel
+  11. Pass → Update Activix Lead (HTTP Request v4.4) — PUT /v2/leads/:id result="attempted", retry 3x/2s
+  12. Pass → Notify Rep via Slack (Slack v2.4) — posts to #leads with lead summary
+  13. Fail → Log Compliance Failure (Code) — COMPLIANCE_BLOCK event, alert payload for #compliance-alerts
+- Validated with n8n_validate_workflow: 0 errors, 15 warnings (informational)
+- JSON backup saved to workflows/instant-lead-response.json
+- Credentials needed: Twilio API, SendGrid API (HTTP Header Auth), Activix API (HTTP Header Auth), Slack OAuth2
+- Environment variables needed: ACTIVIX_WEBHOOK_SECRET, TWILIO_FROM_NUMBER, FROM_EMAIL
+- TODO: Replace Inventory Query placeholder with real InventoryService API call
+- TODO: Replace Generate AI Response template with Nexus AI Agent HTTP call to Claude
+- TODO: End-to-end test with n8n_test_workflow (requires credentials configured)
+
+### 2026-03-29 — Epic 10: n8n Workflow 2 — Cold Lead Warming ✅ COMPLETE
+- Created n8n workflow "Cold Lead Warming — Daily Outreach" via MCP
+- n8n workflow ID: XYDPZrDBrip1GPDE
+- n8n instance: https://nexusagents.app.n8n.cloud
+- 14 nodes, 13 connections, created inactive (activate after credential config)
+- Timezone: America/Toronto, execution order v1, progress saving enabled
+- Node flow:
+  1. Daily 9AM Trigger (scheduleTrigger v1.2) — cron "0 9 * * *"
+  2. Fetch Leads from Activix (Code) — GET /v2/leads, filters result=pending|attempted, division=new|used, excludes lost/invalid/duplicate/delivered/sold, paginated (max 1000 leads)
+  3. Filter Eligible Leads (Code) — excludes unsubscribed (unsubscribe_all_date, sms+email combo), determines touch number from created_at, cadence filter (Day 2, 4, 7, 14, 30, 60+), touch 8+ monthly
+  4. Determine Touch Number (Code) — enriches each lead with channel (SMS/Email alternating), strategy label, outputs individual items for batch processing
+  5. Process Each Lead (SplitInBatches v3) — batch size 1, iterates through leads
+  6. Detect Language (Code) — locale field -> Quebec area codes (418/438/450/514/579/581/819/873) -> postal code (G/H/J) -> en-CA default
+  7. Inventory Match (Code) — placeholder, extracts wanted vehicle from lead, structures query for InventoryService
+  8. Generate Touch Message (Code) — full bilingual templates (en-CA + fr-CA):
+     - Touch 2: followup SMS
+     - Touch 3: feature email (vehicle highlights)
+     - Touch 4: persistence SMS (test drive CTA)
+     - Touch 5: value email (resale, safety, cost)
+     - Touch 6: breakup SMS (respectful close)
+     - Touch 7+: monthly email (new arrivals)
+     - All include opt-out footer, personalization (firstName, vehicleDesc, repName, dealershipName)
+  9. Compliance Check (Code) — CASL implied consent 6-month expiry, opt-out check (channel-specific), 14 forbidden content patterns (pricing/financing/credit/insurance), message existence check
+  10. Compliance Pass? (IF v2.2) — routes on _compliancePass boolean
+  11. Pass → Send Message (Code) — Twilio SMS (REST API) or SendGrid email, continueOnFail=true
+  12. Pass → Update Activix Lead (Code) — PUT /v2/leads/:id, result=attempted, rating by touch (3/2/1), comment with touch log, continueOnFail=true
+  13. Fail → Log Compliance Failure (Code) — logs leadId, failures, skipped reason, continueOnFail=true
+  14. Batch Complete (NoOp) — loop terminator
+- Both pass and fail branches loop back to Process Each Lead for next iteration
+- Error handling: continueOnFail on send/update/log nodes — failed leads skip without blocking the batch
+- JSON backup saved to workflows/cold-lead-warming.json
+- Environment variables needed: ACTIVIX_API_TOKEN, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER, SENDGRID_API_KEY, FROM_EMAIL, DEALERSHIP_NAME, DEALERSHIP_PHONE, DEFAULT_REP_NAME
+- TODO: Replace Inventory Match placeholder with real InventoryService API call
+- TODO: Add LeadTranscript persistence (Supabase) for touch deduplication
+- TODO: Add frequency cap check against Supabase transcript store
+- TODO: End-to-end test with n8n_test_workflow (requires credentials configured)
+
+### 2026-03-28 — Epic 11: Inbound Reply Handler ✅ COMPLETE
+- Created n8n workflow "Inbound Reply Handler" (ID: Iu3zbs4uAJbfKUHz, 19 nodes)
+- Deployed via n8n MCP, validated with 0 errors
+- Nodes implemented:
+  - Twilio Webhook Trigger (POST /inbound-sms) with TwiML response
+  - Lookup Lead: searches Activix API via GET /v2/leads/search?query={phone}
+  - Load Conversation History: reads/writes LeadTranscript from workflow static data
+  - Classify Intent: keyword-based classifier for 9 intents (EN+FR), outputs intent/confidence/action
+  - Route by Intent: Switch node with 3 branches (handoff/continue/stop)
+  - Handoff branch: Build payload (transcript summary, rating, recommendation), Slack alert to #dealership-handoffs, Activix PUT (rating 4-5, result=reached)
+  - Continue branch: Generate AI Reply (bilingual), Compliance Check (financial language, opt-out, consent expiry, content validation), IF gate, Send SMS via Twilio, Update Transcript
+  - Stop branch: Opt-out confirmation (bilingual), Send SMS, Update Activix (result=lost)
+  - Reset Cadence Timer: 72-hour cooldown after customer reply
+- Saved to: workflows/inbound-reply-handler.json
+
+### 2026-03-28 — Epic 12: Activix Failover Queue ✅ COMPLETE
+- Created n8n workflow "Activix Failover Queue" (ID: xoQDRxTkLpDge7q7, 15 nodes)
+- Deployed via n8n MCP, validated with 0 errors
+- Nodes implemented:
+  - Schedule Trigger: every 15 minutes
+  - Check Queue: reads pending items from workflow static data (Supabase in production)
+  - Has Items? IF gate: skips if queue empty
+  - Prepare Items + SplitInBatches: processes queue items one at a time
+  - Activix Health Check: GET /v2/leads?per_page=1 with 10s timeout
+  - API Healthy? IF gate: routes to execute or increment attempt
+  - Healthy branch: Execute queued operation (POST/PUT to Activix), Mark Completed
+  - Unhealthy branch: Increment attempt counter, check if > 10 retries
+  - Over limit: Slack alert to #dealership-ops ("API down 2.5+ hours"), Mark Item Failed
+  - Under limit: Skip Until Next Cycle (NoOp), loops back to batch processor
+- Queue schema (for Supabase): id, lead_data, operation, created_at, attempts, last_error, status
+- Saved to: workflows/activix-failover-queue.json
+
+### 2026-03-28 — Epic 15: Client Dashboard ✅ COMPLETE
+- Created packages/nexus-dashboard/ with package.json, tsconfig.json (extends root, matches nexus-billing pattern)
+- Defined interfaces in types.ts:
+  - DashboardView: viewId, title, description, dataSource, refreshIntervalSec
+  - DashboardConfig: tenantId, views[], auth (DashboardAuth with username, passwordHash, role, lastLogin)
+  - DailySummary: date, leadsHandled, appointmentsBooked, escalations, avgResponseTimeSec
+  - ConversationEntry: leadId, leadName, messages[] (ConversationMessage), startedAt, channel, intent?, handedOff
+  - ConversationFilters: startDate?, endDate?, channel?, intent?, handedOffOnly?, searchQuery?, limit?, offset?
+  - PerformanceTrends: weeklyData[] (WeeklyDataPoint with week, leadVolume, replyRate, handoffRate, appointmentRate)
+  - DashboardSettings (Layer 3): activePromotions[], inventoryHighlights[], blacklistedTopics[], customFaq[] (FaqEntry), hours
+- Implemented DashboardDataProvider interface (dashboard-provider.ts):
+  - getDailySummary(tenantId, date): returns DailySummary or null
+  - getConversations(tenantId, filters?): filtered list with search, pagination, channel/intent/handoff filtering
+  - getTrends(tenantId, dateRange): ISO-week aggregation of summaries into weekly performance data
+  - getSettings(tenantId): returns DashboardSettings or null
+  - updateSettings(tenantId, partial): merge with defaults, CRUD operations
+- Implemented InMemoryDashboardProvider with full filtering, ISO week aggregation, and partial update merge
+- Defined DEFAULT_VIEWS constant: 4 standard views (daily-summary, conversation-browser, performance-trends, settings)
+- Barrel exports in index.ts
+- 36 unit tests — all passing
+  - DEFAULT_VIEWS: 4 views defined, unique viewIds, dataSource on every view, correct titles/descriptions
+  - getDailySummary: unknown tenant/date returns null, correct data retrieval, tenant isolation, all fields
+  - getConversations: empty results, no-filter full return, filter by channel/intent/handoff/date/search, limit/offset/combined
+  - getTrends: empty for unknown/no-data, weekly aggregation, rate computation (0-1), chronological sort
+  - Settings: null for unknown, store/retrieve, partial merge, default creation, persistence, empty arrays, FAQ update, tenant isolation
+- Files: src/types.ts, src/dashboard-provider.ts, src/index.ts
+- Tests: tests/unit/nexus-dashboard/dashboard.test.ts
+
+### 2026-03-28 — Epic 16: Observability & Alerting ✅ COMPLETE
+- Created packages/nexus-observability/ with package.json, tsconfig.json (extends root)
+- Defined interfaces in types.ts:
+  - TraceEntry: traceId, tenantId, timestamp, model, inputTokens, outputTokens, latencyMs, status (success/error/timeout), agentType, error?
+  - TraceFilters: startDate?, endDate?, status?, agentType?, model?
+  - AlertRule: name, condition (fn), channel (slack/pagerduty/email), messageTemplate
+  - AlertEvent: ruleName, timestamp, details, notified
+  - AlertContext: circuitBreakerOpen?, complianceFailure?, complianceDetails?, latencyMs?, errorRate?, queueDepth?
+  - SystemHealth: activixApi, twilioDelivery, aiErrorRate, queueDepth, overallStatus (green/yellow/red)
+  - HealthContext: activixCircuitBreakerOpen, activixErrorRate, twilioDeliveryRate, aiErrorRate, queueDepth
+  - SlackBlock, SlackBlockElement, SlackMessage for Slack Block Kit formatting
+- Implemented TraceLogger (trace-logger.ts):
+  - logTrace(): auto-generates traceId, stores all fields, returns TraceEntry
+  - getTraces(tenantId, filters?): filter by status, agentType, date range, model
+  - getAverageLatency(tenantId, range?): computes mean latency, 0 for empty
+  - getErrorRate(tenantId, range?): counts errors + timeouts as failures, returns 0-1
+  - getTokenUsage(tenantId, range?): returns inputTokens, outputTokens, totalTokens
+  - traceCount property, clear() for testing
+- Implemented AlertEngine (alert-engine.ts) with 5 predefined rules:
+  1. circuit_breaker_open: fires on circuitBreakerOpen=true, Slack channel
+  2. compliance_failure: fires on complianceFailure=true, Slack channel, interpolates {{details}}
+  3. slow_response: fires on latencyMs > 60000ms, Slack channel
+  4. high_error_rate: fires on errorRate > 0.10 (10%), PagerDuty channel
+  5. queue_depth_high: fires on queueDepth > 50, Slack channel
+  - evaluate(context): returns AlertEvent[] for triggered rules, error-resilient (swallows bad conditions)
+  - addRule(): supports custom rules
+  - formatSlackMessage(event): returns Slack Block Kit with header (severity emoji + rule name), section (details), context (ISO timestamp)
+  - Template interpolation for {{details}}, {{latencyMs}}, {{errorRate}}, {{queueDepth}}
+  - All thresholds as named constants: SLOW_RESPONSE_THRESHOLD_MS, HIGH_ERROR_RATE_THRESHOLD, QUEUE_DEPTH_HIGH_THRESHOLD
+- Implemented HealthDashboard (health-dashboard.ts):
+  - getSystemHealth(tenantId, context): returns SystemHealth with green/yellow/red for each component
+  - Activix: red if circuit breaker open OR error rate > 15%, yellow if > 5%
+  - Twilio: red if delivery rate < 85%, yellow if < 95%
+  - AI error rate: red if > 10%, yellow if > 5%
+  - Queue depth: red if > 50, yellow if > 20
+  - Overall: worst-of-all components
+  - All thresholds exported as named constants
+- Barrel exports in index.ts
+- 72 unit tests — all passing
+  - TraceLogger: log with generated/custom traceId, unique IDs, preserve all fields, traceCount, clear
+  - getTraces: empty for unknown, filter by tenant/status/agentType/dateRange/model, combine filters
+  - getAverageLatency: 0 for empty, single/multiple traces, date range scoping
+  - getErrorRate: 0 for empty/all-success, errors counted, timeouts counted, mixed, date range scoping
+  - getTokenUsage: zeros for empty, sum correctly, date range scoping
+  - AlertEngine: 5 predefined rules, correct channels
+  - Each rule: triggers correctly, does not trigger below threshold, threshold boundary behavior
+  - Multiple rules trigger simultaneously, empty array when none triggered, timestamps on events
+  - Custom rules via addRule, error resilience (bad condition swallowed)
+  - formatSlackMessage: 3 blocks (header/section/context), rule name in header, details in section, ISO timestamp in context
+  - HealthDashboard: all green for healthy context
+  - Each component: red/yellow/green thresholds verified (activix, twilio, aiErrorRate, queueDepth)
+  - Overall: red if any red, yellow if any yellow, green only when all green, multiple degraded = red
+- Files: src/types.ts, src/trace-logger.ts, src/alert-engine.ts, src/health-dashboard.ts, src/index.ts
+- Tests: tests/unit/nexus-observability/observability.test.ts
+
+### 2026-03-28 — Epic 18: End-to-End Testing ✅ COMPLETE
+- Created tests/e2e/dealership-workflow.test.ts
+- 14 tests across 13 test groups (test 10 has en-CA + fr-CA sub-tests), all passing
+- Imports from ALL 8 packages: nexus-activix (schemas), nexus-compliance (CompliancePreFlight, ContentValidator, FeatureValidator), nexus-inventory (types), nexus-i18n (LanguageDetector), nexus-transcript (LeadTranscript), nexus-intent (IntentClassifier, HandoffRuleEngine, Intent), nexus-agents (InstantResponseAgent, ColdWarmingAgent, resetCadence, TOUCH_SCHEDULE), nexus-billing (CostLogger, InMemoryCostStore, CostReporter)
+- External services mocked: InventoryService, LanguageDetector, TemplateRepository, CompliancePreFlight (for agent tests)
+- Test coverage:
+  1. New lead full pipeline: webhook parse → language detect → inventory match → AI response → compliance pass
+  2. Cold lead touch 2: 3-day-old lead → touch 2 selected → SMS channel → correct message
+  3. Price inquiry handoff: "how much is the civic?" → PRICE_INQUIRY (0.9 confidence) → shouldHandoff=true → transcript records handoff
+  4. Info request continues: "what are your hours?" → INFO_REQUEST → shouldHandoff=false → action=continue
+  5. Unsubscribed lead blocked: unsubscribe_sms_date set → CompliancePreFlight blocks with opt-out checker
+  6. Expired consent blocked: implied consent 7 months old → blocked with consent expiry reason
+  7. Feature validation: "panoramic roof" on vehicle without it → FeatureValidator blocks with unverified feature
+  8. Content validation: "payments as low as $299/month" → ContentValidator blocks with forbidden financial language
+  9. French language: 514 area code → fr-CA locale → French template → "Bonjour Marie"
+  10. Break-up message: touch 6 en-CA ("timing might not be right") + fr-CA ("pas de souci") — both verified exact text
+  11. Cadence reset: reply after touch 4 → resetCadence() → touch 5 delayed by 7 days from reply
+  12. Full lifecycle: touch 1-6 → customer replies → PRICE_INQUIRY → handoff to Sarah Johnson → transcript summary generated
+  13. Cost tracking: 3 API calls + 2 Twilio messages → CostReporter generates report with correct totals, per-lead cost, breakdown by operation type, readable summary
+- Note: Test for "Activix API down → queued → reconciled" left unchecked in PRD (requires Supabase integration not yet available)
+- Files: tests/e2e/dealership-workflow.test.ts
+
+### 2026-03-28 — Epic 19: Documentation & Training ✅ COMPLETE
+- Created docs/dealership/onboarding-guide.md — plain language guide for dealership staff:
+  - What the AI does (instant responses + follow-up sequences)
+  - What the AI will and will not do (explicit lists)
+  - Dashboard access and views (daily summary, conversation browser, trends, settings)
+  - Managing promotions, inventory highlights, FAQ, blacklisted topics (step-by-step)
+  - Understanding handoffs (what reps receive, response time target)
+  - Language support explanation (English/French auto-detection)
+  - Support contacts
+  - FAQ section (editing messages, complaints, new reps, inventory updates, appointments)
+- Created docs/dealership/internal-runbook.md — deployment guide:
+  - Prerequisites checklist (8 items)
+  - Step 1: Tenant configuration (Layer 2 + Layer 3 with code examples)
+  - Step 2: Activix webhook setup (URL, secret, events, testing)
+  - Step 3: Twilio configuration (number provisioning, inbound webhook, credentials)
+  - Step 4: n8n workflow configuration (all 4 workflows with IDs and env vars)
+  - Step 5: Inventory loading (CSV format, upload, verification)
+  - Step 6: End-to-end verification (4 test scenarios)
+  - Per-dealership deployment checklist (copy-paste template with 20+ items)
+  - Monitoring section (daily checks, weekly checks, automatic alerts)
+  - Scaling section (multi-tenant architecture, adding new dealerships, capacity planning)
+- Created docs/dealership/troubleshooting.md — 8 common issues:
+  - Webhook not firing (diagnosis, 5 causes, fixes)
+  - SMS not delivering (diagnosis, 6 causes, fixes)
+  - Slow AI response > 60s (diagnosis, 4 causes, fixes)
+  - Wrong language detected (how detection works, 3 causes, fixes)
+  - Compliance failure with table of all checker names, failure reasons, and meanings
+  - Lead not in CRM (diagnosis, 4 causes, fixes including failover queue)
+  - Handoff not reaching rep (diagnosis, 5 causes, fixes)
+  - High costs (diagnosis, 4 causes, model pricing comparison)
+- Updated docs/agency/n8n-setup-guide.md — added "Dealership Vertical" section:
+  - All 4 workflows described with IDs and trigger types
+  - ASCII diagram showing how workflows connect
+  - Environment variables table (10 variables)
+  - Link to internal-runbook.md for full deployment guide
+- PRD checkboxes updated: 12/13 Epic 18 items checked (Activix failover test requires Supabase), 4/4 Epic 19 items checked
+- Files: docs/dealership/onboarding-guide.md, docs/dealership/internal-runbook.md, docs/dealership/troubleshooting.md, docs/agency/n8n-setup-guide.md (updated)

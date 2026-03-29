@@ -1,0 +1,211 @@
+{
+  "id": "xoQDRxTkLpDge7q7",
+  "name": "Activix Failover Queue",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Toronto",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "nodes": [
+    {
+      "id": "schedule",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "parameters": { "rule": { "interval": [{ "field": "minutes", "minutesInterval": 15 }] } }
+    },
+    {
+      "id": "check-queue",
+      "name": "Check Queue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300],
+      "parameters": {
+        "jsCode": "const staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) staticData.queue = [];\nconst pendingItems = staticData.queue.filter(i => i.status === 'pending' || i.status === 'retrying');\nreturn [{ json: { queueLength: pendingItems.length, hasItems: pendingItems.length > 0, pendingItems, totalQueueSize: staticData.queue.length } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "has-items",
+      "name": "Has Items?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [440, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [{ "id": "hi1", "leftValue": "={{ $json.hasItems }}", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }]
+        }
+      }
+    },
+    {
+      "id": "prepare-items",
+      "name": "Prepare Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 250],
+      "parameters": {
+        "jsCode": "const items = $input.first().json.pendingItems || [];\nif (items.length === 0) return [];\nreturn items.map(item => ({ json: item }));"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "split-batch",
+      "name": "Process Queue Items",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [880, 250],
+      "parameters": { "batchSize": 1, "options": {} }
+    },
+    {
+      "id": "health-check",
+      "name": "Activix Health Check",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1100, 250],
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.crm.activix.ca/v2/leads?per_page=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Accept", "value": "application/json" }] },
+        "options": { "timeout": 10000 }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "api-healthy",
+      "name": "API Healthy?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1320, 250],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [{ "id": "ah1", "leftValue": "={{ !$json.error && $json.data !== undefined }}", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }]
+        }
+      }
+    },
+    {
+      "id": "exec-op",
+      "name": "Execute Queued Operation",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1560, 150],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.crm.activix.ca/v2/leads",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }, { "name": "Accept", "value": "application/json" }] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Process Queue Items').item.json.leadData || {}) }}",
+        "options": { "timeout": 15000 }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "mark-done",
+      "name": "Mark Completed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 150],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst currentItem = $('Process Queue Items').item.json;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) return [{ json: { status:'no_queue' } }];\nconst httpFailed = input.error || input.code >= 400;\nconst idx = staticData.queue.findIndex(q => q.id === currentItem.id);\nif (httpFailed) {\n  if (idx >= 0) { staticData.queue[idx].attempts = (staticData.queue[idx].attempts||0)+1; staticData.queue[idx].lastError = input.error || 'HTTP error'; staticData.queue[idx].status = 'retrying'; }\n  return [{ json: { status:'item_error', itemId:currentItem.id } }];\n}\nif (idx >= 0) { staticData.queue[idx].status = 'completed'; staticData.queue[idx].completedAt = new Date().toISOString(); }\nreturn [{ json: { status:'completed', itemId:currentItem.id } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "inc-attempt",
+      "name": "Increment Attempt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 350],
+      "parameters": {
+        "jsCode": "const currentItem = $('Process Queue Items').item.json;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) return [{ json: { status:'no_queue' } }];\nconst idx = staticData.queue.findIndex(q => q.id === currentItem.id);\nif (idx >= 0) { staticData.queue[idx].attempts = (staticData.queue[idx].attempts||0)+1; staticData.queue[idx].lastError = 'Activix API unhealthy'; staticData.queue[idx].status = 'retrying'; staticData.queue[idx].lastAttempt = new Date().toISOString(); }\nconst attempts = staticData.queue[idx]?.attempts || 0;\nreturn [{ json: { itemId:currentItem.id, attempts, overLimit: attempts > 10, status:'retrying' } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "over-limit",
+      "name": "Over Retry Limit?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1780, 350],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [{ "id": "ol1", "leftValue": "={{ $json.overLimit }}", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }]
+        }
+      }
+    },
+    {
+      "id": "slack-down",
+      "name": "Slack Alert API Down",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [2000, 300],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": { "__rl": true, "mode": "name", "value": "#dealership-ops" },
+        "text": "={{ 'CRITICAL: Activix API Down > 2.5 hours. Queue item ' + $json.itemId + ' exceeded 10 retries. Manual intervention required. Total attempts: ' + $json.attempts }}",
+        "otherOptions": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "mark-failed",
+      "name": "Mark Item Failed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 300],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) return [{ json: { status:'no_queue' } }];\nconst idx = staticData.queue.findIndex(q => q.id === input.itemId);\nif (idx >= 0) { staticData.queue[idx].status = 'failed'; staticData.queue[idx].failedAt = new Date().toISOString(); staticData.queue[idx].lastError = 'Exceeded max retries (10). API down 2.5+ hours.'; }\nreturn [{ json: { status:'failed_permanently', itemId:input.itemId } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "skip-retry",
+      "name": "Skip Until Next Cycle",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [2000, 450],
+      "parameters": {}
+    },
+    {
+      "id": "no-items",
+      "name": "No Items - Skip",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [660, 400],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": { "main": [[{ "node": "Check Queue", "type": "main", "index": 0 }]] },
+    "Check Queue": { "main": [[{ "node": "Has Items?", "type": "main", "index": 0 }]] },
+    "Has Items?": { "main": [[{ "node": "Prepare Items", "type": "main", "index": 0 }], [{ "node": "No Items - Skip", "type": "main", "index": 0 }]] },
+    "Prepare Items": { "main": [[{ "node": "Process Queue Items", "type": "main", "index": 0 }]] },
+    "Process Queue Items": { "main": [[{ "node": "Activix Health Check", "type": "main", "index": 0 }]] },
+    "Activix Health Check": { "main": [[{ "node": "API Healthy?", "type": "main", "index": 0 }]] },
+    "API Healthy?": { "main": [[{ "node": "Execute Queued Operation", "type": "main", "index": 0 }], [{ "node": "Increment Attempt", "type": "main", "index": 0 }]] },
+    "Execute Queued Operation": { "main": [[{ "node": "Mark Completed", "type": "main", "index": 0 }]] },
+    "Mark Completed": { "main": [[{ "node": "Process Queue Items", "type": "main", "index": 0 }]] },
+    "Increment Attempt": { "main": [[{ "node": "Over Retry Limit?", "type": "main", "index": 0 }]] },
+    "Over Retry Limit?": { "main": [[{ "node": "Slack Alert API Down", "type": "main", "index": 0 }], [{ "node": "Skip Until Next Cycle", "type": "main", "index": 0 }]] },
+    "Slack Alert API Down": { "main": [[{ "node": "Mark Item Failed", "type": "main", "index": 0 }]] },
+    "Mark Item Failed": { "main": [[{ "node": "Process Queue Items", "type": "main", "index": 0 }]] },
+    "Skip Until Next Cycle": { "main": [[{ "node": "Process Queue Items", "type": "main", "index": 0 }]] }
+  }
+}

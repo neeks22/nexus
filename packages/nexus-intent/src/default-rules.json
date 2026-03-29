@@ -1,0 +1,13 @@
+[
+  { "intent": "PRICE_INQUIRY", "action": "handoff", "confidenceThreshold": 0.8, "template": "PRICE_INQUIRY" },
+  { "intent": "FINANCING_QUESTION", "action": "handoff", "confidenceThreshold": 0.8, "template": "FINANCING" },
+  { "intent": "TRADE_IN_REQUEST", "action": "handoff", "confidenceThreshold": 0.8, "template": "GENERAL" },
+  { "intent": "TEST_DRIVE_REQUEST", "action": "handoff", "confidenceThreshold": 0.8, "template": "TEST_DRIVE" },
+  { "intent": "TIMELINE_MENTION", "action": "handoff", "confidenceThreshold": 0.8, "template": "GENERAL" },
+  { "intent": "OBJECTION", "action": "handoff", "confidenceThreshold": 0.8, "template": "OBJECTION" },
+  { "intent": "FRUSTRATION", "action": "handoff", "confidenceThreshold": 0.8, "template": "GENERAL" },
+  { "intent": "LEGAL_MENTION", "action": "handoff", "confidenceThreshold": 0.8, "template": "GENERAL" },
+  { "intent": "HUMAN_REQUEST", "action": "handoff", "confidenceThreshold": 0.8, "template": "GENERAL" },
+  { "intent": "NOT_INTERESTED", "action": "stop", "confidenceThreshold": 0.7 },
+  { "intent": "INFO_REQUEST", "action": "continue", "confidenceThreshold": 0.0 }
+]

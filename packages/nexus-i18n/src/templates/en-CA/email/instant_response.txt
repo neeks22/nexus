@@ -1,0 +1,16 @@
+Subject: Your interest in the {{vehicleYear}} {{vehicleModel}} {{vehicleTrim}}
+
+Hi {{firstName}},
+
+Thank you for your interest in the {{vehicleYear}} {{vehicleModel}} {{vehicleTrim}}! {{inventoryDetail}}
+
+We'd love to help you learn more about this vehicle. Whether you'd like to schedule a test drive, ask questions about features, or simply get more details, {{repName}} on our sales team is here to help.
+
+Would this week work for a visit? We're happy to work around your schedule.
+
+Looking forward to hearing from you!
+
+Best regards,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}

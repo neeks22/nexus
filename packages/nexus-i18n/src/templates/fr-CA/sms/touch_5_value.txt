@@ -1,0 +1,1 @@
+Bonjour {{firstName}}, nous venons de recevoir de beaux nouveaux arrivages qui correspondent a ce que vous cherchiez, dont un {{newArrivalDetail}}. Voulez-vous que je vous envoie les details? - {{dealershipName}}

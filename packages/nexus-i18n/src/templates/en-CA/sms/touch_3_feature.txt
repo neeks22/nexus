@@ -1,0 +1,1 @@
+Hi {{firstName}}, just wanted to share — the {{vehicleYear}} {{vehicleModel}} {{vehicleTrim}} comes with {{featureHighlight}}. It's one of the reasons it's been so popular. Let me know if you'd like to see it in action! - {{dealershipName}}

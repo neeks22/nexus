@@ -1,0 +1,1 @@
+Vous avez ete desabonne et ne recevrez plus de messages de notre part. Si jamais vous changez d'avis, n'hesitez pas a nous contacter. Merci, {{firstName}}! - {{dealershipName}}

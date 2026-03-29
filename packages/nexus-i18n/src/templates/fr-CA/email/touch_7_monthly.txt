@@ -1,0 +1,16 @@
+Objet: Les nouveautes du mois chez {{dealershipName}}
+
+Bonjour {{firstName}},
+
+J'espere que tout va bien de votre cote! Voici un petit apercu de nos nouveautes ce mois-ci chez {{dealershipName}}:
+
+{{newArrivalDetail}}
+
+Que vous soyez en recherche active ou que vous gardiez simplement un oeil sur le marche, je suis toujours disponible pour repondre a vos questions ou vous aider a explorer ce qui est disponible.
+
+Rien ne presse — je voulais simplement vous tenir au courant. N'hesitez pas a me contacter en tout temps!
+
+Cordialement,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}

@@ -1,0 +1,165 @@
+{
+  "name": "Instant Lead Response \u2014 Activix Webhook",
+  "description": "n8n Workflow 1: Receives Activix CRM webhook on new lead creation, verifies HMAC signature, parses lead data, detects language (en-CA/fr-CA), queries inventory, generates personalized AI response, runs CASL compliance check, then sends SMS via Twilio + email via SendGrid, updates Activix lead status, and notifies the assigned rep via Slack. Compliance failures are logged and alerted without sending any message.",
+  "n8n_workflow_id": "vWdc92Ew7olgKFhA",
+  "n8n_instance": "https://nexusagents.app.n8n.cloud",
+  "webhook_path": "/webhook/activix-lead-webhook",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Toronto",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true
+  },
+  "nodes": [
+    {
+      "id": "node-webhook",
+      "name": "Activix Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 300],
+      "parameters": {
+        "path": "activix-lead-webhook",
+        "httpMethod": "POST",
+        "responseMode": "lastNode",
+        "options": { "rawBody": true }
+      },
+      "purpose": "Receives POST from Activix CRM when a new lead is created. Types: email, phone, web_order, sms."
+    },
+    {
+      "id": "node-verify",
+      "name": "Webhook Verification",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "purpose": "HMAC-SHA256 signature check using X-Activix-Webhook-Signature header. Returns 401 if invalid. Uses $env.ACTIVIX_WEBHOOK_SECRET."
+    },
+    {
+      "id": "node-parse",
+      "name": "Parse Lead Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "purpose": "Extracts first_name, last_name, vehicles[], phones[], emails[], locale, source, type, advisor, opt-out fields, and sets implied consent from form submission."
+    },
+    {
+      "id": "node-language",
+      "name": "Language Detection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300],
+      "purpose": "Detects en-CA or fr-CA. Priority: 1) Activix locale field, 2) Quebec area codes (418, 438, 450, 514, 579, 581, 819, 873), 3) Quebec postal code prefixes (G, H, J), 4) default en-CA."
+    },
+    {
+      "id": "node-inventory",
+      "name": "Inventory Query",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300],
+      "purpose": "Placeholder with sample inventory data. Matches lead vehicle interest to available stock, returns top 3 matches. TODO: Replace with HTTP Request to InventoryService API or Supabase."
+    },
+    {
+      "id": "node-ai-response",
+      "name": "Generate AI Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 300],
+      "purpose": "Builds personalized bilingual message using template pattern: 'Hi {firstName}! Thanks for your interest in the {vehicle}. {inventoryDetail} Would you like to schedule a test drive? I can set something up with {repName}. - {dealershipName}'. TODO: Replace with Nexus AI Agent HTTP call."
+    },
+    {
+      "id": "node-compliance",
+      "name": "Compliance Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1440, 300],
+      "purpose": "CASL compliance pre-flight: verifies consent exists, checks implied consent not expired (6-month window), checks opt-out fields, validates content has no forbidden financial language (monthly payments, interest rates, financing terms, credit scores, etc.)."
+    },
+    {
+      "id": "node-if-compliance",
+      "name": "Compliance Pass?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1680, 300],
+      "purpose": "Routes based on compliance.pass boolean. True output -> send messages. False output -> log failure."
+    },
+    {
+      "id": "node-twilio",
+      "name": "Send SMS via Twilio",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1960, 160],
+      "purpose": "Sends SMS via Twilio. Uses $env.TWILIO_FROM_NUMBER. Primary outbound channel.",
+      "credentials_needed": "Twilio API (Account SID + Auth Token)"
+    },
+    {
+      "id": "node-email",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1960, 340],
+      "purpose": "Sends email via SendGrid API v3. Secondary outbound channel. Configure HTTP Header Auth with Bearer token.",
+      "credentials_needed": "SendGrid API Key (HTTP Header Auth: Authorization: Bearer sg_xxx)"
+    },
+    {
+      "id": "node-activix-update",
+      "name": "Update Activix Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1960, 520],
+      "purpose": "PUT /v2/leads/:id with result='attempted'. Retry on fail (3 attempts, 2s wait). Configure HTTP Header Auth with Bearer token.",
+      "credentials_needed": "Activix API Key (HTTP Header Auth: Authorization: Bearer xxx)"
+    },
+    {
+      "id": "node-slack",
+      "name": "Notify Rep via Slack",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [1960, 700],
+      "purpose": "Posts lead summary to #leads channel: lead name, vehicle interest, source, language, phone, email, assigned advisor.",
+      "credentials_needed": "Slack OAuth2 API (Bot Token with chat:write scope)"
+    },
+    {
+      "id": "node-compliance-fail",
+      "name": "Log Compliance Failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1960, 900],
+      "purpose": "Logs COMPLIANCE_BLOCK event with lead details, failure reason, and alert payload for #compliance-alerts Slack channel. No outbound message is sent."
+    }
+  ],
+  "connections": {
+    "Activix Webhook": { "main": [[{ "node": "Webhook Verification", "type": "main", "index": 0 }]] },
+    "Webhook Verification": { "main": [[{ "node": "Parse Lead Data", "type": "main", "index": 0 }]] },
+    "Parse Lead Data": { "main": [[{ "node": "Language Detection", "type": "main", "index": 0 }]] },
+    "Language Detection": { "main": [[{ "node": "Inventory Query", "type": "main", "index": 0 }]] },
+    "Inventory Query": { "main": [[{ "node": "Generate AI Response", "type": "main", "index": 0 }]] },
+    "Generate AI Response": { "main": [[{ "node": "Compliance Check", "type": "main", "index": 0 }]] },
+    "Compliance Check": { "main": [[{ "node": "Compliance Pass?", "type": "main", "index": 0 }]] },
+    "Compliance Pass?": {
+      "main": [
+        [
+          { "node": "Send SMS via Twilio", "type": "main", "index": 0 },
+          { "node": "Send Email", "type": "main", "index": 0 },
+          { "node": "Update Activix Lead", "type": "main", "index": 0 },
+          { "node": "Notify Rep via Slack", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Log Compliance Failure", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "environment_variables_required": [
+    "ACTIVIX_WEBHOOK_SECRET — HMAC secret for webhook signature verification",
+    "TWILIO_FROM_NUMBER — Twilio phone number for outbound SMS (e.g., +15145550100)",
+    "FROM_EMAIL — SendGrid verified sender email"
+  ],
+  "credentials_required": [
+    "Twilio API — Account SID + Auth Token",
+    "SendGrid — HTTP Header Auth with Bearer token",
+    "Activix API — HTTP Header Auth with Bearer token",
+    "Slack — OAuth2 Bot Token with chat:write scope"
+  ],
+  "flow_diagram": "Activix Webhook -> Webhook Verification -> Parse Lead Data -> Language Detection -> Inventory Query -> Generate AI Response -> Compliance Check -> IF(pass) -> [Twilio SMS, SendGrid Email, Activix PUT, Slack Notify] | IF(fail) -> [Log Compliance Failure]"
+}

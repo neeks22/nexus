@@ -1,0 +1,16 @@
+Subject: What's new at {{dealershipName}} this month
+
+Hi {{firstName}},
+
+I hope all is well! Here's a quick update on what's new at {{dealershipName}} this month:
+
+{{newArrivalDetail}}
+
+Whether you're actively shopping or just keeping an eye on the market, I'm always happy to answer questions or help you explore what's available.
+
+No rush — just wanted to keep you in the loop. Feel free to reach out anytime!
+
+Best regards,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}

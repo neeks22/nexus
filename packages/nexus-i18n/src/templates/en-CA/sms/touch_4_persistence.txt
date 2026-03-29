@@ -1,0 +1,1 @@
+Hi {{firstName}}, just wanted to make sure you saw my note about the {{vehicleYear}} {{vehicleModel}}. Still happy to help whenever you're ready! - {{dealershipName}}

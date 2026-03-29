@@ -1,0 +1,1 @@
+Bonjour {{firstName}}! Merci pour votre interet pour le {{vehicleModel}} {{vehicleYear}} {{vehicleTrim}}. {{inventoryDetail}} Aimeriez-vous planifier un essai routier cette semaine? Je peux organiser un rendez-vous avec {{repName}}. - {{dealershipName}}

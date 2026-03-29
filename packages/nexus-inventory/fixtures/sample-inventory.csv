@@ -1,0 +1,11 @@
+vin,make,model,year,trim,color,features,msrp,stock_status,days_on_lot
+1HGCV1F34PA000001,Honda,CR-V,2024,EX-L,Platinum White Pearl,Panoramic Roof|Leather Seats|AWD|Heated Seats|Apple CarPlay|Adaptive Cruise Control,42500,available,12
+1HGCV1F34PA000002,Honda,CR-V,2024,Sport,Crystal Black Pearl,AWD|Heated Seats|Apple CarPlay|Remote Start,38900,available,25
+1HGCV1F34PA000003,Honda,Civic,2024,Touring,Sonic Gray Pearl,Leather Seats|Sunroof|Navigation|Wireless Charging|Bose,34200,available,8
+1HGCV1F34PA000004,Honda,Civic,2023,Sport,Rallye Red,Heated Seats|Apple CarPlay|Android Auto,28500,sold,45
+1HGCV1F34PA000005,Toyota,RAV4,2024,XLE Premium,Magnetic Gray,AWD|Sunroof|Heated Seats|Blind Spot Monitoring|Power Liftgate,39800,available,18
+1HGCV1F34PA000006,Toyota,Camry,2024,SE,Wind Chill Pearl,Adaptive Cruise Control|Apple CarPlay|Lane Departure Warning,32100,available,30
+1HGCV1F34PA000007,Toyota,RAV4,2024,Limited,Blueprint,AWD|Leather Seats|Panoramic Sunroof|360 Camera|Premium Audio|Heated Steering Wheel,45200,pending,5
+1HGCV1F34PA000008,Honda,Accord,2024,Sport Hybrid,Meteorite Gray,Hybrid|Adaptive Cruise Control|Heated Seats|Wireless Charging|Apple CarPlay,36800,available,14
+1HGCV1F34PA000009,Honda,CR-V,2023,LX,Lunar Silver Metallic,AWD|Apple CarPlay|Android Auto,35200,available,60
+1HGCV1F34PA000010,Toyota,Corolla,2024,LE,Celestite Gray,Adaptive Cruise Control|Apple CarPlay|Android Auto|Lane Departure Warning,24500,in_transit,0

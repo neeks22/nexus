@@ -1,0 +1,1 @@
+Bonjour {{firstName}}, je fais un petit suivi — avez-vous eu la chance de jeter un coup d'oeil au {{vehicleModel}}? {{repName}} est disponible cette semaine si vous aimeriez venir le voir en personne. - {{dealershipName}}

@@ -1,0 +1,23 @@
+{
+  "name": "nexus-compliance",
+  "version": "0.1.0",
+  "description": "CASL compliance pre-flight module for the Nexus dealership automation platform",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "npx tsup src/index.ts --format esm --dts",
+    "test": "npx vitest run"
+  },
+  "keywords": ["compliance", "casl", "dealership", "automotive", "consent"],
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}

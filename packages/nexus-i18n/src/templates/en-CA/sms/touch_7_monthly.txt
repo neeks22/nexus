@@ -1,0 +1,1 @@
+Hi {{firstName}}, hope you're doing well! We've got some exciting new inventory this month, including {{newArrivalDetail}}. If you're still in the market, I'd love to help you find the right fit. - {{dealershipName}}

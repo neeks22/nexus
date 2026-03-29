@@ -1,0 +1,1 @@
+Hi {{firstName}}, we just got some great new arrivals that match what you were looking for — including a {{newArrivalDetail}}. Want me to send over the details? - {{dealershipName}}

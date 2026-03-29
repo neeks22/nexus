@@ -1,0 +1,1 @@
+Awesome, {{firstName}}! I'd love to get you behind the wheel of the {{vehicleYear}} {{vehicleModel}}. {{repName}} will reach out to find a time that works for you. Looking forward to it! - {{dealershipName}}

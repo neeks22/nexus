@@ -1,0 +1,1 @@
+Bonjour {{firstName}}, on dirait que le moment n'est peut-etre pas ideal pour le {{vehicleModel}} — pas de souci du tout! Je suis la quand vous serez pret. - {{dealershipName}}

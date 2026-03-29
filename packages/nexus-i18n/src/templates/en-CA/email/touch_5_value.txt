@@ -1,0 +1,16 @@
+Subject: New arrivals that match your interest
+
+Hi {{firstName}},
+
+I hope you're doing well! I wanted to let you know about some exciting new arrivals at {{dealershipName}} that match what you were looking for:
+
+{{newArrivalDetail}}
+
+Our inventory is always changing, and I thought you'd want to be among the first to know about these. Based on our current listings, these won't last long.
+
+If any of these catch your eye — or if you'd like to explore other options — I'm here to help. No pressure at all, just wanted to keep you in the loop.
+
+Best regards,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}

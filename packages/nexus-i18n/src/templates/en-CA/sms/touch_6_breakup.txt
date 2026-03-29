@@ -1,0 +1,1 @@
+Hi {{firstName}}, looks like the timing might not be right for the {{vehicleModel}} — no worries at all! I'm here whenever you're ready. - {{dealershipName}}

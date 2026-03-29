@@ -1,0 +1,271 @@
+{
+  "id": "Iu3zbs4uAJbfKUHz",
+  "name": "Inbound Reply Handler",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Toronto",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "nodes": [
+    {
+      "id": "webhook-trigger",
+      "name": "Twilio Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 300],
+      "parameters": {
+        "path": "inbound-sms",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "respond-ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [220, 300],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",
+        "options": {
+          "responseHeaders": {
+            "entries": [{ "name": "Content-Type", "value": "text/xml" }]
+          }
+        }
+      }
+    },
+    {
+      "id": "lookup-lead",
+      "name": "Lookup Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 300],
+      "parameters": {
+        "jsCode": "// Lookup Lead - match incoming phone to Activix lead via search\nconst input = $input.first().json;\nconst fromPhone = (input.body?.From || input.From || '').replace(/[^\\d+]/g, '');\nconst messageBody = input.body?.Body || input.Body || '';\nconst toPhone = (input.body?.To || input.To || '').replace(/[^\\d+]/g, '');\n\nif (!fromPhone) throw new Error('No From phone number in webhook payload');\n\nconst ACTIVIX_BASE = 'https://api.crm.activix.ca/v2';\nconst ACTIVIX_TOKEN = $env.ACTIVIX_API_TOKEN || 'PLACEHOLDER_TOKEN';\n\nlet lead = null;\ntry {\n  const resp = await fetch(`${ACTIVIX_BASE}/leads/search?query=${encodeURIComponent(fromPhone)}`, {\n    headers: { 'Authorization': `Bearer ${ACTIVIX_TOKEN}`, 'Accept': 'application/json' }\n  });\n  if (resp.ok) {\n    const data = await resp.json();\n    if (data.data?.length > 0) lead = data.data[0];\n  }\n} catch (err) { console.error('Activix search failed:', err.message); }\n\nreturn [{ json: { fromPhone, toPhone, messageBody, lead, leadFound: !!lead, leadId: lead?.id || null, leadName: lead ? `${lead.first_name || ''} ${lead.last_name || ''}`.trim() : 'Unknown', locale: lead?.locale || 'en-CA', advisorName: lead?.advisor?.first_name || null, timestamp: new Date().toISOString() } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "load-transcript",
+      "name": "Load Conversation History",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [660, 300],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst leadId = input.leadId;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.transcripts) staticData.transcripts = {};\nconst transcript = staticData.transcripts[leadId] || { leadId, messages: [], touchNumber: 0, lastContactDate: null };\ntranscript.messages.push({ role: 'customer', content: input.messageBody, channel: 'sms', timestamp: input.timestamp });\ntranscript.lastContactDate = input.timestamp;\nstaticData.transcripts[leadId] = transcript;\nreturn [{ json: { ...input, transcript, touchNumber: transcript.touchNumber, conversationLength: transcript.messages.length } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "classify-intent",
+      "name": "Classify Intent",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 300],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst msg = (input.messageBody || '').toLowerCase();\nconst rules = [\n  { intent:'HUMAN_REQUEST', keywords:['talk to someone','real person','parler a quelquun','speak to','manager','representative'], confidence:0.95, action:'handoff' },\n  { intent:'FRUSTRATION', keywords:['angry','frustrated','terrible','worst','horrible','furieux','ridiculous','unacceptable'], confidence:0.90, action:'handoff' },\n  { intent:'NOT_INTERESTED', keywords:['not interested','remove me','stop','unsubscribe','pas interesse','arretez','leave me alone','no thanks'], confidence:0.95, action:'stop' },\n  { intent:'PRICE_INQUIRY', keywords:['how much','price','cost','prix','combien','pricing','msrp'], confidence:0.85, action:'handoff' },\n  { intent:'TEST_DRIVE_REQUEST', keywords:['test drive','come see','essai routier','come in','visit','see the car','book appointment'], confidence:0.90, action:'handoff' },\n  { intent:'FINANCING_QUESTION', keywords:['finance','payment','lease','financement','monthly','mensuel','credit','loan','down payment'], confidence:0.85, action:'handoff' },\n  { intent:'TRADE_IN_REQUEST', keywords:['trade in','trade-in','my car','echange','my vehicle','mon char'], confidence:0.85, action:'handoff' },\n  { intent:'TIMELINE_MENTION', keywords:['this week','today','soon','cette semaine','tomorrow','demain','this weekend','asap','this month'], confidence:0.85, action:'handoff' },\n  { intent:'OBJECTION', keywords:['too expensive','better deal','trop cher','cheaper','moins cher','competitor','other dealer','negotiate'], confidence:0.80, action:'handoff' }\n];\nlet matched = null;\nfor (const r of rules) { for (const kw of r.keywords) { if (msg.includes(kw)) { matched = r; break; } } if (matched) break; }\nconst result = matched ? { intent:matched.intent, confidence:matched.confidence, action:matched.action } : { intent:'INFO_REQUEST', confidence:0.60, action:'continue' };\nresult.shouldHandoff = result.action === 'handoff';\nreturn [{ json: { ...input, intentClassification: result } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "route-by-intent",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [1100, 300],
+      "parameters": {
+        "rules": {
+          "values": [
+            { "outputKey": "handoff", "conditions": { "combinator": "and", "conditions": [{ "leftValue": "={{ $json.intentClassification.action }}", "rightValue": "handoff", "operator": { "type": "string", "operation": "equals" } }] } },
+            { "outputKey": "continue", "conditions": { "combinator": "and", "conditions": [{ "leftValue": "={{ $json.intentClassification.action }}", "rightValue": "continue", "operator": { "type": "string", "operation": "equals" } }] } },
+            { "outputKey": "stop", "conditions": { "combinator": "and", "conditions": [{ "leftValue": "={{ $json.intentClassification.action }}", "rightValue": "stop", "operator": { "type": "string", "operation": "equals" } }] } }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "build-handoff",
+      "name": "Build Handoff Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 100],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst transcript = input.transcript || { messages: [] };\nconst summary = transcript.messages.slice(-10).map(m => `${m.role === 'customer' ? 'Customer' : 'AI'}: ${m.content}`).join('\\n');\nconst ratingMap = { TEST_DRIVE_REQUEST:5, TIMELINE_MENTION:5, PRICE_INQUIRY:4, FINANCING_QUESTION:4, TRADE_IN_REQUEST:4, OBJECTION:4, FRUSTRATION:5, HUMAN_REQUEST:4 };\nconst actionMap = { TEST_DRIVE_REQUEST:'Book test drive immediately', TIMELINE_MENTION:'Reach out ASAP - buying signal', PRICE_INQUIRY:'Prepare pricing with incentives', FINANCING_QUESTION:'Connect with F&I department', TRADE_IN_REQUEST:'Schedule appraisal', OBJECTION:'Prepare competitive analysis', FRUSTRATION:'Manager call - immediate escalation', HUMAN_REQUEST:'Call customer directly' };\nconst vehicles = (input.lead?.vehicles || []).map(v => `${v.year||''} ${v.make||''} ${v.model||''}`.trim()).filter(Boolean);\nreturn [{ json: { ...input, handoffPayload: { customerName:input.leadName, phone:input.fromPhone, vehiclesOfInterest: vehicles.length > 0 ? vehicles : ['Unknown'], conversationSummary:summary, intent:input.intentClassification.intent, confidence:input.intentClassification.confidence, rating: ratingMap[input.intentClassification.intent] || 3, touchNumber:input.touchNumber, recommendedAction: actionMap[input.intentClassification.intent] || 'Follow up', timestamp:input.timestamp } } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "slack-handoff",
+      "name": "Slack Alert Rep",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [1560, 0],
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": { "__rl": true, "mode": "name", "value": "#dealership-handoffs" },
+        "text": "={{ 'HANDOFF - ' + $json.handoffPayload.intent + ' | Customer: ' + $json.handoffPayload.customerName + ' | Phone: ' + $json.handoffPayload.phone + ' | Vehicles: ' + ($json.handoffPayload.vehiclesOfInterest || []).join(', ') + ' | Rating: ' + $json.handoffPayload.rating + '/5 | Action: ' + $json.handoffPayload.recommendedAction }}",
+        "otherOptions": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "activix-handoff",
+      "name": "Update Activix Handoff",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1560, 200],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://api.crm.activix.ca/v2/leads/' + $json.leadId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }, { "name": "Accept", "value": "application/json" }] },
+        "sendBody": true,
+        "bodyParameters": { "parameters": [{ "name": "rating", "value": "={{ $json.handoffPayload.rating }}" }, { "name": "result", "value": "reached" }, { "name": "comment", "value": "={{ '[AI Handoff] ' + $json.handoffPayload.intent + ' | ' + $json.handoffPayload.recommendedAction }}" }] },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "gen-reply",
+      "name": "Generate AI Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst isFrench = (input.locale || 'en-CA').startsWith('fr');\nconst name = input.lead?.first_name || '';\nlet reply = '';\nif (isFrench) {\n  reply = name ? `Merci pour votre message, ${name}! Je serais heureux de vous aider. Laissez-moi verifier cela pour vous.` : 'Merci pour votre message! Je serais heureux de vous aider.';\n} else {\n  reply = name ? `Thanks for your message, ${name}! Happy to help. Let me look into it and get right back to you.` : 'Thanks for your message! Happy to help. Let me look into it and get right back to you.';\n}\nreturn [{ json: { ...input, generatedReply: reply } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "compliance",
+      "name": "Compliance Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1560, 300],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst reply = input.generatedReply || '';\nconst lead = input.lead;\nconst violations = [];\nconst forbidden = [/\\$\\d+\\/month/i, /monthly payment/i, /interest rate/i, /\\d+\\.?\\d*\\s*%\\s*(apr|interest|rate)/i, /credit score/i, /paiement mensuel/i, /taux d.interet/i];\nfor (const p of forbidden) { if (p.test(reply)) violations.push('Forbidden financial language'); }\nif (lead?.unsubscribe_sms_date) violations.push('Lead unsubscribed from SMS');\nif (lead?.unsubscribe_all_date) violations.push('Lead unsubscribed from all');\nif (lead?.consent_type === 'implied' && lead?.consent_date) {\n  const exp = new Date(lead.consent_date); exp.setMonth(exp.getMonth() + 6);\n  if (new Date() > exp) violations.push('Implied consent expired');\n}\nif (!reply.trim()) violations.push('Empty reply');\nconst pass = violations.length === 0;\nlet finalReply = reply;\nif (pass && reply) finalReply += (input.locale || 'en-CA').startsWith('fr') ? '\\n\\nRepondez STOP pour ne plus recevoir de messages.' : '\\n\\nReply STOP to opt out.';\nreturn [{ json: { ...input, complianceResult: { pass, violations, checkedAt: new Date().toISOString() }, finalReply: pass ? finalReply : null } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "compliance-gate",
+      "name": "Compliance Pass?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1780, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [{ "id": "c1", "leftValue": "={{ $json.complianceResult.pass }}", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }]
+        }
+      }
+    },
+    {
+      "id": "send-sms",
+      "name": "Send Reply SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [2000, 250],
+      "parameters": { "operation": "send", "from": "={{ $json.toPhone }}", "to": "={{ $json.fromPhone }}", "message": "={{ $json.finalReply }}" }
+    },
+    {
+      "id": "update-transcript",
+      "name": "Update Transcript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2220, 250],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\nif (staticData.transcripts?.[input.leadId]) {\n  staticData.transcripts[input.leadId].messages.push({ role:'assistant', content:input.finalReply, channel:'sms', timestamp:new Date().toISOString() });\n}\nreturn [{ json: { status:'reply_sent', leadId:input.leadId, intent:input.intentClassification.intent } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "compliance-fail",
+      "name": "Log Compliance Failure",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 400],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconsole.error('COMPLIANCE BLOCKED:', JSON.stringify(input.complianceResult.violations));\nreturn [{ json: { status:'compliance_blocked', leadId:input.leadId, violations:input.complianceResult.violations, timestamp:new Date().toISOString() } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "optout-msg",
+      "name": "Send Opt-Out Confirmation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 520],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst isFrench = (input.locale || 'en-CA').startsWith('fr');\nconst optOutMessage = isFrench ? 'Nous avons bien recu votre demande. Vous ne recevrez plus de messages de notre part.' : 'We have received your request. You will not receive any more messages from us.';\nreturn [{ json: { ...input, optOutMessage } }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "send-optout",
+      "name": "Send Opt-Out SMS",
+      "type": "n8n-nodes-base.twilio",
+      "typeVersion": 1,
+      "position": [1560, 520],
+      "parameters": { "operation": "send", "from": "={{ $json.toPhone }}", "to": "={{ $json.fromPhone }}", "message": "={{ $json.optOutMessage }}" }
+    },
+    {
+      "id": "activix-optout",
+      "name": "Update Activix Opt-Out",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [1780, 520],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ 'https://api.crm.activix.ca/v2/leads/' + $json.leadId }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }, { "name": "Accept", "value": "application/json" }] },
+        "sendBody": true,
+        "bodyParameters": { "parameters": [{ "name": "result", "value": "lost" }, { "name": "comment", "value": "[AI] Customer opted out via SMS. Sequence stopped." }] },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "reset-cadence",
+      "name": "Reset Cadence Timer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2440, 300],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst leadId = input.leadId;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.cadenceTimers) staticData.cadenceTimers = {};\nstaticData.cadenceTimers[leadId] = { lastReplyAt: new Date().toISOString(), cooldownHours: 72, intent: input.intentClassification?.intent || input.intent || 'unknown' };\nreturn [{ json: { status:'cadence_reset', leadId, cooldownUntil: new Date(Date.now() + 72*60*60*1000).toISOString() } }];"
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "Twilio Webhook Trigger": { "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]] },
+    "Respond OK": { "main": [[{ "node": "Lookup Lead", "type": "main", "index": 0 }]] },
+    "Lookup Lead": { "main": [[{ "node": "Load Conversation History", "type": "main", "index": 0 }]] },
+    "Load Conversation History": { "main": [[{ "node": "Classify Intent", "type": "main", "index": 0 }]] },
+    "Classify Intent": { "main": [[{ "node": "Route by Intent", "type": "main", "index": 0 }]] },
+    "Route by Intent": { "main": [[{ "node": "Build Handoff Payload", "type": "main", "index": 0 }], [{ "node": "Generate AI Reply", "type": "main", "index": 0 }], [{ "node": "Send Opt-Out Confirmation", "type": "main", "index": 0 }]] },
+    "Build Handoff Payload": { "main": [[{ "node": "Slack Alert Rep", "type": "main", "index": 0 }, { "node": "Update Activix Handoff", "type": "main", "index": 0 }]] },
+    "Slack Alert Rep": { "main": [[{ "node": "Reset Cadence Timer", "type": "main", "index": 0 }]] },
+    "Generate AI Reply": { "main": [[{ "node": "Compliance Check", "type": "main", "index": 0 }]] },
+    "Compliance Check": { "main": [[{ "node": "Compliance Pass?", "type": "main", "index": 0 }]] },
+    "Compliance Pass?": { "main": [[{ "node": "Send Reply SMS", "type": "main", "index": 0 }], [{ "node": "Log Compliance Failure", "type": "main", "index": 0 }]] },
+    "Send Reply SMS": { "main": [[{ "node": "Update Transcript", "type": "main", "index": 0 }]] },
+    "Update Transcript": { "main": [[{ "node": "Reset Cadence Timer", "type": "main", "index": 0 }]] },
+    "Send Opt-Out Confirmation": { "main": [[{ "node": "Send Opt-Out SMS", "type": "main", "index": 0 }]] },
+    "Send Opt-Out SMS": { "main": [[{ "node": "Update Activix Opt-Out", "type": "main", "index": 0 }]] }
+  }
+}

@@ -1,0 +1,1 @@
+Bonjour {{firstName}}, je voulais vous mentionner que le {{vehicleModel}} {{vehicleYear}} {{vehicleTrim}} est equipe de {{featureHighlight}}. C'est l'une des raisons pour lesquelles il est si populaire. Faites-moi signe si vous voulez le voir en action! - {{dealershipName}}

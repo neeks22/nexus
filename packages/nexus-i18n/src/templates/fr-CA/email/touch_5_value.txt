@@ -1,0 +1,16 @@
+Objet: Nouveaux arrivages qui correspondent a vos criteres
+
+Bonjour {{firstName}},
+
+J'espere que vous allez bien! Je voulais vous informer de quelques nouveaux arrivages chez {{dealershipName}} qui correspondent a ce que vous recherchiez:
+
+{{newArrivalDetail}}
+
+Notre inventaire change constamment, et je voulais que vous soyez parmi les premiers informes. Selon nos vehicules en stock, ceux-ci ne resteront pas longtemps.
+
+Si l'un d'entre eux vous interesse — ou si vous aimeriez explorer d'autres options — je suis la pour vous aider. Aucune pression, je voulais simplement vous tenir au courant.
+
+Cordialement,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}

@@ -1,0 +1,1 @@
+Bonjour {{firstName}}, je voulais m'assurer que vous aviez bien recu mon message au sujet du {{vehicleModel}} {{vehicleYear}}. N'hesitez pas a me contacter quand ca vous convient! - {{dealershipName}}

@@ -1,0 +1,18 @@
+Subject: A closer look at the {{vehicleYear}} {{vehicleModel}} {{vehicleTrim}}
+
+Hi {{firstName}},
+
+I wanted to share a few highlights about the {{vehicleYear}} {{vehicleModel}} {{vehicleTrim}} that I think you'll appreciate:
+
+{{featureHighlight}}
+
+These are just a few of the reasons this model has been one of our most popular choices. Based on our current listings, we have availability in several configurations.
+
+If you'd like to come see it in person, I'd be happy to arrange a time that works for you. A test drive is the best way to experience everything it has to offer.
+
+Let me know what works for your schedule!
+
+Best regards,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}

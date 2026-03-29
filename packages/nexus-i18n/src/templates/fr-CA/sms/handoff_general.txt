@@ -1,0 +1,1 @@
+Merci, {{firstName}}! Je vous mets en contact avec {{repName}} de notre equipe — il pourra vous aider avec tout ce dont vous avez besoin. Vous aurez de nos nouvelles bientot! - {{dealershipName}}

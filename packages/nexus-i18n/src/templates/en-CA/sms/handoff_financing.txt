@@ -1,0 +1,1 @@
+Thanks for asking, {{firstName}}! Our finance team can walk you through all the available options for the {{vehicleModel}}. {{repName}} will be in touch shortly to help. - {{dealershipName}}

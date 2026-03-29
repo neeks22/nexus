@@ -1,0 +1,23 @@
+{
+  "name": "nexus-pii",
+  "version": "0.1.0",
+  "description": "PII detection and redaction module for the Nexus dealership automation platform",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "npx tsup src/index.ts --format esm --dts",
+    "test": "npx vitest run"
+  },
+  "keywords": ["pii", "redaction", "privacy", "dealership", "automotive", "logging"],
+  "license": "MIT",
+  "dependencies": {
+    "pino": "^9.0.0"
+  }
+}

@@ -1,0 +1,1 @@
+Bonjour {{firstName}}, j'espere que vous allez bien! Nous avons de belles nouveautes ce mois-ci chez le concessionnaire, dont {{newArrivalDetail}}. Si vous etes toujours a la recherche, je serais ravi de vous aider a trouver le bon vehicule. - {{dealershipName}}

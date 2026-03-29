@@ -1,0 +1,1 @@
+Bonne question, {{firstName}}! Le prix est important — laissez-moi vous mettre en contact avec {{repName}} qui pourra vous presenter toutes les options, incluant les promotions en cours sur le {{vehicleModel}}. On vous revient sous peu! - {{dealershipName}}

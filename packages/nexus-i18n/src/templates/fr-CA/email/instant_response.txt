@@ -1,0 +1,16 @@
+Objet: Votre interet pour le {{vehicleModel}} {{vehicleYear}} {{vehicleTrim}}
+
+Bonjour {{firstName}},
+
+Merci pour votre interet pour le {{vehicleModel}} {{vehicleYear}} {{vehicleTrim}}! {{inventoryDetail}}
+
+Ce serait un plaisir de vous aider a en apprendre davantage sur ce vehicule. Que vous souhaitiez planifier un essai routier, poser des questions sur les caracteristiques ou simplement obtenir plus de details, {{repName}} de notre equipe des ventes est la pour vous.
+
+Est-ce que cette semaine vous conviendrait pour une visite? On s'adapte a votre horaire avec plaisir.
+
+Au plaisir de vous entendre!
+
+Cordialement,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}
