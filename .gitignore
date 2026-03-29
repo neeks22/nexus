@@ -10,3 +10,5 @@ nexus-memory.json
 .env
 .env.*
 .mcp.json
+.env
+.env.local
