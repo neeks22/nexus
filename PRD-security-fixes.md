@@ -8,9 +8,9 @@
 - [x] Add Twilio webhook signature validation to inbound-reply-handler workflow — verify X-Twilio-Signature header
 
 ## Epic 2: Dead Code Cleanup
-- [ ] Delete packages/nexus-compliance/src/frequency-cap-checker.ts (duplicate of frequency-cap.ts)
-- [ ] Delete packages/nexus-compliance/src/opt-out-templates.ts (duplicate of templates/opt-out.ts)
-- [ ] Verify compliance-preflight.ts imports from the correct files after deletion
+- [x] Delete packages/nexus-compliance/src/frequency-cap-checker.ts (duplicate of frequency-cap.ts)
+- [x] Delete packages/nexus-compliance/src/opt-out-templates.ts (duplicate of templates/opt-out.ts)
+- [x] Verify compliance-preflight.ts imports from the correct files after deletion
 
 ## Epic 3: Data Integrity
 - [ ] Add Zod validation on Activix API responses in activix-client.ts — validate response body against schemas before casting

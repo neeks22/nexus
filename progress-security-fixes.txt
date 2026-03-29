@@ -27,3 +27,10 @@ PRD: PRD-security-fixes.md
 - Throws descriptive errors on: missing auth token, missing signature header, missing webhook URL, invalid signature
 - No tests applicable (n8n workflow JSON file, not TypeScript)
 - JSON validated: 21 nodes, connections correctly wired
+
+### [2026-03-29 07:55] Epic 2, Items 1-3: Dead code cleanup
+- Deleted frequency-cap-checker.ts (duplicate of frequency-cap.ts) — zero imports found
+- Deleted opt-out-templates.ts (duplicate of templates/opt-out.ts) — zero imports found
+- Verified compliance-preflight.ts imports from correct files: frequency-cap.js and opt-out-checker.js
+- Verified index.ts exports from correct files: frequency-cap.js, opt-out-checker.js, templates/opt-out.js
+- All 920 tests pass after deletion
