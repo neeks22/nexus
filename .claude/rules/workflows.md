@@ -4,10 +4,10 @@ paths: workflows/**
 
 # n8n Workflow Rules
 
-- All workflows MUST be CRM-agnostic — read CRM_PROVIDER and MESSAGING_PROVIDER env vars
-- NEVER hardcode API tokens — always use $env variables
-- NEVER use PLACEHOLDER_TOKEN fallbacks — throw error if env var missing
-- All Slack notifications use SLACK_WEBHOOK_URL env var — never hardcode the URL
+- All workflows MUST be CRM-agnostic — support both Activix and GHL via provider config
+- Credentials are HARDCODED in Code nodes (n8n Cloud free plan does not support $env vars)
+- workflows/ directory is in .gitignore — NEVER commit workflow JSON files (they contain secrets)
+- To update credentials, edit the local JSON files and redeploy via mcp__n8n-mcp tools
 - Webhook endpoints MUST verify signatures (Activix HMAC-SHA256, Twilio X-Twilio-Signature)
 - All workflows MUST have error handling — continueOnFail on send/update nodes
 - Workflow JSON files MUST be saved to workflows/ directory for version control

@@ -12,3 +12,4 @@ nexus-memory.json
 .mcp.json
 .env
 .env.local
+workflows/

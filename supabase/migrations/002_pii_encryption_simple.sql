@@ -1,0 +1,73 @@
+-- NEXUS PII ENCRYPTION (Simple version — no Vault dependency)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+-- Add encrypted columns
+ALTER TABLE lead_transcripts
+  ADD COLUMN IF NOT EXISTS encrypted_content TEXT,
+  ADD COLUMN IF NOT EXISTS encrypted_metadata TEXT;
+
+ALTER TABLE consent_records
+  ADD COLUMN IF NOT EXISTS encrypted_lead_id TEXT;
+
+ALTER TABLE funnel_submissions
+  ADD COLUMN IF NOT EXISTS encrypted_first_name TEXT,
+  ADD COLUMN IF NOT EXISTS encrypted_last_name TEXT,
+  ADD COLUMN IF NOT EXISTS encrypted_phone TEXT,
+  ADD COLUMN IF NOT EXISTS encrypted_email TEXT;
+
+-- Encrypt/decrypt helpers using a fixed key
+CREATE OR REPLACE FUNCTION encrypt_pii(plaintext TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  IF plaintext IS NULL THEN RETURN NULL; END IF;
+  RETURN encode(pgp_sym_encrypt(plaintext, 'nexus-pii-key-2026'), 'base64');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION decrypt_pii(ciphertext TEXT)
+RETURNS TEXT AS $$
+BEGIN
+  IF ciphertext IS NULL THEN RETURN NULL; END IF;
+  RETURN pgp_sym_decrypt(decode(ciphertext, 'base64'), 'nexus-pii-key-2026');
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Auto-encrypt trigger for funnel_submissions
+CREATE OR REPLACE FUNCTION encrypt_funnel_pii()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.encrypted_first_name = encrypt_pii(NEW.first_name);
+  NEW.encrypted_last_name = encrypt_pii(NEW.last_name);
+  NEW.encrypted_phone = encrypt_pii(NEW.phone);
+  NEW.encrypted_email = encrypt_pii(NEW.email);
+  NEW.first_name = NULL;
+  NEW.last_name = NULL;
+  NEW.phone = NULL;
+  NEW.email = NULL;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_encrypt_funnel_pii
+  BEFORE INSERT ON funnel_submissions
+  FOR EACH ROW EXECUTE FUNCTION encrypt_funnel_pii();
+
+-- Decrypted views
+CREATE OR REPLACE VIEW v_funnel_submissions AS
+SELECT id, tenant_id, vehicle_type, budget_range, employment, credit_situation,
+  has_trade_in, decrypt_pii(encrypted_first_name) as first_name,
+  decrypt_pii(encrypted_last_name) as last_name,
+  decrypt_pii(encrypted_phone) as phone,
+  decrypt_pii(encrypted_email) as email,
+  casl_consent, utm_source, utm_medium, utm_campaign,
+  pre_approval_score, crm_lead_id, status, created_at
+FROM funnel_submissions;
+
+CREATE OR REPLACE VIEW v_lead_transcripts AS
+SELECT id, tenant_id, lead_id, entry_type, role,
+  COALESCE(decrypt_pii(encrypted_content), content) as content,
+  channel, touch_number, intent, confidence,
+  compliance_pass, compliance_failures, handoff_rep_name,
+  COALESCE(decrypt_pii(encrypted_metadata), metadata::text) as metadata,
+  created_at
+FROM lead_transcripts;
