@@ -5,7 +5,7 @@
 ## Epic 1: Critical Security Fixes
 - [x] Fix timingSafeEqual in activix-client.ts — replace `===` with `crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))` in verifyWebhookSignature method
 - [x] Remove PLACEHOLDER_TOKEN fallback in workflows/inbound-reply-handler.json — throw error if env var missing instead of falling back to placeholder
-- [ ] Add Twilio webhook signature validation to inbound-reply-handler workflow — verify X-Twilio-Signature header
+- [x] Add Twilio webhook signature validation to inbound-reply-handler workflow — verify X-Twilio-Signature header
 
 ## Epic 2: Dead Code Cleanup
 - [ ] Delete packages/nexus-compliance/src/frequency-cap-checker.ts (duplicate of frequency-cap.ts)

@@ -51,6 +51,20 @@
       }
     },
     {
+      "id": "validate-twilio-sig",
+      "name": "Validate Twilio Signature",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        330,
+        300
+      ],
+      "parameters": {
+        "jsCode": "// Validate Twilio webhook signature (X-Twilio-Signature) to prevent spoofed requests.\n// Skips validation when MESSAGING_PROVIDER is not 'twilio'.\nconst crypto = require('crypto');\nconst msgProvider = $env.MESSAGING_PROVIDER || 'twilio';\nconst input = $input.first().json;\n\nif (msgProvider !== 'twilio') {\n  // Non-Twilio provider — skip signature check\n  return [{ json: input }];\n}\n\nconst TWILIO_AUTH_TOKEN = $env.TWILIO_AUTH_TOKEN;\nif (!TWILIO_AUTH_TOKEN) throw new Error('Missing required env var: TWILIO_AUTH_TOKEN');\n\n// n8n webhook exposes headers on the input json\nconst headers = input.headers || {};\nconst twilioSignature = headers['x-twilio-signature'] || headers['X-Twilio-Signature'] || '';\nif (!twilioSignature) throw new Error('Missing X-Twilio-Signature header — request rejected');\n\n// Build the validation string: full webhook URL + sorted POST params appended\nconst WEBHOOK_BASE_URL = $env.N8N_WEBHOOK_BASE_URL || $env.WEBHOOK_URL || '';\nif (!WEBHOOK_BASE_URL) throw new Error('Missing required env var: N8N_WEBHOOK_BASE_URL — needed for Twilio signature validation');\n\nconst webhookPath = 'inbound-sms';\nconst fullUrl = WEBHOOK_BASE_URL.replace(/\\/$/, '') + '/webhook/' + webhookPath;\n\n// Twilio sends form-encoded POST params in body\nconst body = input.body || input;\nconst paramKeys = Object.keys(body).filter(k => k !== 'headers' && k !== 'webhookUrl').sort();\nlet dataString = fullUrl;\nfor (const key of paramKeys) {\n  dataString += key + (body[key] != null ? String(body[key]) : '');\n}\n\nconst computed = crypto\n  .createHmac('sha1', TWILIO_AUTH_TOKEN)\n  .update(dataString)\n  .digest('base64');\n\n// Timing-safe comparison\nconst expected = Buffer.from(twilioSignature);\nconst actual = Buffer.from(computed);\nif (expected.length !== actual.length || !crypto.timingSafeEqual(expected, actual)) {\n  throw new Error('Invalid Twilio webhook signature — request rejected');\n}\n\nreturn [{ json: input }];"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
       "id": "parse-inbound",
       "name": "Parse Inbound Message",
       "type": "n8n-nodes-base.code",
@@ -394,6 +408,17 @@
       ]
     },
     "Respond OK": {
+      "main": [
+        [
+          {
+            "node": "Validate Twilio Signature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Twilio Signature": {
       "main": [
         [
           {

@@ -17,3 +17,13 @@ PRD: PRD-security-fixes.md
 - Auth tokens ($env.GHL_API_KEY, $env.TWILIO_ACCOUNT_SID, $env.TWILIO_AUTH_TOKEN, $env.ACTIVIX_API_TOKEN) now throw descriptive errors when missing instead of silently using empty strings
 - Non-auth fallbacks (message content, name formatting, location ID) left intact — those are safe data defaults
 - No tests applicable (n8n workflow JSON file, not TypeScript)
+
+### [2026-03-29 07:55] Epic 1, Item 3: Add Twilio webhook signature validation to inbound-reply-handler
+- Added new "Validate Twilio Signature" Code node between "Respond OK" and "Parse Inbound Message"
+- Implements full Twilio signature validation: HMAC-SHA1 of (URL + sorted POST params) using TWILIO_AUTH_TOKEN
+- Uses timing-safe comparison (crypto.timingSafeEqual) for the signature check
+- Skips validation when MESSAGING_PROVIDER is not 'twilio' (e.g., GHL webhooks pass through)
+- Requires N8N_WEBHOOK_BASE_URL env var to reconstruct the full webhook URL for validation
+- Throws descriptive errors on: missing auth token, missing signature header, missing webhook URL, invalid signature
+- No tests applicable (n8n workflow JSON file, not TypeScript)
+- JSON validated: 21 nodes, connections correctly wired
