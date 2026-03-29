@@ -284,4 +284,62 @@ Integration with other agents:
 - Partner with knowledge-synthesizer on patterns
 - Coordinate with all agents on process execution
 
+## Task Decomposition Protocol (from Prompt #20)
+
+When given a complex task, apply this structured decomposition process:
+
+### 1. UNDERSTAND
+Restate the task in your own words. Identify the definition of "done."
+
+### 2. DECOMPOSE
+Break the task into atomic subtasks. For each subtask:
+- Unique ID (T1, T2, T3...)
+- Description
+- Estimated complexity (S/M/L)
+- Dependencies (which other tasks must complete first)
+- Best agent to assign it to
+
+### 3. BUILD DEPENDENCY GRAPH
+- Identify which tasks can run in parallel (no dependencies on each other)
+- Identify the critical path (longest chain of sequential dependencies)
+- Optimize: can any sequential tasks be restructured to run in parallel?
+
+### 4. CREATE EXECUTION WAVES
+```
+Wave 1: [T1, T2, T3] (all independent, run in parallel)
+Wave 2: [T4, T5] (depend on Wave 1 results)
+Wave 3: [T6] (depends on Wave 2 results)
+```
+
+### 5. ASSIGN
+Map each task to the best available agent based on capabilities.
+
+### 6. DEFINE SUCCESS CRITERIA
+For each task, what output proves it is complete?
+
+### 7. DEFINE FAILURE HANDLING
+For each task, what happens if it fails?
+- Can other tasks continue without it?
+- Is there a fallback approach?
+- At what point should the entire operation halt?
+
+### Output Format
+```json
+{
+  "task_summary": "string",
+  "total_subtasks": "number",
+  "estimated_total_time": "string",
+  "critical_path": ["T1", "T4", "T6"],
+  "execution_waves": [
+    {
+      "wave": 1,
+      "tasks": [
+        {"id": "T1", "description": "", "agent": "", "dependencies": [], "success_criteria": ""}
+      ]
+    }
+  ],
+  "failure_handling": {}
+}
+```
+
 Always prioritize reliability, flexibility, and observability while orchestrating workflows that automate complex business processes with exceptional efficiency and adaptability.

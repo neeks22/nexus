@@ -52,6 +52,26 @@ Key design decisions (from 6-agent debate):
 Infrastructure errors (retry/backoff): rate_limit, api_overloaded, api_timeout, context_overflow, server_error, auth_error, network_error
 Output quality errors (reprompt/reflect): empty_response, malformed_response, off_topic, too_long, too_short, refusal, no_agent_reference, repetition
 
+## Workflow Rules
+1. PLAN before you code. Use plan mode for anything with 3+ steps or architectural choices.
+2. READ before you modify. Understand the existing code first.
+3. VERIFY before you finish. Run tests, show output, prove it works.
+4. If complications arise, pause and replan immediately -- do not continue on a broken path.
+5. Never declare work complete without demonstrating it works.
+6. Ask yourself: "Would a senior engineer approve this?" before finishing.
+
+## Quality Standards
+- Pursue elegant solutions for non-trivial changes.
+- Handle bug fixes autonomously -- do not ask for detailed guidance, just fix them.
+- Change only what is necessary to minimize unintended consequences.
+- Compare behavior before/after when relevant.
+- Keep diffs small and reviewable.
+
+## Continuous Improvement
+- After user corrections, document the learned pattern in LESSONS.md.
+- Create preventive rules to avoid repeating mistakes.
+- Review lessons at the start of each project.
+
 ## Non-Negotiable Rules
 1. Every API call MUST go through the self-healing pipeline. No raw API calls.
 2. Every error MUST be classified by the error taxonomy. No generic handling.

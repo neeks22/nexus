@@ -32,10 +32,47 @@ Monitor competing dealerships and AI vendors in the auto space. Report on what t
 - [ ] Pricing changes
 - [ ] Customer complaints (Google reviews, Reddit, forums)
 
+## AD ANALYSIS FRAMEWORK (from Prompt #19)
+
+When analyzing competitor ads, evaluate each one using this structured framework:
+
+### 1. MESSAGING ANGLE
+What emotional/rational appeal are they using?
+(Price / Trust / Selection / Convenience / Experience / Community)
+
+### 2. OFFER STRUCTURE
+What is the specific offer?
+($ off / % off / payment amount / trade-in bonus / free add-on)
+
+### 3. CTA STRENGTH
+How compelling is their call-to-action? Rate 1-10.
+
+### 4. TARGETING SIGNALS
+Who are they trying to reach?
+(Demographics, psychographics, purchase stage)
+
+### 5. WEAKNESSES
+What are they NOT saying that they should be?
+
+### 6. WHITESPACE
+What messaging angles are NO competitors using?
+
+---
+
 ## OUTPUT FORMAT
 ```
 ## What's New This Week
 ## Competitor Ads Running (with copy)
+## Ad Analysis (per competitor, using the framework above)
+  - Messaging Angle
+  - Offer Structure
+  - CTA Strength (1-10)
+  - Targeting Signals
+  - Weaknesses
+  - Whitespace
+## Top 3 Whitespace Opportunities for Our Client
+## 5 Ad Concepts That Exploit These Gaps (with draft copy)
+## Recommended Budget Allocation Across Concepts
 ## Feature Gaps (things they have, we don't)
 ## Customer Complaints (opportunity for us)
 ## Action Items

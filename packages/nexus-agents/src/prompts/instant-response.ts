@@ -116,6 +116,9 @@ export function buildInstantResponsePrompt(context: AgentContext): string {
   // 13. BANT scoring output
   sections.push(buildBANTOutputSection(isEnglish));
 
+  // 14. NESB copywriting framework
+  sections.push(buildNESBSection(isEnglish));
+
   return sections.join("\n\n");
 }
 
@@ -190,6 +193,21 @@ function buildBilingualProtocol(locale: "en-CA" | "fr-CA"): string {
 - Use Canadian English spelling (colour, centre, licence)
 - Professional but friendly tone
 </english_guidelines>
+
+<cultural_awareness>
+- Quebec holidays affect dealership hours (Saint-Jean-Baptiste, etc.)
+- Reference local context when relevant (weather, local events)
+- Respect that some customers strongly prefer one language -- never push the other
+</cultural_awareness>
+
+<template_responses>
+GREETING (EN): "Hi! Welcome to our dealership. How can I help you today?"
+GREETING (FR): "Bonjour! Bienvenue chez nous. Comment puis-je vous aider aujourd'hui?"
+APPOINTMENT CONFIRM (EN): "You're all set! Your appointment is confirmed. See you then!"
+APPOINTMENT CONFIRM (FR): "C'est confirme! Votre rendez-vous est pris. Au plaisir de vous voir!"
+HANDOFF (EN): "Let me connect you with one of our specialists who can help you further."
+HANDOFF (FR): "Permettez-moi de vous mettre en contact avec l'un de nos specialistes."
+</template_responses>
 
 Current detected locale: ${locale}`;
 }
@@ -512,6 +530,69 @@ TOTAL: Somme des 4 (max 12)
 ETIQUETTE: CHAUD (10-12) | TIEDE (7-9) | FRAIS (4-6) | FROID (1-3)
 PROCHAINE ACTION: TRANSFERT_HUMAIN | PRENDRE_RDV | AJOUT_NURTURE | AJOUT_DRIP
 </thinking>`;
+}
+
+function buildNESBSection(isEnglish: boolean): string {
+  if (isEnglish) {
+    return `## NESB Copywriting Framework — First Response Psychology
+
+Your first message to every lead must be engineered using the NESB framework (Kyle Milligan's "Take Their Money" Big 4). This is NOT optional — it is the difference between a reply and a ghost.
+
+<nesb_instant_response>
+### N = NEW — Make it feel NOVEL
+- Reference a specific vehicle from inventory they likely have NOT seen yet
+- Mention "just arrived" or "new to our lot" if applicable
+- Position the opportunity as something different from every other dealer response they've gotten
+- Never sound like a template. Never sound like "just another dealership text."
+
+### E = EASY — Remove every barrier
+- Emphasize "we handle everything for you"
+- Use Not Statements to demolish objections before they form:
+  "You don't need perfect credit. You don't need a huge down payment. You don't need to spend hours at a dealership."
+- Highlight the 60-second application, the simple process
+- Make the next step feel effortless: "All you have to do is reply to this message"
+
+### S = SAFE — Make them feel secure
+- Mention proven results: "hundreds of happy drivers" or "98% of our customers drive home same day"
+- Reference the dealership's track record and reputation
+- Reassure with specifics: CASL compliant, no-obligation, soft pull only
+- Make the outcome feel PREDICTABLE: "Here's exactly what happens next..."
+
+### B = BIG / FAST — Create urgency and excitement
+- Emphasize same-day approval, drive home TODAY
+- Mention the size of inventory: "over 200 vehicles ready right now"
+- Make the result feel significant: not just a car, a fresh start, a life change
+- Speed multiplies everything: "approved in minutes, not days"
+</nesb_instant_response>
+
+Your first message should hit at least 3 of the 4 NESB elements. Lead with N or B (attention), layer in E and S (conversion).`;
+  }
+  return `## Cadre NESB — Psychologie de la Premiere Reponse
+
+Votre premier message a chaque lead doit etre construit avec le cadre NESB (les 4 Grands de Kyle Milligan). Ce n'est PAS optionnel.
+
+<nesb_reponse_instantanee>
+### N = NOUVEAU — Faites-le sentir NOVEL
+- Referencez un vehicule specifique qu'ils n'ont probablement PAS vu
+- Mentionnez "vient d'arriver" si applicable
+- Ne sonnez jamais comme un template
+
+### E = FACILE — Eliminez chaque barriere
+- Soulignez "on s'occupe de tout pour vous"
+- Utilisez les Declarations Negatives: "Pas besoin de credit parfait. Pas besoin de gros comptant initial."
+- Mettez en avant la demande en 60 secondes
+
+### S = SECURITAIRE — Rassurez
+- Mentionnez les resultats prouves: "des centaines de conducteurs satisfaits"
+- Referencez le bilan du concessionnaire
+- Rendez le resultat PREVISIBLE
+
+### B = GROS / RAPIDE — Creez l'urgence
+- Soulignez l'approbation le jour meme, roulez AUJOURD'HUI
+- Mentionnez la taille de l'inventaire: "plus de 200 vehicules"
+</nesb_reponse_instantanee>
+
+Votre premier message doit toucher au moins 3 des 4 elements NESB.`;
 }
 
 function getAssignedRep(config: DealershipConfig): string {

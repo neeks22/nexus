@@ -1,0 +1,31 @@
+{
+  "id": "pcfbM9Ns0hVIzpgh",
+  "name": "Service Department Handler",
+  "description": "n8n Workflow: Receives service department inquiries via webhook, classifies service type (booking/status/recall/FAQ), generates response using Prompt #3 (Service BDC Agent), runs compliance check, sends SMS, and updates CRM. Based on Prompt #3 from the top-20-prompts-arsenal.",
+  "n8n_workflow_id": "pcfbM9Ns0hVIzpgh",
+  "n8n_instance": "https://nexusagents.app.n8n.cloud",
+  "webhook_path": "/webhook/service-inquiry",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Toronto",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true
+  },
+  "flow_diagram": "Service Inquiry Webhook -> Classify Service Type -> Generate Service Response (Prompt #3) -> Compliance Check -> IF(pass) -> [Send SMS, Update CRM] | IF(fail) -> [Log Compliance Failure]",
+  "environment_variables_required": [
+    "CRM_PROVIDER -- 'activix' (default) or 'ghl'",
+    "MESSAGING_PROVIDER -- 'twilio' (default) or 'ghl'",
+    "DEALERSHIP_NAME -- Dealership display name",
+    "DEALERSHIP_ADDRESS -- Physical address",
+    "DEALERSHIP_PHONE -- Main phone number",
+    "SERVICE_HOURS -- Service department hours",
+    "SERVICE_ADVISOR_NAME -- Default service advisor name",
+    "SHUTTLE_INFO -- Shuttle availability info",
+    "TWILIO_ACCOUNT_SID -- Twilio credentials (if MESSAGING_PROVIDER=twilio)",
+    "TWILIO_AUTH_TOKEN",
+    "TWILIO_FROM_NUMBER",
+    "GHL_API_KEY -- GoHighLevel credentials (if MESSAGING_PROVIDER=ghl)"
+  ]
+}

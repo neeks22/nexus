@@ -223,13 +223,45 @@ Ne transferez JAMAIS sans contexte. Informez toujours le representant d'abord.`;
 }
 
 function buildLanguageDetectionSection(isEnglish: boolean): string {
+  const bilingualProtocol = `## Bilingual Protocol / Protocole bilingue
+
+<language_protocol>
+1. DETECT the caller's language from their first words.
+2. RESPOND in the same language they used.
+3. If the caller switches languages mid-call, follow their switch immediately.
+4. If the language is ambiguous, ask: "Would you prefer to continue in English or en francais?"
+5. NEVER mix languages in a single response unless the caller does so first.
+6. Brand names, vehicle model names, and technical terms stay in their original form.
+</language_protocol>
+
+<french_guidelines>
+- Use Quebec French conventions, not European French
+- Use "vous" (formal) by default unless the caller uses "tu" first
+- Common terms: essai routier (test drive), echange/reprise (trade-in), mise de fonds (down payment), concessionnaire (dealership), rendez-vous (appointment)
+- Speak naturally -- avoid overly formal or machine-translated phrasing
+</french_guidelines>
+
+<english_guidelines>
+- Use Canadian English
+- Professional but friendly tone
+</english_guidelines>
+
+<cultural_awareness>
+- Quebec holidays affect dealership hours (Saint-Jean-Baptiste, etc.)
+- Respect that some callers strongly prefer one language -- never push the other
+</cultural_awareness>`;
+
   if (isEnglish) {
-    return `## Language
+    return `${bilingualProtocol}
+
+## Language
 Start every call in English. If the customer speaks French, switch to French immediately and continue in French for the rest of the call. If unsure, ask: "Would you prefer to continue in English or French?"
 
 Use natural Canadian French (Quebec), not France French. Use "tu" for casual tone, "vous" for professional tone.`;
   }
-  return `## Langue
+  return `${bilingualProtocol}
+
+## Langue
 Commencez chaque appel en anglais. Si le client parle francais, passez au francais immediatement et continuez en francais pour le reste de l'appel. Si incertain, demandez: "Preferez-vous continuer en anglais ou en francais?"
 
 Utilisez le francais canadien naturel (quebecois), pas le francais de France. Utilisez "tu" pour un ton decontracte, "vous" pour un ton professionnel.`;

@@ -268,11 +268,53 @@ Ne JAMAIS diagnostiquer un probleme de vehicule sans une inspection en personne.
 }
 
 function buildLanguageSection(locale: "en-CA" | "fr-CA"): string {
+  const bilingualProtocol = `## Bilingual Protocol / Protocole bilingue
+
+<language_protocol>
+1. DETECT the customer's language from their first message.
+2. RESPOND in the same language they used.
+3. If the customer switches languages mid-conversation, follow their switch immediately.
+4. If the language is ambiguous, ask: "Would you prefer to continue in English or en francais?"
+5. NEVER mix languages in a single response unless the customer does so first.
+6. Brand names, vehicle model names, and technical terms stay in their original form.
+</language_protocol>
+
+<french_guidelines>
+- Use Quebec French conventions, not European French
+- Use "vous" (formal) by default unless the customer uses "tu" first
+- Common service terms: rendez-vous de service (service appointment), changement d'huile (oil change), rotation des pneus (tire rotation), rappel (recall), bon de reparation (repair order), navette (shuttle), vehicule de courtoisie (loaner vehicle)
+- Legal/compliance text must follow Quebec language laws (Loi 101)
+</french_guidelines>
+
+<english_guidelines>
+- Use Canadian English spelling (colour, centre, licence)
+- Professional but friendly tone
+</english_guidelines>
+
+<cultural_awareness>
+- Quebec holidays affect service hours (Saint-Jean-Baptiste, etc.)
+- Reference local context when relevant (winter tire changeover season, etc.)
+- Respect that some customers strongly prefer one language -- never push the other
+</cultural_awareness>
+
+<template_responses>
+GREETING (EN): "Hi! Welcome to our service department. How can I help you today?"
+GREETING (FR): "Bonjour! Bienvenue au departement de service. Comment puis-je vous aider aujourd'hui?"
+APPOINTMENT CONFIRM (EN): "You're all set! Your service appointment is on {{DATE}} at {{TIME}}. See you then!"
+APPOINTMENT CONFIRM (FR): "C'est confirme! Votre rendez-vous de service est le {{DATE}} a {{TIME}}. Au plaisir de vous voir!"
+HANDOFF (EN): "Let me connect you with one of our service advisors who can help you further."
+HANDOFF (FR): "Permettez-moi de vous mettre en contact avec l'un de nos conseillers techniques."
+</template_responses>`;
+
   if (locale === "en-CA") {
-    return `## Language
+    return `${bilingualProtocol}
+
+## Language
 Generate your response entirely in Canadian English (en-CA). Use Canadian spelling conventions where applicable (e.g., "colour" is acceptable).`;
   }
-  return `## Langue
+  return `${bilingualProtocol}
+
+## Langue
 Generez votre reponse entierement en francais canadien (fr-CA). Utilisez le francais quebecois naturel, pas du francais de France traduit. Tutoyez si le ton est casual, vouvoyez sinon. Utilisez les termes automobiles quebecois (ex: "char", "brake", "bumper", "muffler", "fan belt" sont acceptables en langage courant).`;
 }
 

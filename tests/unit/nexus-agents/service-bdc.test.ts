@@ -183,7 +183,9 @@ describe("buildServiceBdcPrompt", () => {
     expect(prompt).toContain("francais canadien");
     expect(prompt).toContain("quebecois");
     expect(prompt).toContain("departement de service");
-    expect(prompt).not.toContain("Canadian English");
+    // Bilingual protocol includes both language guidelines for language switching,
+    // but the primary language directive should be French
+    expect(prompt).toContain("Generez votre reponse entierement en francais canadien");
   });
 
   it("includes service context with shuttle and loaner info", () => {
