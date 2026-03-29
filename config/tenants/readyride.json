@@ -1,0 +1,40 @@
+{
+  "dealershipName": "ReadyRide",
+  "hours": "Mon-Fri 10am-6pm, Sat 10am-4pm, Sun Closed",
+  "staff": [
+    {
+      "name": "Moe",
+      "role": "Sales & Financing Advisor",
+      "email": "moe@readyride.ca"
+    },
+    {
+      "name": "Hussein",
+      "role": "Sales & Financing Advisor",
+      "email": "hussein@readyride.ca"
+    },
+    {
+      "name": "Samah",
+      "role": "Sales & Financing Advisor",
+      "email": "samah@readyride.ca"
+    },
+    {
+      "name": "Eddy",
+      "role": "Sales & Financing Advisor",
+      "email": "eddy@readyride.ca"
+    },
+    {
+      "name": "Adam",
+      "role": "Sales & Financing Advisor",
+      "email": "adam@readyride.ca"
+    }
+  ],
+  "address": "1740 Queensdale Avenue, Gloucester, Ontario K1T 1J6",
+  "phone": "613-983-9834",
+  "timezone": "America/Toronto",
+  "tone": "friendly",
+  "escalationNumbers": [
+    "613-983-9834"
+  ],
+  "inventorySourceUrl": "https://www.readyride.ca/inventory",
+  "crmApiUrl": "https://api.readyride.ca/crm"
+}

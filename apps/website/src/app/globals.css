@@ -210,3 +210,17 @@ code {
     font-size: clamp(2rem, 8vw, 3.5rem);
   }
 }
+
+/* ============================================
+   LANDING PAGE MODE
+   Hides global nav/footer for standalone pages
+   ============================================ */
+
+body[data-landing] > header,
+body[data-landing] > footer {
+  display: none !important;
+}
+
+body[data-landing] > main {
+  padding-top: 0;
+}

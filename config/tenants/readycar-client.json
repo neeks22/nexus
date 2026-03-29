@@ -1,0 +1,58 @@
+{
+  "activePromotions": [
+    "Fast approvals — apply online in minutes",
+    "All credit situations welcome — bad credit, no credit, fresh starts",
+    "Same-day financing decisions available",
+    "Newcomers to Canada welcome — no Canadian credit history needed"
+  ],
+  "inventoryHighlights": [
+    "Quality pre-owned vehicles available across all categories",
+    "All vehicles safety-inspected and certified",
+    "New inventory added regularly — ask your advisor about availability"
+  ],
+  "blacklistedTopics": [
+    "competitor names",
+    "specific interest rates or APR numbers",
+    "guaranteed approval",
+    "specific monthly payment amounts before application",
+    "internal lender names or lender criteria",
+    "minimum credit score thresholds",
+    "negative comments about other dealerships"
+  ],
+  "customFaq": [
+    {
+      "question": "Can I get approved with bad credit?",
+      "answer": "Yes. ReadyCar works with multiple lending partners to help people in all credit situations — bad credit, no credit, bankruptcy, and consumer proposals. Apply online and we will find the best financing option for you."
+    },
+    {
+      "question": "Do I need a co-signer?",
+      "answer": "Not necessarily. Many customers get approved on their own. Our financing team will review your application and let you know if a co-signer would improve your rate or approval chances, but it is often not required."
+    },
+    {
+      "question": "What is the minimum credit score needed?",
+      "answer": "There is no minimum credit score to apply. We look at your full financial picture, not just a number. Apply online and our team will work to find a solution that fits your situation."
+    },
+    {
+      "question": "Will applying hurt my credit score?",
+      "answer": "No. Our initial application uses a soft credit check which has no impact on your credit score. You can apply with no obligation."
+    },
+    {
+      "question": "How long does the approval process take?",
+      "answer": "Most applicants receive a same-day decision. The online application takes just a few minutes, and our team typically follows up within hours."
+    },
+    {
+      "question": "Can I get approved after bankruptcy or a consumer proposal?",
+      "answer": "Yes. Whether you have been discharged from bankruptcy or are in an active consumer proposal, we have lending partners who work with these situations. A bankruptcy does not have to keep you off the road."
+    },
+    {
+      "question": "I am new to Canada. Can I get a car loan?",
+      "answer": "Yes. ReadyCar welcomes newcomers to Canada. Even without Canadian credit history, we can help you get into a vehicle and start building your credit."
+    },
+    {
+      "question": "What documents do I need?",
+      "answer": "Start with our quick online application. For final approval, you will generally need proof of income, proof of address, and valid identification. Your advisor will guide you through the specifics."
+    }
+  ],
+  "greetingOverride": "Hi! Welcome to ReadyCar. I am here to help you find a great vehicle with financing that works for you. How can I help?",
+  "signatureOverride": "ReadyCar — Your Trusted Auto Financing Partner | readycar.ca"
+}

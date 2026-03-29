@@ -1,0 +1,20 @@
+{
+  "dealershipName": "ReadyCar",
+  "hours": "Mon-Fri 10am-6pm, Sat 10am-4pm, Sun Closed",
+  "staff": [
+    {
+      "name": "Advisor",
+      "role": "Sales & Financing Advisor",
+      "email": "info@readycar.ca"
+    }
+  ],
+  "address": "Gloucester, Ontario",
+  "phone": "613-000-0000",
+  "timezone": "America/Toronto",
+  "tone": "friendly",
+  "escalationNumbers": [
+    "613-000-0000"
+  ],
+  "inventorySourceUrl": "https://www.readycar.ca/inventory",
+  "crmApiUrl": "https://api.readycar.ca/crm"
+}
