@@ -10,17 +10,17 @@
 - [x] Create mock Activix-style CRM view showing AI conversation logged
 
 ## Epic 2: Sales Deck (PDF/Slides)
-- [ ] Create a 10-slide sales deck in markdown format (docs/agency/sales-deck.md)
-- [ ] Slide 1: Cover — "Nexus AI | Your Dealership's 24/7 Sales Machine"
-- [ ] Slide 2: The Problem — 47 min avg response, 56% after hours, $210K BDC cost
-- [ ] Slide 3: The Solution — AI responds in < 60s, 24/7, EN/FR, CRM integrated
-- [ ] Slide 4: How It Works — 4-step visual flow
-- [ ] Slide 5: For Subprime Dealers — "Your Job Is Your Credit", 7-touch nurture
-- [ ] Slide 6: The Full Stack — lead gen + lead handling (the Nexus Machine diagram)
-- [ ] Slide 7: Results — projected ROI ($13K spend → $60K+ gross)
-- [ ] Slide 8: Social Proof — testimonial quotes, stats
-- [ ] Slide 9: The Offer — Free 30-day pilot, $0 setup, $2,500/mo after
-- [ ] Slide 10: Next Steps — "Give us CRM access → live in 48 hours"
+- [x] Create a 10-slide sales deck in markdown format (docs/agency/sales-deck.md)
+- [x] Slide 1: Cover — "Nexus AI | Your Dealership's 24/7 Sales Machine"
+- [x] Slide 2: The Problem — 47 min avg response, 56% after hours, $210K BDC cost
+- [x] Slide 3: The Solution — AI responds in < 60s, 24/7, EN/FR, CRM integrated
+- [x] Slide 4: How It Works — 4-step visual flow
+- [x] Slide 5: For Subprime Dealers — "Your Job Is Your Credit", 7-touch nurture
+- [x] Slide 6: The Full Stack — lead gen + lead handling (the Nexus Machine diagram)
+- [x] Slide 7: Results — projected ROI ($13K spend → $60K+ gross)
+- [x] Slide 8: Social Proof — testimonial quotes, stats
+- [x] Slide 9: The Offer — Free 30-day pilot, $0 setup, $2,500/mo after
+- [x] Slide 10: Next Steps — "Give us CRM access → live in 48 hours"
 
 ## Epic 3: Prospect List (Beyond ReadyRide/ReadyCar)
 - [ ] Research and list 20 Ottawa-area dealerships on Activix CRM
