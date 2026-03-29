@@ -1,0 +1,23 @@
+{
+  "name": "nexus-control",
+  "version": "0.1.0",
+  "description": "Agent control panel — toggle, configure, and manage AI agents per dealership tenant",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "npx tsup src/index.ts --format esm --dts",
+    "test": "npx vitest run"
+  },
+  "keywords": ["agents", "control-panel", "dealership", "multi-tenant", "configuration"],
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}
