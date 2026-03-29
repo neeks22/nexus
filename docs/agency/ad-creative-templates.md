@@ -1,0 +1,727 @@
+# Ad Creative Template Library — Subprime Auto Dealerships
+
+> **Last updated:** 2026-03-28
+> **Platforms:** Meta (Facebook/Instagram), Google Ads
+> **Markets:** Ottawa/Gatineau, Ontario, Quebec
+> **Audience:** 575-699 credit score, working professionals, first-time buyers, credit rebuilders
+> **Languages:** English + Quebec French
+
+---
+
+## TABLE OF CONTENTS
+
+1. [Meta Ads — Campaign 1: Automotive Inventory Ads (AIA)](#campaign-1-automotive-inventory-ads-aia)
+2. [Meta Ads — Campaign 2: Lead Gen (Facebook Lead Forms)](#campaign-2-lead-gen-facebook-lead-forms)
+3. [Meta Ads — Campaign 3: Retargeting](#campaign-3-retargeting)
+4. [Meta Ads — Campaign 4: Video Ads](#campaign-4-video-ads)
+5. [Google Ads — Vehicle Listing Ads (VLAs)](#google-ads--vehicle-listing-ads-vlas)
+6. [Google Ads — Search Ads](#google-ads--search-ads)
+7. [Google Ads — Performance Max](#google-ads--performance-max)
+8. [French Versions (Quebec)](#french-versions-quebec)
+9. [Meta Special Ad Category Compliance Notes](#meta-special-ad-category-compliance)
+
+---
+
+## META SPECIAL AD CATEGORY — IMPORTANT
+
+All ads for auto financing MUST run under the **Credit** special ad category on Meta. This means:
+
+- **No age targeting** (must be 18-65+)
+- **No ZIP/postal code targeting** — minimum 15-mile radius only
+- **No lookalike audiences** — use Special Ad Audiences instead
+- **No income, net worth, or credit score targeting**
+- **Ad copy cannot state or imply knowledge of someone's credit situation** (e.g., "We know your credit is bad" = rejected)
+- **Can use interest targeting** but only from the approved list
+
+Each template below includes a compliance flag:
+- `[COMPLIANT]` — Safe to run as-is
+- `[REVIEW]` — Borderline; compliant alternative provided
+- `[FLAGGED]` — Will likely be rejected; must use the alternative
+
+---
+
+## CAMPAIGN 1: AUTOMOTIVE INVENTORY ADS (AIA)
+
+> **Ad Type:** Dynamic catalog ads pulling from vehicle inventory feed
+> **Objective:** Traffic or Conversions
+> **Placement:** Facebook Feed, Instagram Feed, Marketplace
+> **Special Ad Category:** Credit
+
+### Headline Templates (30 chars max for clean display)
+
+| # | Headline Template | Compliance |
+|---|---|---|
+| H1 | `{{year}} {{make}} {{model}} — {{city}}` | `[COMPLIANT]` |
+| H2 | `{{make}} {{model}} — From ${{price}}/mo` | `[COMPLIANT]` |
+| H3 | `{{year}} {{make}} — {{mileage}} km` | `[COMPLIANT]` |
+| H4 | `Drive This {{make}} {{model}} Today` | `[COMPLIANT]` |
+| H5 | `{{make}} {{model}} — Financing Available` | `[COMPLIANT]` |
+
+### Primary Text Templates (125 chars for mobile optimization)
+
+| # | Primary Text | Compliance |
+|---|---|---|
+| P1 | `This {{year}} {{make}} {{model}} is available now in {{city}}. Flexible financing options for every situation. Apply today.` | `[COMPLIANT]` |
+| P2 | `Looking for a {{make}} {{model}}? We have this {{year}} in stock with financing available. Same-day approval possible.` | `[COMPLIANT]` |
+| P3 | `{{year}} {{make}} {{model}} — {{mileage}} km. All credit situations welcome. Get your personalized rate in minutes.` | `[REVIEW]` — "All credit situations welcome" is borderline. **Alt:** `Financing options available for everyone. Get your personalized rate in minutes.` |
+| P4 | `Don't wait. This {{year}} {{make}} {{model}} in {{city}} won't last. Apply for financing and drive it home today.` | `[COMPLIANT]` |
+| P5 | `Your next car is here. {{year}} {{make}} {{model}} with flexible payment plans. See if you qualify — takes 60 seconds.` | `[COMPLIANT]` |
+
+### Description Templates (under 30 chars)
+
+| # | Description | Compliance |
+|---|---|---|
+| D1 | `From ${{weekly_payment}}/week` | `[COMPLIANT]` |
+| D2 | `Apply now — quick approval` | `[COMPLIANT]` |
+| D3 | `$0 down options available` | `[COMPLIANT]` |
+| D4 | `Financing for every situation` | `[COMPLIANT]` |
+| D5 | `See your rate in 60 seconds` | `[COMPLIANT]` |
+
+### CTA Button
+- **Primary:** `Get Offer`
+- **Secondary:** `Learn More`
+
+### Feed Requirements
+- Product feed must include: `id`, `title`, `description`, `availability`, `condition`, `price`, `link`, `image_link`, `brand` (make), `vehicle_id`
+- Images: 1200x628 minimum, no text overlay exceeding 20% of image
+- Update feed every 4 hours minimum to avoid showing sold inventory
+
+---
+
+## CAMPAIGN 2: LEAD GEN (FACEBOOK LEAD FORMS)
+
+> **Ad Type:** Lead generation with Instant Forms
+> **Objective:** Lead Generation
+> **Placement:** Facebook Feed, Instagram Feed, Stories
+> **Special Ad Category:** Credit
+
+### Standard Lead Form Configuration
+
+**Form questions (use for ALL 5 templates):**
+1. Full Name *(prefilled)*
+2. Phone Number *(prefilled)*
+3. What type of vehicle are you looking for? *(dropdown: SUV, Sedan, Truck, Van, Any)*
+4. Employment status *(dropdown: Full-time, Part-time, Self-employed, Other)*
+
+**Privacy policy link:** Required — must link to dealer's privacy policy
+**Form type:** Higher Intent (add review screen before submit)
+
+---
+
+### Template LG-1: "Your Job Is Your Credit"
+
+**Target angle:** Working professionals who think they need perfect credit
+
+| Element | Content |
+|---|---|
+| **Headline** | Your Job Is Your Credit |
+| **Primary Text** | Working full-time? That's the #1 thing lenders look at. We work with 20+ lenders who focus on income and stability — not just a number. See what you qualify for in 60 seconds. |
+| **Description** | Full-time or part-time — apply in 60 seconds |
+| **CTA Button** | Apply Now |
+| **Image Guidance** | Professional-looking person (diverse representation) standing next to a clean, late-model SUV or sedan. Warm lighting. Text overlay: "EMPLOYED? YOU'RE ALREADY HALFWAY THERE." Use dealership branding. |
+| **Compliance** | `[REVIEW]` — "Your Job Is Your Credit" could imply credit knowledge. **Compliant alt headline:** `Working? You Qualify for More Than You Think` **Compliant alt primary text:** `Full-time or part-time employment opens the door to flexible financing. We work with 20+ lenders to find the best fit for your situation. See your options in 60 seconds.` |
+
+---
+
+### Template LG-2: "$0 Down — Drive Today"
+
+**Target angle:** Removing the cash barrier — people who don't have savings for a down payment
+
+| Element | Content |
+|---|---|
+| **Headline** | $0 Down — Drive Today |
+| **Primary Text** | No savings for a down payment? No problem. We have $0-down financing options that get you behind the wheel today. Over 200 vehicles in stock. |
+| **Description** | Zero down payment options available |
+| **CTA Button** | Get Offer |
+| **Image Guidance** | Split image: left side shows a person looking frustrated at a piggy bank, right side shows them smiling with car keys. Bold text overlay: "$0 DOWN." Clean, modern design. |
+| **Compliance** | `[COMPLIANT]` — $0 down is a financing feature, not a credit-score claim. |
+
+---
+
+### Template LG-3: "Fresh Start Program"
+
+**Target angle:** Empowerment — people recovering from financial setbacks
+
+| Element | Content |
+|---|---|
+| **Headline** | The Fresh Start Auto Program |
+| **Primary Text** | Everyone deserves a second chance. Our Fresh Start Program is designed to get you driving AND build your financial future at the same time. Apply in 60 seconds — no obligation. |
+| **Description** | A new beginning starts here |
+| **CTA Button** | Apply Now |
+| **Image Guidance** | Sunrise or "new day" imagery. Person receiving car keys with a genuine smile. Warm, hopeful tone. Text overlay: "YOUR FRESH START IS HERE." Avoid any imagery that looks predatory or desperate. |
+| **Compliance** | `[COMPLIANT]` — "Fresh Start" is an empowerment message, not a credit-specific claim. Keep it aspirational, not pitying. |
+
+---
+
+### Template LG-4: "Pre-Approved in 60 Seconds"
+
+**Target angle:** Speed and ease — people who hate long processes
+
+| Element | Content |
+|---|---|
+| **Headline** | Pre-Approved in 60 Seconds |
+| **Primary Text** | Skip the dealership runaround. Apply online in 60 seconds, get your approval, then come pick your car. It really is that simple. 200+ vehicles ready to go. |
+| **Description** | Fast, easy, no-hassle financing |
+| **CTA Button** | Apply Now |
+| **Image Guidance** | Phone screen showing a timer/stopwatch at 60 seconds with a green checkmark. Clean, techy feel. Text overlay: "60 SECONDS. THAT'S IT." Minimize text — let the visual tell the story. |
+| **Compliance** | `[COMPLIANT]` — Speed claim is about the process, not credit. Ensure the 60-second claim is accurate for the actual application flow. |
+
+---
+
+### Template LG-5: "Credit Rebuilding Program"
+
+**Target angle:** Long-term value — people who want to fix their credit, not just get a car
+
+| Element | Content |
+|---|---|
+| **Headline** | Rebuild Your Credit While You Drive |
+| **Primary Text** | Every on-time payment builds your credit score. Our Credit Rebuilding Program pairs you with lenders who report to credit bureaus — so your car payment actually helps your future. |
+| **Description** | Drive today, build credit for tomorrow |
+| **CTA Button** | Learn More |
+| **Image Guidance** | Upward-trending graph overlaid on a car driving toward a horizon. Optimistic, forward-looking. Text overlay: "EVERY PAYMENT BUILDS YOUR FUTURE." Professional, not gimmicky. |
+| **Compliance** | `[FLAGGED]` — "Rebuild Your Credit" directly references credit status. **Compliant alt headline:** `Build a Stronger Financial Future` **Compliant alt primary text:** `Every on-time payment is a step forward. Our program connects you with lenders who report to credit bureaus — so your car payment works for your future. Apply and see your options.` **Compliant alt description:** `Your car payment works for you` |
+
+---
+
+## CAMPAIGN 3: RETARGETING
+
+> **Ad Type:** Dynamic retargeting + static retargeting
+> **Objective:** Conversions
+> **Audience:** Website visitors (last 30 days) who did NOT submit a lead form
+> **Placement:** Facebook Feed, Instagram Feed, Audience Network
+> **Special Ad Category:** Credit
+> **Frequency cap:** 3 impressions per person per week (avoid ad fatigue)
+
+---
+
+### Template RT-1: "Still Thinking About It?"
+
+| Element | Content |
+|---|---|
+| **Headline** | Still Thinking About the {{make}} {{model}}? |
+| **Primary Text** | We noticed you were checking out the {{year}} {{make}} {{model}}. It's still here — but not for long. Get your financing options in 60 seconds. |
+| **Description** | Your vehicle is still available |
+| **CTA Button** | Get Offer |
+| **Image** | Dynamic — pulls from catalog (same vehicle they viewed) |
+| **Compliance** | `[COMPLIANT]` — Behavioral retargeting based on site visit is allowed. Does not reference credit. |
+
+---
+
+### Template RT-2: "Still Available"
+
+| Element | Content |
+|---|---|
+| **Headline** | The {{make}} {{model}} You Viewed Is Still Available |
+| **Primary Text** | Good news — that {{year}} {{make}} {{model}} you were looking at hasn't sold yet. Financing options available. Don't miss it this time. |
+| **Description** | Apply now before it's gone |
+| **CTA Button** | Learn More |
+| **Image** | Dynamic catalog image of the vehicle |
+| **Compliance** | `[COMPLIANT]` |
+
+---
+
+### Template RT-3: Social Proof
+
+| Element | Content |
+|---|---|
+| **Headline** | {{X}} People Approved This Week |
+| **Primary Text** | You're not alone — {{X}} people got approved for financing this week at {{dealership_name}}. See what you qualify for. It takes 60 seconds and won't affect your credit score. |
+| **Description** | Join hundreds of happy drivers |
+| **CTA Button** | Apply Now |
+| **Image** | Collage of happy customers with their new cars (use real customer photos with permission, or diverse stock photos). Text overlay: "{{X}}+ APPROVED THIS WEEK." |
+| **Compliance** | `[REVIEW]` — "got approved for financing" is borderline. **Compliant alt primary text:** `{{X}} people drove away in a new vehicle this week from {{dealership_name}}. See your financing options — takes 60 seconds and won't affect your credit score.` |
+
+> **Operational note:** Update {{X}} weekly in the ad creative. Use actual numbers — fabricating approval counts is an advertising violation.
+
+---
+
+### Template RT-4: Urgency / Scarcity
+
+| Element | Content |
+|---|---|
+| **Headline** | Only {{X}} Left at This Price |
+| **Primary Text** | The {{year}} {{make}} {{model}} you were eyeing? We only have {{X}} left at this price. Once they're gone, they're gone. Lock in your rate today. |
+| **Description** | Limited stock — act now |
+| **CTA Button** | Get Offer |
+| **Image** | Dynamic catalog image with a "LOW STOCK" badge overlay |
+| **Compliance** | `[COMPLIANT]` — Scarcity claims are fine as long as they are truthful. Ensure inventory counts are accurate. False scarcity is an FTC/Competition Bureau violation. |
+
+---
+
+### Template RT-5: Objection Handler
+
+| Element | Content |
+|---|---|
+| **Headline** | Worried About Financing? Don't Be. |
+| **Primary Text** | We work with 20+ lenders to find the right fit for YOUR situation. Not just one bank — twenty. That's why our approval rate is so high. Apply in 60 seconds — it won't affect your score. |
+| **Description** | 20+ lenders competing for you |
+| **CTA Button** | Apply Now |
+| **Image** | Clean graphic showing logos of multiple lender partners (or generic bank icons) funneling down to one "APPROVED" stamp. Professional, trustworthy design. |
+| **Compliance** | `[FLAGGED]` — "Worried about financing?" implies knowledge of the viewer's situation. **Compliant alt headline:** `Financing Made Simple` **Compliant alt primary text:** `We work with 20+ lenders to find the best fit for every situation. More lenders means more options — and higher approval rates. Apply in 60 seconds. It won't affect your score.` |
+
+---
+
+## CAMPAIGN 4: VIDEO ADS
+
+> **Ad Type:** Video (Reels, Stories, In-Feed)
+> **Objective:** Leads or Traffic
+> **Placement:** Reels, Stories, In-Feed Video
+> **Special Ad Category:** Credit
+> **Key principle:** 92% of mobile video is watched on mute. Text overlays carry the message. Audio is a bonus.
+
+---
+
+### Template VID-1: "They Said You Can't"
+
+**Hook (0-3 sec):** Text overlay on black screen: `"They said you can't get approved."`
+
+| Element | Content |
+|---|---|
+| **Text Overlay Sequence** | **0-3s:** "They said you can't get approved." (white text, black bg, dramatic pause) / **3-7s:** "We said: watch this." (text wipes in, cut to person getting keys) / **7-12s:** "20+ lenders. $0 down options. 60-second application." (quick cuts of vehicles, happy customers) / **12-15s:** "Apply now at {{URL}} — your next car is waiting." (logo, CTA button) |
+| **Voiceover Script** | "They told you no. The bank turned you down. But we're not the bank. We work with over 20 lenders — and we don't stop until we find one that says yes. Apply in 60 seconds. Zero down options available. Your fresh start is one click away." |
+| **Music Mood** | Cinematic build — starts quiet and moody, crescendos at the "watch this" moment. Think Hans Zimmer lite. Royalty-free: search "inspirational cinematic" on Epidemic Sound. |
+| **Visual Description** | Opens dark/moody. Quick transition to bright, warm lighting when the "watch this" hits. Real dealership footage mixed with customer handshake moments. End on logo + URL. Vertical (9:16) for Reels/Stories, also cut a 1:1 for feed. |
+| **Duration** | 15 seconds (Reels), 30-second extended cut for in-feed |
+| **Compliance** | `[FLAGGED]` — "They said you can't get approved" implies credit rejection. **Compliant alt hook:** `"Looking for a car? Here's a better way to finance it."` **Compliant alt voiceover opening:** `"Finding the right financing shouldn't be hard. We work with over 20 lenders — and we don't stop until we find the best fit for you."` |
+
+---
+
+### Template VID-2: "$0 Down, Ottawa's #1"
+
+**Hook (0-3 sec):** Text overlay: `"$0 down. No hassle. Ottawa's #1 approval rate."`
+
+| Element | Content |
+|---|---|
+| **Text Overlay Sequence** | **0-3s:** "$0 down. No hassle. Ottawa's #1 approval rate." (bold, each phrase appears one by one) / **3-7s:** "200+ vehicles in stock right now." (drone or tracking shot of lot) / **7-12s:** "Apply from your phone. Approved in minutes." (screen recording of application flow) / **12-15s:** "{{Dealership Name}} — Apply now." (logo, CTA) |
+| **Voiceover Script** | "Zero down. No hassle. Ottawa's number one approval rate. With over 200 vehicles in stock, your perfect car is waiting. Apply right from your phone — it takes less than 60 seconds. Visit {{URL}} and drive away happy." |
+| **Music Mood** | Upbeat, confident energy. Modern hip-hop instrumental or upbeat pop. Think "walking with swagger." Royalty-free: search "confident urban" on Artlist. |
+| **Visual Description** | Fast-paced, high-energy. Start with bold text kinetics. Cut to wide shot of the vehicle lot (drone if possible). Show phone screen with application. End with customer driving off the lot. Bright colors, daylight. |
+| **Duration** | 15 seconds |
+| **Compliance** | `[REVIEW]` — "#1 approval rate" must be substantiated or removed. **Compliant alt:** `"$0 down. No hassle. Hundreds of happy drivers."` Ensure the "#1" claim has supporting data or replace with a provable stat. |
+
+---
+
+### Template VID-3: "POV: You Just Got Approved"
+
+**Hook (0-3 sec):** Text overlay: `"POV: You just got approved for your dream car"`
+
+| Element | Content |
+|---|---|
+| **Text Overlay Sequence** | **0-3s:** "POV: You just got approved for your dream car" (TikTok-style POV format) / **3-7s:** Show first-person walk through dealership, hand touching car hood / **7-12s:** "This could be you tomorrow." (keys being handed over, engine starting) / **12-15s:** "Link in bio. 60-second application." (driving away shot) |
+| **Voiceover Script** | *No voiceover — this one is pure visual storytelling with trending audio.* Use a trending Reels sound or a cinematic "achievement unlocked" style audio. |
+| **Music Mood** | Trending Reels audio of the moment, OR a "glow-up" style beat. Check current trending sounds weekly and swap. Fallback: dreamy, aspirational lo-fi. |
+| **Visual Description** | Shot entirely on iPhone for authenticity. POV perspective — viewer IS the person. Walk through the lot, open the car door, sit inside, grab the wheel, start the engine, drive away. Golden hour lighting. Raw, real, not polished. |
+| **Duration** | 15 seconds (Reels native) |
+| **Compliance** | `[COMPLIANT]` — POV format is aspirational, not making credit claims. |
+
+---
+
+### Template VID-4: "3 Things Your Dealer Isn't Telling You"
+
+**Hook (0-3 sec):** Text overlay: `"3 things your dealer isn't telling you about financing"`
+
+| Element | Content |
+|---|---|
+| **Text Overlay Sequence** | **0-3s:** "3 things your dealer isn't telling you about financing" (curiosity hook) / **3-6s:** "#1: You don't need perfect credit." / **6-9s:** "#2: More lenders = better rates for you." / **9-12s:** "#3: Your job matters more than your score." / **12-15s:** "We work with 20+ lenders. Apply in 60 seconds." (CTA + logo) |
+| **Voiceover Script** | "Here are 3 things most dealers won't tell you about financing. Number 1: you don't need perfect credit to get approved. Number 2: the more lenders a dealer works with, the better your rate. And number 3: your employment matters more than your credit score. We work with over 20 lenders — that's why our rates are lower and our approvals are higher. Link in bio." |
+| **Music Mood** | "Insider secret" energy — slightly tense, conspiratorial opening. Think podcast-style background music. Light, modern, not distracting. |
+| **Visual Description** | Talking-head style — a real person (salesperson or finance manager) speaking directly to camera. Casual setting, not behind a desk. Text overlays for each point. Number graphics pop in. End with logo and CTA. |
+| **Duration** | 15 seconds (Reels), 30-second extended for in-feed |
+| **Compliance** | `[FLAGGED]` — "#1: You don't need perfect credit" and "#3: Your job matters more than your score" both reference credit status. **Compliant alt #1:** "#1: You have more financing options than you think." **Compliant alt #3:** "#3: Stable income opens more doors than you'd expect." |
+
+---
+
+### Template VID-5: "From Denied to Driving"
+
+**Hook (0-3 sec):** Text overlay: `"From denied to driving in 48 hours — here's how"`
+
+| Element | Content |
+|---|---|
+| **Text Overlay Sequence** | **0-3s:** "From denied to driving in 48 hours — here's how" (bold, punchy) / **3-7s:** Customer testimonial-style: "I got turned away from 3 dealerships..." / **7-12s:** "...then I found {{dealership}}. Approved the same day." / **12-15s:** "Your turn. Apply in 60 seconds." (customer with car, CTA) |
+| **Voiceover Script** | "I was turned away from three dealerships. They all said the same thing — we can't help you. Then a friend told me about {{dealership_name}}. I applied on my phone, got approved the same day, and drove away 48 hours later. If you're looking for a car, just apply. It's 60 seconds. Worst case, you know your options." |
+| **Music Mood** | Emotional transformation — quiet piano opening, builds to uplifting. Storytelling music. Search "emotional success story" on Epidemic Sound. |
+| **Visual Description** | Documentary/testimonial style. Real customer if possible (offer a $50 gas card for testimonials). Start with the customer outside the dealership. Intercut with B-roll of the car, the application process, the handshake. End on them driving, smiling. Subtitles mandatory. |
+| **Duration** | 30 seconds (this story needs room to breathe) |
+| **Compliance** | `[FLAGGED]` — "From denied to driving" directly references credit denial. **Compliant alt hook:** `"From searching to driving in 48 hours — here's how"` **Compliant alt testimonial:** `"I visited a few dealerships and it never worked out. Then I found {{dealership}}. Applied online, got my answer the same day, and was driving 48 hours later."` |
+
+---
+
+## GOOGLE ADS — VEHICLE LISTING ADS (VLAs)
+
+> **Ad Type:** Vehicle Listing Ads (Merchant Center vehicle feed)
+> **Campaign Type:** Performance Max for Vehicle Ads
+> **Feed:** Google Merchant Center vehicle inventory feed
+
+### Product Feed Title Format
+```
+{{year}} {{make}} {{model}} {{trim}} — {{city}} | {{dealership_name}}
+```
+Example: `2022 Toyota RAV4 LE — Ottawa | DriveSmart Auto`
+
+### Product Feed Description Format
+```
+{{year}} {{make}} {{model}} {{trim}}. {{mileage}} km. {{transmission}}. {{key_feature_1}}, {{key_feature_2}}. Financing available — apply online for fast approval. Located in {{city}}.
+```
+Example: `2022 Toyota RAV4 LE. 45,000 km. Automatic. Heated seats, backup camera. Financing available — apply online for fast approval. Located in Ottawa.`
+
+### Promotion Text Options
+
+| # | Promotion Text |
+|---|---|
+| 1 | `$0 down financing available` |
+| 2 | `Apply online — approved in minutes` |
+| 3 | `Free Carfax report with every vehicle` |
+
+---
+
+## GOOGLE ADS — SEARCH ADS
+
+> **Campaign Type:** Search
+> **Match Types:** Phrase match and exact match
+> **Bid Strategy:** Maximize conversions (target CPA once you have 30+ conversions)
+
+---
+
+### Template SA-1: "Bad Credit Car Loans"
+**Keyword:** `bad credit car loans ottawa`
+
+| Element | Content |
+|---|---|
+| **Headline 1** | Bad Credit? Get Approved Today |
+| **Headline 2** | Car Loans Ottawa — All Credit |
+| **Headline 3** | $0 Down Options Available |
+| **Description 1** | Turned down before? We work with 20+ lenders to find the right car loan for you. Apply in 60 seconds. Drive today. |
+| **Description 2** | Over 200 vehicles in stock. Flexible financing for every situation. Same-day approvals available in Ottawa. |
+| **Display URL Path** | `/bad-credit` / `car-loans` |
+| **Sitelinks** | `Apply Now` — `$0 Down Program` — `View Inventory` — `Fresh Start Program` |
+
+---
+
+### Template SA-2: "No Credit Check"
+**Keyword:** `buy car no credit check`
+
+| Element | Content |
+|---|---|
+| **Headline 1** | No Credit Check Car Loans |
+| **Headline 2** | Drive Today — Apply Online |
+| **Headline 3** | Ottawa's Top-Rated Dealer |
+| **Description 1** | Skip the credit check stress. We focus on income and employment to get you approved. 200+ vehicles ready. Apply in 60 seconds. |
+| **Description 2** | Your job is your approval. Full-time or part-time — we have financing solutions. $0 down available. Visit us today. |
+| **Display URL Path** | `/no-credit-check` / `apply` |
+| **Sitelinks** | `Apply Now` — `View Inventory` — `$0 Down Financing` — `About Our Program` |
+
+---
+
+### Template SA-3: "Car Financing All Credit"
+**Keyword:** `car financing all credit`
+
+| Element | Content |
+|---|---|
+| **Headline 1** | Car Financing — All Welcome |
+| **Headline 2** | 20+ Lenders Competing for You |
+| **Headline 3** | Approved in 60 Seconds |
+| **Description 1** | All credit situations considered. We partner with 20+ lenders to find the best rate and terms for you. Apply online now. |
+| **Description 2** | New to credit? Rebuilding? No problem. Flexible auto financing with $0 down options. 200+ vehicles in Ottawa. |
+| **Display URL Path** | `/financing` / `all-credit` |
+| **Sitelinks** | `Apply Online` — `See Today's Inventory` — `Fresh Start Program` — `Trade-In Welcome` |
+
+---
+
+### Template SA-4: "Used Cars Ottawa Financing"
+**Keyword:** `used cars ottawa financing`
+
+| Element | Content |
+|---|---|
+| **Headline 1** | Used Cars Ottawa + Financing |
+| **Headline 2** | 200+ Vehicles — From $99/wk |
+| **Headline 3** | Same-Day Approval Available |
+| **Description 1** | Browse 200+ quality used cars in Ottawa with on-site financing. Every vehicle inspected. Flexible payments starting at $99/week. |
+| **Description 2** | Toyota, Honda, Hyundai, Ford & more. Financing for every situation. $0 down available. Apply online or visit us today. |
+| **Display URL Path** | `/used-cars` / `ottawa` |
+| **Sitelinks** | `SUVs in Stock` — `Sedans Under $20K` — `Apply for Financing` — `Trade-In Value` |
+
+---
+
+### Template SA-5: "Second Chance Auto"
+**Keyword:** `second chance auto loans`
+
+| Element | Content |
+|---|---|
+| **Headline 1** | Second Chance Auto Financing |
+| **Headline 2** | Everyone Deserves a Fresh Start |
+| **Headline 3** | Apply Online — 60 Seconds |
+| **Description 1** | Our Second Chance Program has helped hundreds get back on the road. 20+ lenders, $0 down options, and real support. Apply now. |
+| **Description 2** | Life happens. We get it. Flexible auto financing designed to get you driving and build your financial future. Ottawa. |
+| **Display URL Path** | `/second-chance` / `auto` |
+| **Sitelinks** | `Apply Now` — `How It Works` — `View Inventory` — `Customer Stories` |
+
+---
+
+## GOOGLE ADS — PERFORMANCE MAX
+
+> **Campaign Type:** Performance Max
+> **Asset Groups:** Create 1 asset group per vehicle category (SUV, Sedan, Truck) + 1 "Financing" group
+> **Audience Signals:** In-market for vehicles, custom intent (search terms from above), remarketing lists
+
+### Headline Options (15 headlines, 30 chars max each)
+
+| # | Headline |
+|---|---|
+| 1 | Get Approved — Drive Today |
+| 2 | $0 Down Car Financing |
+| 3 | Used Cars Ottawa — 200+ |
+| 4 | Financing for Every Situation |
+| 5 | Apply Online in 60 Seconds |
+| 6 | Ottawa's #1 Used Car Dealer |
+| 7 | Second Chance Auto Program |
+| 8 | 20+ Lenders Competing for You |
+| 9 | Quality Used Cars + Financing |
+| 10 | Same-Day Approval Available |
+| 11 | Drive Today — Easy Financing |
+| 12 | Cars From $99/Week |
+| 13 | SUVs, Sedans, Trucks in Stock |
+| 14 | Fresh Start Auto Program |
+| 15 | Your Next Car Starts Here |
+
+### Long Headlines (5 long headlines, 90 chars max each)
+
+| # | Long Headline |
+|---|---|
+| 1 | Get Approved for a Quality Used Car in Ottawa — $0 Down Options Available |
+| 2 | 200+ Vehicles in Stock with Flexible Financing for Every Situation |
+| 3 | Ottawa's Trusted Used Car Dealer — 20+ Lenders, Same-Day Approval |
+| 4 | Skip the Runaround — Apply Online in 60 Seconds and Drive Today |
+| 5 | Your Fresh Start Begins Here — Financing Designed Around Your Life |
+
+### Asset Group Descriptions (5 descriptions, 90 chars max each)
+
+| # | Description |
+|---|---|
+| 1 | Quality used cars with flexible financing. 20+ lenders, $0 down options. Apply in 60 sec. |
+| 2 | Over 200 inspected vehicles in Ottawa. Financing for every situation. Drive same day. |
+| 3 | Everyone deserves reliable transportation. Flexible payments from $99/week. Apply today. |
+| 4 | Skip the bank hassle. We match you with 20+ lenders for the best rate. Fast approvals. |
+| 5 | Ottawa's trusted auto financing — 100s of happy drivers this year. See what you qualify for. |
+
+### Image Guidance
+
+| Asset Type | Specs | Content |
+|---|---|---|
+| **Landscape (1.91:1)** | 1200x628 | Hero shot of best vehicle on the lot with financing CTA overlay |
+| **Square (1:1)** | 1200x1200 | Close-up of a popular model with price/payment overlay |
+| **Portrait (4:5)** | 960x1200 | Person receiving keys — emotional moment |
+| **Logo (1:1)** | 1200x1200 | Dealership logo on white/transparent background |
+| **Logo (4:1)** | 1200x300 | Dealership logo horizontal version |
+
+- Upload minimum 5 images per asset group (Google recommends up to 20)
+- Include at least 1 lifestyle image (customer receiving keys, driving, family in car)
+- All images must be high resolution — no blurry phone photos
+- Add dealership logo as watermark to every image (bottom-right corner)
+
+---
+
+## FRENCH VERSIONS (QUEBEC)
+
+> **Market:** Gatineau, Quebec City, Montreal
+> **Language:** Quebec French (natural, conversational — NOT Parisian)
+> **Key terms reference:**
+> - 1ere chance au credit / Premiere chance au credit
+> - Aucun cas refuse
+> - Essai routier
+> - Concessionnaire
+> - Approbation instantanee
+> - Financement automobile
+> - Mise de fonds $0
+> - Demande en ligne
+
+---
+
+### FR-1: Lead Gen — "Ton emploi, c'est ta cle" (LG-1 Translation)
+
+| Element | Content |
+|---|---|
+| **Headline** | Ton emploi, c'est ta cle |
+| **Primary Text** | Tu travailles a temps plein? C'est ce que les preteurs regardent en premier. On travaille avec 20+ preteurs qui se concentrent sur ton revenu, pas juste un chiffre. Decouvre tes options en 60 secondes. |
+| **Description** | Temps plein ou partiel — applique en 60 sec |
+| **CTA Button** | Faire une demande |
+| **Compliance** | `[REVIEW]` — Same as English. **Alt:** `Tu travailles? T'as plus d'options que tu penses` |
+
+---
+
+### FR-2: Lead Gen — "0$ de mise de fonds" (LG-2 Translation)
+
+| Element | Content |
+|---|---|
+| **Headline** | 0$ de mise de fonds — Roule aujourd'hui |
+| **Primary Text** | Pas de cash pour un depot? Pas de stress. On a des options de financement a 0$ de mise de fonds. Plus de 200 vehicules en inventaire. |
+| **Description** | Aucune mise de fonds requise |
+| **CTA Button** | Voir l'offre |
+
+---
+
+### FR-3: Lead Gen — "Programme Nouveau Depart" (LG-3 Translation)
+
+| Element | Content |
+|---|---|
+| **Headline** | Programme Nouveau Depart |
+| **Primary Text** | Tout le monde merite une deuxieme chance. Notre Programme Nouveau Depart te met au volant ET batit ton avenir financier en meme temps. Demande en 60 secondes — sans obligation. |
+| **Description** | Un nouveau depart commence ici |
+| **CTA Button** | Faire une demande |
+
+---
+
+### FR-4: Lead Gen — "Pre-approuve en 60 secondes" (LG-4 Translation)
+
+| Element | Content |
+|---|---|
+| **Headline** | Pre-approuve en 60 secondes |
+| **Primary Text** | Fini le niaisage chez le concessionnaire. Applique en ligne en 60 secondes, recois ton approbation, pis viens chercher ton char. C'est simple de meme. 200+ vehicules prets a partir. |
+| **Description** | Rapide, facile, sans casse-tete |
+| **CTA Button** | Faire une demande |
+
+---
+
+### FR-5: Lead Gen — "Programme de reconstruction de credit" (LG-5 Translation)
+
+| Element | Content |
+|---|---|
+| **Headline** | Batis ton credit en roulant |
+| **Primary Text** | Chaque paiement a temps batit ton dossier de credit. Notre programme te jumele avec des preteurs qui rapportent aux bureaux de credit — fait que ton paiement de char travaille pour toi. |
+| **Description** | Ton char travaille pour ton avenir |
+| **CTA Button** | En savoir plus |
+| **Compliance** | `[FLAGGED]` — Same issue as English. **Alt headline:** `Batis un avenir financier plus solide` |
+
+---
+
+### FR-6: Retargeting — "Tu y penses encore?" (RT-1 Translation)
+
+| Element | Content |
+|---|---|
+| **Headline** | Tu y penses encore, le {{make}} {{model}}? |
+| **Primary Text** | On a vu que t'as regarde le {{year}} {{make}} {{model}}. Il est encore disponible — mais pas pour longtemps. Decouvre tes options de financement en 60 secondes. |
+| **Description** | Ton vehicule est encore disponible |
+| **CTA Button** | Voir l'offre |
+
+---
+
+### FR-7: Retargeting — Social Proof (RT-3 Translation)
+
+| Element | Content |
+|---|---|
+| **Headline** | {{X}} personnes approuvees cette semaine |
+| **Primary Text** | T'es pas tout seul — {{X}} personnes ont roule avec un nouveau vehicule cette semaine chez {{dealership_name}}. Decouvre tes options en 60 secondes. Ca n'affecte pas ton credit. |
+| **Description** | Rejoins des centaines de conducteurs satisfaits |
+| **CTA Button** | Faire une demande |
+
+---
+
+### FR-8: Video Hook — "Y'ont dit que tu pouvais pas" (VID-1 Translation)
+
+| Element | Content |
+|---|---|
+| **Text Overlay (0-3s)** | "Y'ont dit que tu pouvais pas etre approuve." |
+| **Text Overlay (3-7s)** | "Nous, on a dit: watch ben ca." |
+| **Text Overlay (7-12s)** | "20+ preteurs. 0$ de mise de fonds. Demande en 60 secondes." |
+| **Text Overlay (12-15s)** | "Applique maintenant sur {{URL}}" |
+| **Voiceover Script** | "Y'ont dit non. La banque t'a refuse. Mais nous, on n'est pas la banque. On travaille avec plus de 20 preteurs — pis on lache pas tant qu'on trouve pas celui qui dit oui. Applique en 60 secondes. Options a zero de mise de fonds. Ton nouveau depart est a un clic." |
+| **Compliance** | `[FLAGGED]` — Same as English. **Compliant alt hook:** `"Tu cherches un char? V'la une meilleure facon de le financer."` |
+
+---
+
+### FR-9: Search Ad — "Financement auto mauvais credit" (SA-1 Translation)
+
+| Element | Content |
+|---|---|
+| **Headline 1** | Mauvais credit? Approuve ici |
+| **Headline 2** | Pret auto Gatineau — Tous cas |
+| **Headline 3** | 0$ de mise de fonds dispo |
+| **Description 1** | Refuse ailleurs? On travaille avec 20+ preteurs pour trouver le bon pret auto. Demande en 60 secondes. Roule aujourd'hui. |
+| **Description 2** | Plus de 200 vehicules en stock. Financement flexible pour toutes les situations. Approbation le jour meme a Gatineau. |
+| **Display URL Path** | `/mauvais-credit` / `pret-auto` |
+
+---
+
+### FR-10: PMax Descriptions (top 5)
+
+| # | Description (FR) |
+|---|---|
+| 1 | Vehicules d'occasion de qualite avec financement flexible. 20+ preteurs, 0$ comptant. 60 sec. |
+| 2 | Plus de 200 vehicules inspectes a Gatineau. Financement pour toutes les situations. Meme journee. |
+| 3 | Tout le monde merite un transport fiable. Paiements a partir de 99$/sem. Applique aujourd'hui. |
+| 4 | Fini le niaisage avec la banque. On te jumele avec 20+ preteurs. Approbation rapide garantie. |
+| 5 | Financement auto de confiance a Gatineau — des centaines de clients satisfaits. Decouvre tes options. |
+
+---
+
+## META SPECIAL AD CATEGORY COMPLIANCE
+
+### Quick Reference — What Gets Flagged
+
+| Element | Allowed | Not Allowed |
+|---|---|---|
+| "$0 down" | Yes — financing feature | |
+| "Bad credit" | Only in Google Search | Flagged on Meta |
+| "Your credit score" | No — implies knowledge of user | |
+| "All credit welcome" | Borderline — use with caution | |
+| "Rebuild your credit" | No — references credit status | |
+| "Get approved" | Yes — aspirational | |
+| "Pre-approved" | Yes — aspirational | |
+| "We know you were denied" | | No — references past rejection |
+| "Fresh Start Program" | Yes — branded program name | |
+| "Worried about financing?" | Borderline — implies anxiety | |
+| "Your job is your credit" | Borderline — implies credit status | |
+| Employment questions in lead form | Yes — standard qualification | |
+| Credit score question in lead form | | No — cannot ask about credit |
+
+### Compliant Copy Patterns (Use These)
+
+- "Financing for every situation" (universal, no credit reference)
+- "See your options in 60 seconds" (speed benefit)
+- "20+ lenders competing for you" (feature benefit)
+- "$0 down available" (financing feature)
+- "Apply with no obligation" (low risk)
+- "Your next car is waiting" (aspirational)
+- "Same-day decisions" (speed benefit)
+
+### Patterns That Will Get Rejected on Meta
+
+- "Bad credit? No problem!" (direct credit reference)
+- "We approve everyone" (guarantee language)
+- "No matter your credit score" (credit reference)
+- "Bankruptcy? Divorce? Consumer proposal?" (targeting by financial hardship)
+- "We know banks turned you down" (assumes rejection)
+
+### Google vs. Meta — Key Difference
+
+Google Search Ads are NOT subject to the same credit-category restrictions as Meta. On Google, you CAN use terms like "bad credit car loans" because the user searched for that term. On Meta, you are pushing ads to people, so you cannot assume their credit status. This is why the Google templates use more aggressive credit-related language.
+
+---
+
+## OPERATIONAL NOTES
+
+### A/B Testing Schedule
+- Run each template for 7 days minimum before judging
+- Test headline vs. headline first (biggest lever)
+- Then test primary text variants
+- Then test image/video creative
+- Kill anything under 1% CTR after 1,000 impressions
+
+### Dynamic Variable Sources
+| Variable | Source |
+|---|---|
+| `{{year}}` | Vehicle feed — year field |
+| `{{make}}` | Vehicle feed — brand field |
+| `{{model}}` | Vehicle feed — model field |
+| `{{city}}` | Dealership location or geo-target |
+| `{{price}}` | Vehicle feed — price field |
+| `{{mileage}}` | Vehicle feed — mileage field |
+| `{{weekly_payment}}` | Calculated: (price * rate / 52) |
+| `{{dealership_name}}` | Static — set per account |
+| `{{URL}}` | Landing page URL |
+| `{{X}}` | Updated weekly from CRM data |
+
+### Creative Refresh Cadence
+- Static images: refresh every 4-6 weeks
+- Video: refresh every 6-8 weeks
+- Ad copy: refresh every 3-4 weeks
+- Retargeting: refresh every 2-3 weeks (smaller audience = faster fatigue)

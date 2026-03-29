@@ -1,0 +1,632 @@
+{
+  "exportFormatVersion": 2,
+  "exportTime": "2026-03-28 00:00:00",
+  "containerVersion": {
+    "path": "accounts/0/containers/0/versions/1",
+    "accountId": "0",
+    "containerId": "0",
+    "containerVersionId": "1",
+    "name": "Nexus Dealership Template v1.0",
+    "description": "Full-stack tracking for car dealerships: Meta Pixel, Google Ads, GA4, and server-side CAPI forwarding via n8n. Change 3 constants (META_PIXEL_ID, GOOGLE_ADS_CONVERSION_ID, GA4_MEASUREMENT_ID) and deploy.",
+    "container": {
+      "path": "accounts/0/containers/0",
+      "accountId": "0",
+      "containerId": "0",
+      "name": "Dealership GTM Template",
+      "publicId": "GTM-XXXXXX",
+      "usageContext": ["WEB"],
+      "fingerprint": "0",
+      "tagManagerUrl": ""
+    },
+    "builtInVariable": [
+      { "accountId": "0", "containerId": "0", "type": "PAGE_URL", "name": "Page URL" },
+      { "accountId": "0", "containerId": "0", "type": "PAGE_PATH", "name": "Page Path" },
+      { "accountId": "0", "containerId": "0", "type": "PAGE_HOSTNAME", "name": "Page Hostname" },
+      { "accountId": "0", "containerId": "0", "type": "REFERRER", "name": "Referrer" },
+      { "accountId": "0", "containerId": "0", "type": "CLICK_URL", "name": "Click URL" },
+      { "accountId": "0", "containerId": "0", "type": "CLICK_TEXT", "name": "Click Text" },
+      { "accountId": "0", "containerId": "0", "type": "FORM_ID", "name": "Form ID" },
+      { "accountId": "0", "containerId": "0", "type": "EVENT", "name": "Event" }
+    ],
+    "variable": [
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "100",
+        "name": "META_PIXEL_ID",
+        "type": "c",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "value", "value": "YOUR_META_PIXEL_ID_HERE" }
+        ],
+        "fingerprint": "100"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "101",
+        "name": "GOOGLE_ADS_CONVERSION_ID",
+        "type": "c",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "value", "value": "AW-XXXXXXXXXX/XXXXXXXXXXXXXXXXXXX" }
+        ],
+        "fingerprint": "101"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "102",
+        "name": "GA4_MEASUREMENT_ID",
+        "type": "c",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "value", "value": "G-XXXXXXXXXX" }
+        ],
+        "fingerprint": "102"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "103",
+        "name": "DLV - vehicle_make",
+        "type": "v",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "name", "value": "vehicle_make" },
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" }
+        ],
+        "fingerprint": "103"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "104",
+        "name": "DLV - vehicle_model",
+        "type": "v",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "name", "value": "vehicle_model" },
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" }
+        ],
+        "fingerprint": "104"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "105",
+        "name": "DLV - vehicle_year",
+        "type": "v",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "name", "value": "vehicle_year" },
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" }
+        ],
+        "fingerprint": "105"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "106",
+        "name": "DLV - vehicle_price",
+        "type": "v",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "name", "value": "vehicle_price" },
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" }
+        ],
+        "fingerprint": "106"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "107",
+        "name": "DLV - vehicle_vin",
+        "type": "v",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "name", "value": "vehicle_vin" },
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" }
+        ],
+        "fingerprint": "107"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "108",
+        "name": "DLV - form_id",
+        "type": "v",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "name", "value": "form_id" },
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" }
+        ],
+        "fingerprint": "108"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "109",
+        "name": "DLV - user_ip",
+        "type": "v",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "name", "value": "user_ip" },
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" }
+        ],
+        "fingerprint": "109"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "variableId": "110",
+        "name": "DLV - event_id",
+        "type": "v",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "name", "value": "event_id" },
+          { "type": "INTEGER", "key": "dataLayerVersion", "value": "2" }
+        ],
+        "fingerprint": "110"
+      }
+    ],
+    "trigger": [
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "1",
+        "name": "All Pages",
+        "type": "PAGEVIEW",
+        "fingerprint": "1"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "2",
+        "name": "Form Submission - Dealer Forms",
+        "type": "FORM_SUBMISSION",
+        "filter": [
+          {
+            "type": "CSS_SELECTOR",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "form[id*='lead'], form[class*='lead'], form[id*='contact'], form[class*='contact'], form[action*='lead'], form[data-form-type='lead'], #contactForm, .contact-form, .lead-form, #leadForm" }
+            ]
+          }
+        ],
+        "parameter": [
+          { "type": "BOOLEAN", "key": "waitForTags", "value": "true" },
+          { "type": "TEMPLATE", "key": "waitForTagsTimeout", "value": "2000" },
+          { "type": "BOOLEAN", "key": "checkValidation", "value": "true" }
+        ],
+        "fingerprint": "2"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "3",
+        "name": "VDP Page View",
+        "type": "PAGEVIEW",
+        "filter": [
+          {
+            "type": "CONTAINS",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{Page URL}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "/inventory/" }
+            ]
+          }
+        ],
+        "fingerprint": "3"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "4",
+        "name": "VDP Page View - Vehicle Path",
+        "type": "PAGEVIEW",
+        "filter": [
+          {
+            "type": "CONTAINS",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{Page URL}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "/vehicle/" }
+            ]
+          }
+        ],
+        "fingerprint": "4"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "5",
+        "name": "Click to Call",
+        "type": "CLICK",
+        "filter": [
+          {
+            "type": "STARTS_WITH",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{Click URL}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "tel:" }
+            ]
+          }
+        ],
+        "parameter": [
+          { "type": "BOOLEAN", "key": "uniqueTriggerId", "value": "true" }
+        ],
+        "fingerprint": "5"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "6",
+        "name": "Chat Widget Open",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "chat_widget_open" }
+            ]
+          }
+        ],
+        "fingerprint": "6"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "7",
+        "name": "Application Complete - Thank You",
+        "type": "PAGEVIEW",
+        "filter": [
+          {
+            "type": "CONTAINS",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{Page URL}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "/thank-you" }
+            ]
+          }
+        ],
+        "fingerprint": "7"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "8",
+        "name": "Application Complete - Confirmation",
+        "type": "PAGEVIEW",
+        "filter": [
+          {
+            "type": "CONTAINS",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{Page URL}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "/confirmation" }
+            ]
+          }
+        ],
+        "fingerprint": "8"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "9",
+        "name": "Test Drive Booking",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "test_drive_booking" }
+            ]
+          }
+        ],
+        "fingerprint": "9"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "triggerId": "10",
+        "name": "VDP Data Layer Event",
+        "type": "CUSTOM_EVENT",
+        "customEventFilter": [
+          {
+            "type": "EQUALS",
+            "parameter": [
+              { "type": "TEMPLATE", "key": "arg0", "value": "{{_event}}" },
+              { "type": "TEMPLATE", "key": "arg1", "value": "vdp_view" }
+            ]
+          }
+        ],
+        "fingerprint": "10"
+      }
+    ],
+    "tag": [
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "1",
+        "name": "Meta Pixel - Base",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n!function(f,b,e,v,n,t,s)\n{if(f.fbq)return;n=f.fbq=function(){n.callMethod?\nn.callMethod.apply(n,arguments):n.queue.push(arguments)};\nif(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';\nn.queue=[];t=b.createElement(e);t.async=!0;\nt.src=v;s=b.getElementsByTagName(e)[0];\ns.parentNode.insertBefore(t,s)}(window, document,'script',\n'https://connect.facebook.net/en_US/fbevents.js');\nfbq('init', '{{META_PIXEL_ID}}');\nfbq('track', 'PageView');\n</script>\n<noscript><img height=\"1\" width=\"1\" style=\"display:none\"\nsrc=\"https://www.facebook.com/tr?id={{META_PIXEL_ID}}&ev=PageView&noscript=1\"\n/></noscript>"
+          },
+          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" }
+        ],
+        "firingTriggerId": ["1"],
+        "tagFiringOption": "ONCE_PER_PAGE",
+        "fingerprint": "1",
+        "priority": { "type": "INTEGER", "value": "99" }
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "2",
+        "name": "Meta Pixel - Lead Event",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\nfbq('track', 'Lead', {\n  content_name: document.title,\n  content_category: 'lead_form'\n});\n</script>"
+          },
+          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" }
+        ],
+        "firingTriggerId": ["2", "7", "8"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "2",
+        "setupTag": [{ "tagName": "Meta Pixel - Base" }]
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "3",
+        "name": "Meta Pixel - ViewContent (VDP)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\nvar make = {{DLV - vehicle_make}} || '';\nvar model = {{DLV - vehicle_model}} || '';\nvar year = {{DLV - vehicle_year}} || '';\nvar price = {{DLV - vehicle_price}} || 0;\nvar vin = {{DLV - vehicle_vin}} || '';\nfbq('track', 'ViewContent', {\n  content_name: year + ' ' + make + ' ' + model,\n  content_type: 'vehicle',\n  content_ids: [vin],\n  value: price,\n  currency: 'CAD'\n});\n</script>"
+          },
+          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" }
+        ],
+        "firingTriggerId": ["3", "4", "10"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "3",
+        "setupTag": [{ "tagName": "Meta Pixel - Base" }]
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "4",
+        "name": "Meta Pixel - Schedule (Test Drive)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\nfbq('track', 'Schedule', {\n  content_name: 'Test Drive Booking',\n  content_category: 'appointment'\n});\n</script>"
+          },
+          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" }
+        ],
+        "firingTriggerId": ["9"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "4",
+        "setupTag": [{ "tagName": "Meta Pixel - Base" }]
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "5",
+        "name": "Google Ads Conversion - Lead",
+        "type": "awct",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "conversionId", "value": "{{GOOGLE_ADS_CONVERSION_ID}}" },
+          { "type": "TEMPLATE", "key": "conversionLabel", "value": "" },
+          { "type": "BOOLEAN", "key": "enableNewCustomerReporting", "value": "false" }
+        ],
+        "firingTriggerId": ["2", "7", "8"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "5"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "6",
+        "name": "Google Ads Conversion - Call",
+        "type": "awct",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "conversionId", "value": "{{GOOGLE_ADS_CONVERSION_ID}}" },
+          { "type": "TEMPLATE", "key": "conversionLabel", "value": "" },
+          { "type": "BOOLEAN", "key": "enableNewCustomerReporting", "value": "false" }
+        ],
+        "firingTriggerId": ["5"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "6"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "7",
+        "name": "GA4 - Page View",
+        "type": "gaawc",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "measurementId", "value": "{{GA4_MEASUREMENT_ID}}" },
+          { "type": "BOOLEAN", "key": "sendPageView", "value": "true" },
+          { "type": "BOOLEAN", "key": "enableSendToServerContainer", "value": "false" }
+        ],
+        "firingTriggerId": ["1"],
+        "tagFiringOption": "ONCE_PER_PAGE",
+        "fingerprint": "7"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "8",
+        "name": "GA4 - VDP View",
+        "type": "gaawe",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "eventName", "value": "vdp_view" },
+          { "type": "TEMPLATE", "key": "measurementId", "value": "{{GA4_MEASUREMENT_ID}}" },
+          {
+            "type": "LIST",
+            "key": "eventParameters",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "vehicle_make" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - vehicle_make}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "vehicle_model" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - vehicle_model}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "vehicle_year" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - vehicle_year}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "vehicle_price" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - vehicle_price}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "vehicle_vin" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - vehicle_vin}}" }
+                ]
+              }
+            ]
+          }
+        ],
+        "firingTriggerId": ["3", "4", "10"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "8"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "9",
+        "name": "GA4 - Lead Form Submit",
+        "type": "gaawe",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "eventName", "value": "generate_lead" },
+          { "type": "TEMPLATE", "key": "measurementId", "value": "{{GA4_MEASUREMENT_ID}}" },
+          {
+            "type": "LIST",
+            "key": "eventParameters",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "form_id" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{DLV - form_id}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "form_location" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{Page Path}}" }
+                ]
+              }
+            ]
+          }
+        ],
+        "firingTriggerId": ["2", "7", "8"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "9"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "10",
+        "name": "GA4 - Click to Call",
+        "type": "gaawe",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "eventName", "value": "click_to_call" },
+          { "type": "TEMPLATE", "key": "measurementId", "value": "{{GA4_MEASUREMENT_ID}}" },
+          {
+            "type": "LIST",
+            "key": "eventParameters",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "phone_number" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{Click URL}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "click_text" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{Click Text}}" }
+                ]
+              },
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "page_location" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{Page Path}}" }
+                ]
+              }
+            ]
+          }
+        ],
+        "firingTriggerId": ["5"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "10"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "11",
+        "name": "GA4 - Chat Widget Open",
+        "type": "gaawe",
+        "parameter": [
+          { "type": "TEMPLATE", "key": "eventName", "value": "chat_widget_open" },
+          { "type": "TEMPLATE", "key": "measurementId", "value": "{{GA4_MEASUREMENT_ID}}" },
+          {
+            "type": "LIST",
+            "key": "eventParameters",
+            "list": [
+              {
+                "type": "MAP",
+                "map": [
+                  { "type": "TEMPLATE", "key": "name", "value": "page_location" },
+                  { "type": "TEMPLATE", "key": "value", "value": "{{Page Path}}" }
+                ]
+              }
+            ]
+          }
+        ],
+        "firingTriggerId": ["6"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "11"
+      },
+      {
+        "accountId": "0",
+        "containerId": "0",
+        "tagId": "12",
+        "name": "CAPI Event Forwarder (n8n Webhook)",
+        "type": "html",
+        "parameter": [
+          {
+            "type": "TEMPLATE",
+            "key": "html",
+            "value": "<script>\n(function() {\n  var dl = window.dataLayer || [];\n  var lastEvent = null;\n  for (var i = dl.length - 1; i >= 0; i--) {\n    if (dl[i] && dl[i].event) { lastEvent = dl[i]; break; }\n  }\n  if (!lastEvent) return;\n\n  var payload = {\n    event_name: lastEvent.event || 'PageView',\n    event_id: lastEvent.event_id || (Date.now() + '_' + Math.random().toString(36).substr(2, 9)),\n    event_time: Math.floor(Date.now() / 1000),\n    event_source_url: window.location.href,\n    user_agent: navigator.userAgent,\n    pixel_id: '{{META_PIXEL_ID}}',\n    action_source: 'website',\n    vehicle_make: lastEvent.vehicle_make || null,\n    vehicle_model: lastEvent.vehicle_model || null,\n    vehicle_year: lastEvent.vehicle_year || null,\n    vehicle_price: lastEvent.vehicle_price || null,\n    vehicle_vin: lastEvent.vehicle_vin || null,\n    user_ip: lastEvent.user_ip || null,\n    fbc: (document.cookie.match('(^|;)\\\\s*_fbc\\\\s*=\\\\s*([^;]+)') || [])[2] || null,\n    fbp: (document.cookie.match('(^|;)\\\\s*_fbp\\\\s*=\\\\s*([^;]+)') || [])[2] || null\n  };\n\n  var xhr = new XMLHttpRequest();\n  xhr.open('POST', 'https://nexusagents.app.n8n.cloud/webhook/meta-capi', true);\n  xhr.setRequestHeader('Content-Type', 'application/json');\n  xhr.send(JSON.stringify(payload));\n})();\n</script>"
+          },
+          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" }
+        ],
+        "firingTriggerId": ["2", "3", "4", "5", "6", "7", "8", "9", "10"],
+        "tagFiringOption": "ONCE_PER_EVENT",
+        "fingerprint": "12"
+      }
+    ],
+    "fingerprint": "1"
+  }
+}

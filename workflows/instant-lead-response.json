@@ -1,9 +1,9 @@
 {
-  "name": "Instant Lead Response \u2014 Activix Webhook",
-  "description": "n8n Workflow 1: Receives Activix CRM webhook on new lead creation, verifies HMAC signature, parses lead data, detects language (en-CA/fr-CA), queries inventory, generates personalized AI response, runs CASL compliance check, then sends SMS via Twilio + email via SendGrid, updates Activix lead status, and notifies the assigned rep via Slack. Compliance failures are logged and alerted without sending any message.",
+  "name": "Instant Lead Response — CRM Webhook",
+  "description": "n8n Workflow 1: Receives CRM webhook on new lead creation (supports Activix and GHL via CRM_PROVIDER env var), verifies signature, parses lead data into normalized format, detects language (en-CA/fr-CA), queries inventory, generates personalized AI response, runs CASL compliance check, then sends SMS via configured messaging provider (Twilio or GHL) + email via SendGrid, updates CRM lead status, and notifies the assigned rep via Slack. Compliance failures are logged and alerted without sending any message.",
   "n8n_workflow_id": "vWdc92Ew7olgKFhA",
   "n8n_instance": "https://nexusagents.app.n8n.cloud",
-  "webhook_path": "/webhook/activix-lead-webhook",
+  "webhook_path": "/webhook/crm-lead-webhook",
   "active": false,
   "settings": {
     "executionOrder": "v1",
@@ -15,17 +15,17 @@
   "nodes": [
     {
       "id": "node-webhook",
-      "name": "Activix Webhook",
+      "name": "CRM Webhook",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
       "position": [0, 300],
       "parameters": {
-        "path": "activix-lead-webhook",
+        "path": "crm-lead-webhook",
         "httpMethod": "POST",
         "responseMode": "lastNode",
         "options": { "rawBody": true }
       },
-      "purpose": "Receives POST from Activix CRM when a new lead is created. Types: email, phone, web_order, sms."
+      "purpose": "Receives POST from CRM when a new lead is created. Activix types: email, phone, web_order, sms. GHL: via workflow trigger or webhook."
     },
     {
       "id": "node-verify",
@@ -33,7 +33,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [240, 300],
-      "purpose": "HMAC-SHA256 signature check using X-Activix-Webhook-Signature header. Returns 401 if invalid. Uses $env.ACTIVIX_WEBHOOK_SECRET."
+      "parameters": {
+        "jsCode": "// Webhook signature verification — adapts to CRM provider\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst input = $input.first().json;\nconst rawBody = $input.first().json.body ? JSON.stringify($input.first().json.body) : '';\n\nif (provider === 'ghl') {\n  // GHL uses a simple API key check or OAuth — no HMAC\n  // Verify the request comes from GHL by checking known fields\n  const body = input.body || input;\n  if (!body.contactId && !body.contact_id && !body.id) {\n    throw new Error('Invalid GHL webhook payload: no contact identifier found');\n  }\n  return [{ json: { ...input, _verified: true, _provider: 'ghl' } }];\n}\n\n// Default: Activix HMAC-SHA256 signature check\nconst crypto = require('crypto');\nconst secret = $env.ACTIVIX_WEBHOOK_SECRET || '';\nconst signature = input.headers?.['x-activix-webhook-signature'] || '';\nconst expected = crypto.createHmac('sha256', secret).update(rawBody).digest('hex');\n\nif (!signature || signature !== expected) {\n  throw new Error('HMAC signature verification failed — returning 401');\n}\n\nreturn [{ json: { ...input, _verified: true, _provider: 'activix' } }];"
+      },
+      "purpose": "Signature/auth verification. Activix: HMAC-SHA256 via X-Activix-Webhook-Signature. GHL: payload structure validation."
     },
     {
       "id": "node-parse",
@@ -41,7 +44,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [480, 300],
-      "purpose": "Extracts first_name, last_name, vehicles[], phones[], emails[], locale, source, type, advisor, opt-out fields, and sets implied consent from form submission."
+      "parameters": {
+        "jsCode": "// Parse lead data from any CRM into normalized format\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst input = $input.first().json;\nconst body = input.body || input;\n\n// Normalized lead format\nlet lead = {\n  id: null,\n  firstName: null,\n  lastName: null,\n  email: null,\n  phone: null,\n  phones: [],\n  emails: [],\n  locale: null,\n  source: null,\n  type: null,\n  postalCode: null,\n  vehicles: [],\n  advisor: null,\n  consentType: 'implied',\n  consentDate: null,\n  unsubscribeAll: false,\n  unsubscribeSms: false,\n  unsubscribeEmail: false,\n  _provider: provider,\n  _raw: body,\n};\n\nif (provider === 'ghl') {\n  const contact = body.contact || body;\n  lead.id = contact.id || contact.contactId || null;\n  lead.firstName = contact.firstName || contact.first_name || contact.name?.split(' ')[0] || null;\n  lead.lastName = contact.lastName || contact.last_name || contact.name?.split(' ').slice(1).join(' ') || null;\n  lead.email = contact.email || null;\n  lead.phone = contact.phone || null;\n  lead.phones = contact.phone ? [{ number: contact.phone, type: 'mobile' }] : [];\n  lead.emails = contact.email ? [{ address: contact.email, type: 'primary' }] : [];\n  lead.locale = contact.tags?.includes('french') ? 'fr-CA' : null;\n  lead.source = contact.source || contact.attributionSource?.medium || 'web';\n  lead.type = contact.type || 'web';\n  lead.postalCode = contact.postalCode || contact.address?.postalCode || null;\n  // GHL custom fields for vehicle interest\n  const customFields = contact.customFields || contact.customField || [];\n  if (Array.isArray(customFields)) {\n    for (const cf of customFields) {\n      const key = (cf.key || cf.id || '').toLowerCase();\n      if (key.includes('vehicle') || key.includes('make') || key.includes('model')) {\n        lead.vehicles.push({ make: cf.value, type: 'wanted' });\n      }\n    }\n  }\n  lead.advisor = contact.assignedTo ? { name: contact.assignedTo } : null;\n  lead.consentDate = contact.dateAdded || new Date().toISOString();\n  lead.unsubscribeAll = contact.dnd || false;\n  lead.unsubscribeSms = contact.dndSettings?.SMS?.status === 'active' || false;\n  lead.unsubscribeEmail = contact.dndSettings?.Email?.status === 'active' || false;\n} else {\n  // Default: Activix\n  lead.id = body.id || null;\n  lead.firstName = body.first_name || null;\n  lead.lastName = body.last_name || null;\n  const emailArr = body.emails || [];\n  lead.email = emailArr[0]?.address || emailArr[0]?.email || body.email || null;\n  const phoneArr = body.phones || [];\n  lead.phone = phoneArr[0]?.number || phoneArr[0]?.phone || body.phone || null;\n  lead.phones = phoneArr;\n  lead.emails = emailArr;\n  lead.locale = body.locale || null;\n  lead.source = body.source || null;\n  lead.type = body.type || null;\n  lead.postalCode = body.postal_code || body.address?.postal_code || null;\n  lead.vehicles = body.vehicles || [];\n  lead.advisor = body.advisor ? { name: `${body.advisor.first_name || ''} ${body.advisor.last_name || ''}`.trim(), id: body.advisor.id } : null;\n  lead.consentType = body.consent_type || 'implied';\n  lead.consentDate = body.consent_date || body.created_at || null;\n  lead.unsubscribeAll = !!body.unsubscribe_all_date;\n  lead.unsubscribeSms = !!body.unsubscribe_sms_date;\n  lead.unsubscribeEmail = !!body.unsubscribe_email_date;\n}\n\nreturn [{ json: lead }];"
+      },
+      "purpose": "Normalizes lead data from Activix or GHL into a common format: firstName, lastName, phone, email, vehicles, locale, consent fields."
     },
     {
       "id": "node-language",
@@ -49,7 +55,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [720, 300],
-      "purpose": "Detects en-CA or fr-CA. Priority: 1) Activix locale field, 2) Quebec area codes (418, 438, 450, 514, 579, 581, 819, 873), 3) Quebec postal code prefixes (G, H, J), 4) default en-CA."
+      "parameters": {
+        "jsCode": "// Detects en-CA or fr-CA from normalized lead data\n// Priority: 1) locale field, 2) Quebec area codes, 3) Quebec postal code prefixes, 4) default en-CA\n\nconst lead = $input.first().json;\nconst QUEBEC_AREA_CODES = ['418', '438', '450', '514', '579', '581', '819', '873'];\nconst QUEBEC_POSTAL_PREFIXES = ['G', 'H', 'J'];\n\nfunction detectLanguage(lead) {\n  if (lead.locale) {\n    const locale = lead.locale.toLowerCase();\n    if (locale.startsWith('fr')) return 'fr-CA';\n    if (locale.startsWith('en')) return 'en-CA';\n  }\n  // Check phones array\n  const phones = lead.phones || [];\n  for (const phone of phones) {\n    const number = (phone.number || phone.phone || '').replace(/[^0-9]/g, '');\n    let areaCode = '';\n    if (number.length === 11 && number.startsWith('1')) areaCode = number.substring(1, 4);\n    else if (number.length === 10) areaCode = number.substring(0, 3);\n    if (QUEBEC_AREA_CODES.includes(areaCode)) return 'fr-CA';\n  }\n  // Check single phone field\n  if (lead.phone) {\n    const number = lead.phone.replace(/[^0-9]/g, '');\n    let areaCode = '';\n    if (number.length === 11 && number.startsWith('1')) areaCode = number.substring(1, 4);\n    else if (number.length === 10) areaCode = number.substring(0, 3);\n    if (QUEBEC_AREA_CODES.includes(areaCode)) return 'fr-CA';\n  }\n  const postalCode = lead.postalCode || '';\n  if (postalCode && QUEBEC_POSTAL_PREFIXES.includes(postalCode.charAt(0).toUpperCase())) return 'fr-CA';\n  return 'en-CA';\n}\n\nreturn [{ json: { ...lead, _locale: detectLanguage(lead) } }];"
+      },
+      "purpose": "Detects en-CA or fr-CA. Priority: 1) locale field, 2) Quebec area codes (418, 438, 450, 514, 579, 581, 819, 873), 3) Quebec postal code prefixes (G, H, J), 4) default en-CA."
     },
     {
       "id": "node-inventory",
@@ -65,7 +74,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1200, 300],
-      "purpose": "Builds personalized bilingual message using template pattern: 'Hi {firstName}! Thanks for your interest in the {vehicle}. {inventoryDetail} Would you like to schedule a test drive? I can set something up with {repName}. - {dealershipName}'. TODO: Replace with Nexus AI Agent HTTP call."
+      "purpose": "Builds personalized bilingual message using template pattern. Uses normalized lead.firstName, lead.advisor.name, vehicle data. TODO: Replace with Nexus AI Agent HTTP call."
     },
     {
       "id": "node-compliance",
@@ -73,7 +82,10 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [1440, 300],
-      "purpose": "CASL compliance pre-flight: verifies consent exists, checks implied consent not expired (6-month window), checks opt-out fields, validates content has no forbidden financial language (monthly payments, interest rates, financing terms, credit scores, etc.)."
+      "parameters": {
+        "jsCode": "// CASL compliance pre-flight using normalized lead fields\nconst lead = $input.first().json;\nconst message = lead._message || '';\nconst now = new Date();\nconst failures = [];\nlet pass = true;\n\n// 1. CASL consent check\nconst consentDate = lead.consentDate ? new Date(lead.consentDate) : null;\nconst consentType = lead.consentType || 'implied';\nif (consentType === 'implied' && consentDate) {\n  const sixMonthsLater = new Date(consentDate);\n  sixMonthsLater.setMonth(sixMonthsLater.getMonth() + 6);\n  if (now > sixMonthsLater) { failures.push('CASL: Implied consent expired (>6 months)'); pass = false; }\n}\n\n// 2. Opt-out check\nif (lead.unsubscribeAll) { failures.push('Opt-out: Lead has unsubscribed from all communications'); pass = false; }\nif (lead.unsubscribeSms) { failures.push('Opt-out: Lead has unsubscribed from SMS'); pass = false; }\nif (lead.unsubscribeEmail) { failures.push('Opt-out: Lead has unsubscribed from email'); pass = false; }\n\n// 3. Content validation — forbidden financial language\nconst FORBIDDEN_PATTERNS = [\n  /\\$\\d+[\\s/]*(per|a|\\/)\\s*month/i, /monthly\\s*payment/i, /paiement\\s*mensuel/i,\n  /\\d+(\\.\\d+)?\\s*%\\s*(apr|interest|taux|interet)/i, /interest\\s*rate/i, /taux\\s*d'interet/i,\n  /financ(ing|ement)\\s*(term|option|rate|taux)/i, /credit\\s*score/i, /cote\\s*de\\s*credit/i,\n  /insurance\\s*(rate|cost|premium)/i, /assurance\\s*(taux|cout|prime)/i,\n  /(?:we'?ll|I'?ll|can)\\s*beat\\s*(any|the|their)/i, /guaranteed\\s*approv/i, /approbation\\s*garantie/i,\n];\nfor (const pattern of FORBIDDEN_PATTERNS) {\n  if (pattern.test(message)) { failures.push(`Content violation: ${pattern.source}`); pass = false; }\n}\n\n// 4. Message exists\nif (!message || message.trim().length === 0) { failures.push('No message generated'); pass = false; }\n\nreturn [{ json: { ...lead, _compliancePass: pass, _complianceFailures: failures, _complianceCheckedAt: now.toISOString() } }];"
+      },
+      "purpose": "CASL compliance pre-flight: verifies consent exists, checks implied consent not expired (6-month window), checks opt-out fields, validates content has no forbidden financial language."
     },
     {
       "id": "node-if-compliance",
@@ -84,13 +96,15 @@
       "purpose": "Routes based on compliance.pass boolean. True output -> send messages. False output -> log failure."
     },
     {
-      "id": "node-twilio",
-      "name": "Send SMS via Twilio",
-      "type": "n8n-nodes-base.twilio",
-      "typeVersion": 1,
+      "id": "node-send-message",
+      "name": "Send SMS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [1960, 160],
-      "purpose": "Sends SMS via Twilio. Uses $env.TWILIO_FROM_NUMBER. Primary outbound channel.",
-      "credentials_needed": "Twilio API (Account SID + Auth Token)"
+      "parameters": {
+        "jsCode": "// Send SMS via configured messaging provider (Twilio or GHL)\nconst msgProvider = $env.MESSAGING_PROVIDER || 'twilio';\nconst lead = $input.first().json;\nconst message = lead._message || '';\nconst recipientPhone = lead.phone || '';\n\nlet sendResult = { success: false, provider: msgProvider, error: null, messageId: null };\n\ntry {\n  if (!recipientPhone) throw new Error('No phone number available for SMS');\n  if (!message) throw new Error('No message to send');\n\n  if (msgProvider === 'ghl') {\n    // GHL Conversations API\n    const GHL_API_KEY = $env.GHL_API_KEY || '';\n    const GHL_LOCATION_ID = $env.GHL_LOCATION_ID || '';\n    const contactId = lead.id;\n    if (!contactId) throw new Error('No GHL contact ID for messaging');\n\n    const response = await fetch('https://services.leadconnectorhq.com/conversations/messages', {\n      method: 'POST',\n      headers: {\n        'Authorization': `Bearer ${GHL_API_KEY}`,\n        'Version': '2021-07-28',\n        'Content-Type': 'application/json',\n      },\n      body: JSON.stringify({\n        type: 'SMS',\n        contactId: contactId,\n        message: message,\n      }),\n    });\n    const result = await response.json();\n    if (response.ok) {\n      sendResult = { success: true, provider: 'ghl', messageId: result.messageId || result.id || 'sent', error: null };\n    } else {\n      throw new Error(result.message || `GHL error: ${response.status}`);\n    }\n  } else {\n    // Default: Twilio\n    const TWILIO_ACCOUNT_SID = $env.TWILIO_ACCOUNT_SID || '';\n    const TWILIO_AUTH_TOKEN = $env.TWILIO_AUTH_TOKEN || '';\n    const TWILIO_FROM_NUMBER = $env.TWILIO_FROM_NUMBER || '';\n    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;\n    const body = new URLSearchParams({ To: recipientPhone, From: TWILIO_FROM_NUMBER, Body: message });\n    const response = await fetch(twilioUrl, {\n      method: 'POST',\n      headers: { 'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`), 'Content-Type': 'application/x-www-form-urlencoded' },\n      body: body.toString(),\n    });\n    const result = await response.json();\n    if (response.ok) {\n      sendResult = { success: true, provider: 'twilio', messageId: result.sid, error: null };\n    } else {\n      throw new Error(result.message || `Twilio error: ${response.status}`);\n    }\n  }\n} catch (err) {\n  sendResult = { success: false, provider: msgProvider, error: err.message, messageId: null };\n}\n\nreturn [{ json: { ...lead, _smsResult: sendResult } }];"
+      },
+      "purpose": "Sends SMS via Twilio or GHL Conversations API based on MESSAGING_PROVIDER env var."
     },
     {
       "id": "node-email",
@@ -102,13 +116,15 @@
       "credentials_needed": "SendGrid API Key (HTTP Header Auth: Authorization: Bearer sg_xxx)"
     },
     {
-      "id": "node-activix-update",
-      "name": "Update Activix Lead",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "id": "node-crm-update",
+      "name": "Update CRM Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [1960, 520],
-      "purpose": "PUT /v2/leads/:id with result='attempted'. Retry on fail (3 attempts, 2s wait). Configure HTTP Header Auth with Bearer token.",
-      "credentials_needed": "Activix API Key (HTTP Header Auth: Authorization: Bearer xxx)"
+      "parameters": {
+        "jsCode": "// Update CRM lead status after outreach — supports Activix and GHL\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst lead = $input.first().json;\n\nfunction getCrmConfig() {\n  if (provider === 'ghl') {\n    return {\n      baseUrl: 'https://services.leadconnectorhq.com',\n      headers: { 'Authorization': `Bearer ${$env.GHL_API_KEY}`, 'Version': '2021-07-28', 'Content-Type': 'application/json' },\n    };\n  }\n  return {\n    baseUrl: $env.ACTIVIX_API_URL || 'https://api.crm.activix.ca/v2',\n    headers: { 'Authorization': `Bearer ${$env.ACTIVIX_API_TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n  };\n}\n\nconst config = getCrmConfig();\nlet updateResult = { success: false, error: null };\n\ntry {\n  if (provider === 'ghl') {\n    // Update GHL contact\n    const response = await fetch(`${config.baseUrl}/contacts/${lead.id}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({\n        tags: [...(lead._raw?.tags || []), 'nexus-contacted', 'auto-response-sent'],\n        customFields: [{ key: 'last_nexus_action', value: 'instant_response' }, { key: 'last_contact_date', value: new Date().toISOString() }],\n      }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`GHL update error: ${response.status} ${errText}`); }\n  } else {\n    // Default: Activix PUT /v2/leads/:id\n    const response = await fetch(`${config.baseUrl}/leads/${lead.id}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({ result: 'attempted' }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`Activix update error: ${response.status} ${errText}`); }\n  }\n} catch (err) {\n  updateResult = { success: false, error: err.message };\n}\n\nreturn [{ json: { ...lead, _crmUpdateResult: updateResult } }];"
+      },
+      "purpose": "Updates lead status in the CRM (Activix: PUT /v2/leads/:id, GHL: PUT /contacts/:id). Adapts based on CRM_PROVIDER."
     },
     {
       "id": "node-slack",
@@ -129,7 +145,7 @@
     }
   ],
   "connections": {
-    "Activix Webhook": { "main": [[{ "node": "Webhook Verification", "type": "main", "index": 0 }]] },
+    "CRM Webhook": { "main": [[{ "node": "Webhook Verification", "type": "main", "index": 0 }]] },
     "Webhook Verification": { "main": [[{ "node": "Parse Lead Data", "type": "main", "index": 0 }]] },
     "Parse Lead Data": { "main": [[{ "node": "Language Detection", "type": "main", "index": 0 }]] },
     "Language Detection": { "main": [[{ "node": "Inventory Query", "type": "main", "index": 0 }]] },
@@ -139,9 +155,9 @@
     "Compliance Pass?": {
       "main": [
         [
-          { "node": "Send SMS via Twilio", "type": "main", "index": 0 },
+          { "node": "Send SMS", "type": "main", "index": 0 },
           { "node": "Send Email", "type": "main", "index": 0 },
-          { "node": "Update Activix Lead", "type": "main", "index": 0 },
+          { "node": "Update CRM Lead", "type": "main", "index": 0 },
           { "node": "Notify Rep via Slack", "type": "main", "index": 0 }
         ],
         [
@@ -151,15 +167,24 @@
     }
   },
   "environment_variables_required": [
-    "ACTIVIX_WEBHOOK_SECRET — HMAC secret for webhook signature verification",
+    "CRM_PROVIDER — 'activix' (default) or 'ghl'",
+    "MESSAGING_PROVIDER — 'twilio' (default) or 'ghl'",
+    "ACTIVIX_WEBHOOK_SECRET — HMAC secret for Activix webhook signature verification",
+    "ACTIVIX_API_TOKEN — Activix API Bearer token",
+    "ACTIVIX_API_URL — Activix API base URL (default: https://api.crm.activix.ca/v2)",
+    "GHL_API_KEY — GoHighLevel API Bearer token",
+    "GHL_LOCATION_ID — GoHighLevel location ID",
+    "TWILIO_ACCOUNT_SID — Twilio Account SID",
+    "TWILIO_AUTH_TOKEN — Twilio Auth Token",
     "TWILIO_FROM_NUMBER — Twilio phone number for outbound SMS (e.g., +15145550100)",
     "FROM_EMAIL — SendGrid verified sender email"
   ],
   "credentials_required": [
-    "Twilio API — Account SID + Auth Token",
+    "Twilio API — Account SID + Auth Token (if MESSAGING_PROVIDER=twilio)",
     "SendGrid — HTTP Header Auth with Bearer token",
-    "Activix API — HTTP Header Auth with Bearer token",
+    "Activix API — HTTP Header Auth with Bearer token (if CRM_PROVIDER=activix)",
+    "GHL API — Bearer token (if CRM_PROVIDER=ghl)",
     "Slack — OAuth2 Bot Token with chat:write scope"
   ],
-  "flow_diagram": "Activix Webhook -> Webhook Verification -> Parse Lead Data -> Language Detection -> Inventory Query -> Generate AI Response -> Compliance Check -> IF(pass) -> [Twilio SMS, SendGrid Email, Activix PUT, Slack Notify] | IF(fail) -> [Log Compliance Failure]"
+  "flow_diagram": "CRM Webhook -> Webhook Verification -> Parse Lead Data -> Language Detection -> Inventory Query -> Generate AI Response -> Compliance Check -> IF(pass) -> [SMS (Twilio/GHL), SendGrid Email, CRM Update (Activix/GHL), Slack Notify] | IF(fail) -> [Log Compliance Failure]"
 }

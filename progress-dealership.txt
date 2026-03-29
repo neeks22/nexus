@@ -599,3 +599,74 @@ Design: docs/superpowers/specs/2026-03-28-dealership-n8n-workflow-design.md
   - Link to internal-runbook.md for full deployment guide
 - PRD checkboxes updated: 12/13 Epic 18 items checked (Activix failover test requires Supabase), 4/4 Epic 19 items checked
 - Files: docs/dealership/onboarding-guide.md, docs/dealership/internal-runbook.md, docs/dealership/troubleshooting.md, docs/agency/n8n-setup-guide.md (updated)
+
+### 2026-03-28 — Epic 20: Meta Conversions API (CAPI) — Server-Side Tracking ✅ COMPLETE
+- Created n8n workflow "Meta Conversions API (CAPI) — Server-Side Tracking" via MCP
+- n8n workflow ID: YWMy7GvBignFzbuj
+- n8n instance: https://nexusagents.app.n8n.cloud
+- Webhook path: /webhook/meta-capi
+- 7 nodes, 6 connections, created inactive (activate after env var config)
+- Purpose: Server-side conversion tracking for Meta ads, bypasses ad blockers, improves attribution and ad optimization
+- Node flow:
+  1. Receive Conversion Event (Webhook v2.1) — POST /webhook/meta-capi, raw body enabled, responds with last node output
+  2. Parse Event (Code) — validates event_name (Lead, ViewContent, Schedule, Purchase, Contact, SubmitApplication, Search), extracts user_data (email, phone, IP, UA, fbc, fbp, external_id), custom_data (vehicle_make, vehicle_model, value, currency, content_name, content_category), event_source_url, generates event_id for deduplication
+  3. Hash PII (Code) — SHA256 hashes email (lowercase, trim) and phone (digits only, adds country code 1 for 10-digit), passes through already-hashed values (64 hex char detection), hashes external_id
+  4. Build CAPI Payload (Code) — formats Meta Conversions API data[] array: event_name, event_time (unix), event_id, action_source=website, user_data (em[], ph[], client_ip_address, client_user_agent, fbc, fbp, external_id[]), custom_data (vehicle info, value, currency). Validates at least one user_data field. Constructs Graph API URL from $env.META_PIXEL_ID and $env.META_ACCESS_TOKEN
+  5. Send to Meta CAPI (HTTP Request v4.2) — POST to graph.facebook.com/v19.0/{PIXEL_ID}/events, retryOnFail=true, maxTries=3, waitBetweenTries=5000ms, 30s timeout, full response
+  6. Log Success (Code) — logs events_received, fbtrace_id, returns {success: true, event_id, events_received} to webhook caller
+  7. Log Failure — Dead Letter (Code) — stores failed events in workflow static data (capped at 100), includes original payload for manual replay, returns {success: false, error, queued_for_retry: true}
+- Error handling: HTTP Request node retries 3x with 5s wait, dead letter queue for persistent failures, continueOnFail on failure node
+- Event deduplication: event_id passed through from browser pixel for browser+server dedup (Meta matches on event_id)
+- JSON backup saved to workflows/meta-capi-tracking.json (includes integration example with sample POST body)
+- Environment variables needed: META_PIXEL_ID, META_ACCESS_TOKEN
+- TODO: Test workflow end-to-end with n8n_test_workflow (requires Meta credentials configured)
+- TODO: Add Slack alert on persistent failures (connect to #dealership-ops channel)
+
+### 2026-03-28 — Epic 21: n8n Workflow 5 — Ad Lead Capture (Meta & Google Lead Forms) ✅ COMPLETE
+- Created n8n workflow "Ad Lead Capture — Meta & Google Lead Forms" via MCP
+- n8n workflow ID: JCmUCJVgfyj059VM
+- n8n instance: https://nexusagents.app.n8n.cloud
+- Webhook path: /webhook/ad-lead
+- 13 nodes, 12 connections, created inactive (activate after credential config)
+- Timezone: America/Toronto, execution order v1, progress saving enabled
+- Node flow:
+  1. Ad Lead Webhook (Webhook v2.1) — POST /webhook/ad-lead, raw body enabled, responseMode=responseNode
+  2. Detect Source (Code) — identifies facebook_lead_form vs google_lead_form based on payload structure:
+     - Meta: lead_id, leadgen_id, form_id, page_id, entry[].changes[]
+     - Google: gcl_id, gclid, campaign_id, user_column_data, google_key
+     - Fallback: platform field check, defaults to 'unknown'
+  3. Normalize Lead (Code) — extracts common format:
+     - firstName, lastName, email, phone (from Meta field_data[] or Google user_column_data[])
+     - source ('facebook_lead_form' or 'google_lead_form')
+     - campaign, adName, formId, vehicleInterest
+     - consent: 'implied' (CASL 6-month window from submission date)
+     - Bilingual field name support (prenom, nom, courriel, telephone, vehicule, marque, modele)
+     - Full name splitting fallback when first/last separate fields missing
+     - Validation: rejects leads missing both email and phone
+  4. Deduplicate (Code) — CRM search by email then phone:
+     - Activix: GET /v2/leads/search?query={email|phone}
+     - GHL: GET /contacts/search/duplicate?locationId={id}&email={email} or &phone={phone}
+     - Provider determined by $env.CRM_PROVIDER (default: activix)
+     - Safe default: treats as new lead if CRM search fails
+  5. New Lead? (IF v2.2) — routes on _isNew boolean (true=output 0, false=output 1)
+  6. New Lead branch:
+     - Create Lead in CRM (HTTP Request v4.2) — Activix POST /v2/leads (type=web, emails[], phones[], source, campaign, vehicles[], consent_type, consent_date) or GHL POST /contacts/ (firstName, lastName, email, phone, locationId, source, tags). Retry 3x/3s.
+     - Trigger Instant Response (HTTP Request v4.2) — POST to /webhook/activix-lead-webhook with normalized lead data. Retry 2x/5s.
+     - Log New Lead (Code) — PII-redacted log: email first 3 chars + ***, phone last 4 digits only. Includes crmLeadId, consent, consentExpiry.
+     - Slack Notify New Lead (HTTP Request) — posts to Slack webhook with lead summary (name, source, campaign, vehicle interest, CRM ID, consent status, instant response triggered). continueOnFail=true.
+  7. Existing Lead branch:
+     - Update Existing Lead (HTTP Request v4.2) — Activix PUT /v2/leads/:id (comment with source/campaign/form/vehicle/date) or GHL PUT /contacts/:id (tags with source, campaign, 'ad-lead-repeat'). Retry 3x/3s.
+     - Log Duplicate (Code) — PII-redacted log with existingLeadId.
+     - Slack Notify Duplicate (HTTP Request) — posts duplicate notification to Slack. continueOnFail=true.
+  8. Respond OK (respondToWebhook v1.1) — returns 200 JSON {status: 'ok', leadProcessed: true}
+- Error handling:
+  - CRM create/update: retryOnFail=true, maxTries=3, waitBetweenTries=3000ms
+  - Instant response trigger: retryOnFail=true, maxTries=2, waitBetweenTries=5000ms
+  - Slack notifications: continueOnFail=true (non-blocking)
+  - Dedup CRM search: try/catch, defaults to isNew=true on failure
+  - Normalize: throws on missing both email and phone
+- Slack webhook: SLACK_WEBHOOK_URL (configured in n8n environment)
+- JSON backup saved to workflows/ad-lead-capture.json
+- Environment variables needed: CRM_PROVIDER, ACTIVIX_API_TOKEN (or GHL_API_KEY + GHL_LOCATION_ID + GHL_BASE_URL), N8N_BASE_URL
+- TODO: Test workflow end-to-end with n8n_test_workflow (requires CRM credentials configured)
+- TODO: Configure LeadsBridge or direct Facebook/Google webhook to POST to /webhook/ad-lead

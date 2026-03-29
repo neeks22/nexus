@@ -1,6 +1,6 @@
 {
   "id": "xoQDRxTkLpDge7q7",
-  "name": "Activix Failover Queue",
+  "name": "CRM Failover Queue",
   "active": false,
   "settings": {
     "executionOrder": "v1",
@@ -63,18 +63,12 @@
     },
     {
       "id": "health-check",
-      "name": "Activix Health Check",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "name": "CRM Health Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [1100, 250],
       "parameters": {
-        "method": "GET",
-        "url": "https://api.crm.activix.ca/v2/leads?per_page=1",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": { "parameters": [{ "name": "Accept", "value": "application/json" }] },
-        "options": { "timeout": 10000 }
+        "jsCode": "// Health check for the configured CRM — supports Activix and GHL\nconst provider = $env.CRM_PROVIDER || 'activix';\n\nfunction getCrmConfig() {\n  if (provider === 'ghl') {\n    return {\n      baseUrl: 'https://services.leadconnectorhq.com',\n      headers: { 'Authorization': `Bearer ${$env.GHL_API_KEY}`, 'Version': '2021-07-28', 'Accept': 'application/json' },\n    };\n  }\n  return {\n    baseUrl: $env.ACTIVIX_API_URL || 'https://api.crm.activix.ca/v2',\n    headers: { 'Authorization': `Bearer ${$env.ACTIVIX_API_TOKEN}`, 'Accept': 'application/json' },\n  };\n}\n\nconst config = getCrmConfig();\nlet healthy = false;\nlet responseData = {};\n\ntry {\n  let url;\n  if (provider === 'ghl') {\n    const GHL_LOCATION_ID = $env.GHL_LOCATION_ID || '';\n    url = `${config.baseUrl}/contacts/?locationId=${GHL_LOCATION_ID}&limit=1`;\n  } else {\n    url = `${config.baseUrl}/leads?per_page=1`;\n  }\n\n  const response = await fetch(url, {\n    method: 'GET',\n    headers: config.headers,\n    signal: AbortSignal.timeout(10000),\n  });\n\n  if (response.ok) {\n    responseData = await response.json();\n    healthy = true;\n  } else {\n    responseData = { error: `HTTP ${response.status}`, status: response.status };\n  }\n} catch (err) {\n  responseData = { error: err.message };\n}\n\nreturn [{ json: { ...responseData, _healthy: healthy, _provider: provider, data: healthy ? (responseData.data || responseData.contacts || []) : undefined } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -88,27 +82,18 @@
         "conditions": {
           "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
           "combinator": "and",
-          "conditions": [{ "id": "ah1", "leftValue": "={{ !$json.error && $json.data !== undefined }}", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }]
+          "conditions": [{ "id": "ah1", "leftValue": "={{ $json._healthy }}", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }]
         }
       }
     },
     {
       "id": "exec-op",
       "name": "Execute Queued Operation",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.4,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [1560, 150],
       "parameters": {
-        "method": "POST",
-        "url": "https://api.crm.activix.ca/v2/leads",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpHeaderAuth",
-        "sendHeaders": true,
-        "headerParameters": { "parameters": [{ "name": "Content-Type", "value": "application/json" }, { "name": "Accept", "value": "application/json" }] },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($('Process Queue Items').item.json.leadData || {}) }}",
-        "options": { "timeout": 15000 }
+        "jsCode": "// Execute queued CRM operation — supports Activix and GHL\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst currentItem = $('Process Queue Items').item.json;\nconst leadData = currentItem.leadData || {};\n\nfunction getCrmConfig() {\n  if (provider === 'ghl') {\n    return {\n      baseUrl: 'https://services.leadconnectorhq.com',\n      headers: { 'Authorization': `Bearer ${$env.GHL_API_KEY}`, 'Version': '2021-07-28', 'Content-Type': 'application/json', 'Accept': 'application/json' },\n    };\n  }\n  return {\n    baseUrl: $env.ACTIVIX_API_URL || 'https://api.crm.activix.ca/v2',\n    headers: { 'Authorization': `Bearer ${$env.ACTIVIX_API_TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n  };\n}\n\nconst config = getCrmConfig();\nconst operation = currentItem.operation || 'create';\nlet result = { success: false, error: null, data: null };\n\ntry {\n  if (provider === 'ghl') {\n    const GHL_LOCATION_ID = $env.GHL_LOCATION_ID || '';\n    let url, method, body;\n\n    if (operation === 'update' && leadData.id) {\n      url = `${config.baseUrl}/contacts/${leadData.id}`;\n      method = 'PUT';\n      // Map common fields to GHL format\n      body = {\n        firstName: leadData.first_name || leadData.firstName,\n        lastName: leadData.last_name || leadData.lastName,\n        email: leadData.email,\n        phone: leadData.phone,\n        tags: leadData.tags || [],\n        customFields: leadData.customFields || [],\n      };\n    } else {\n      url = `${config.baseUrl}/contacts/`;\n      method = 'POST';\n      body = {\n        locationId: GHL_LOCATION_ID,\n        firstName: leadData.first_name || leadData.firstName,\n        lastName: leadData.last_name || leadData.lastName,\n        email: leadData.email,\n        phone: leadData.phone,\n        tags: leadData.tags || ['nexus-queued'],\n      };\n    }\n\n    // Remove undefined fields\n    Object.keys(body).forEach(k => body[k] === undefined && delete body[k]);\n\n    const response = await fetch(url, {\n      method,\n      headers: config.headers,\n      body: JSON.stringify(body),\n    });\n    const data = await response.json();\n    if (response.ok) result = { success: true, error: null, data };\n    else throw new Error(data.message || `GHL error: ${response.status}`);\n  } else {\n    // Default: Activix\n    let url = `${config.baseUrl}/leads`;\n    let method = 'POST';\n    if (operation === 'update' && leadData.id) {\n      url = `${config.baseUrl}/leads/${leadData.id}`;\n      method = 'PUT';\n    }\n\n    const response = await fetch(url, {\n      method,\n      headers: config.headers,\n      body: JSON.stringify(leadData),\n    });\n    const data = await response.json();\n    if (response.ok) result = { success: true, error: null, data };\n    else throw new Error(`Activix error: ${response.status} ${JSON.stringify(data)}`);\n  }\n} catch (err) {\n  result = { success: false, error: err.message, data: null };\n}\n\nreturn [{ json: { ...result, _provider: provider, _operation: operation } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -119,7 +104,7 @@
       "typeVersion": 2,
       "position": [1780, 150],
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst currentItem = $('Process Queue Items').item.json;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) return [{ json: { status:'no_queue' } }];\nconst httpFailed = input.error || input.code >= 400;\nconst idx = staticData.queue.findIndex(q => q.id === currentItem.id);\nif (httpFailed) {\n  if (idx >= 0) { staticData.queue[idx].attempts = (staticData.queue[idx].attempts||0)+1; staticData.queue[idx].lastError = input.error || 'HTTP error'; staticData.queue[idx].status = 'retrying'; }\n  return [{ json: { status:'item_error', itemId:currentItem.id } }];\n}\nif (idx >= 0) { staticData.queue[idx].status = 'completed'; staticData.queue[idx].completedAt = new Date().toISOString(); }\nreturn [{ json: { status:'completed', itemId:currentItem.id } }];"
+        "jsCode": "const input = $input.first().json;\nconst currentItem = $('Process Queue Items').item.json;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) return [{ json: { status:'no_queue' } }];\nconst httpFailed = !input.success || input.error;\nconst idx = staticData.queue.findIndex(q => q.id === currentItem.id);\nif (httpFailed) {\n  if (idx >= 0) { staticData.queue[idx].attempts = (staticData.queue[idx].attempts||0)+1; staticData.queue[idx].lastError = input.error || 'HTTP error'; staticData.queue[idx].status = 'retrying'; }\n  return [{ json: { status:'item_error', itemId:currentItem.id } }];\n}\nif (idx >= 0) { staticData.queue[idx].status = 'completed'; staticData.queue[idx].completedAt = new Date().toISOString(); }\nreturn [{ json: { status:'completed', itemId:currentItem.id } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -130,7 +115,7 @@
       "typeVersion": 2,
       "position": [1560, 350],
       "parameters": {
-        "jsCode": "const currentItem = $('Process Queue Items').item.json;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) return [{ json: { status:'no_queue' } }];\nconst idx = staticData.queue.findIndex(q => q.id === currentItem.id);\nif (idx >= 0) { staticData.queue[idx].attempts = (staticData.queue[idx].attempts||0)+1; staticData.queue[idx].lastError = 'Activix API unhealthy'; staticData.queue[idx].status = 'retrying'; staticData.queue[idx].lastAttempt = new Date().toISOString(); }\nconst attempts = staticData.queue[idx]?.attempts || 0;\nreturn [{ json: { itemId:currentItem.id, attempts, overLimit: attempts > 10, status:'retrying' } }];"
+        "jsCode": "const provider = $env.CRM_PROVIDER || 'activix';\nconst providerLabel = provider === 'ghl' ? 'GHL' : 'Activix';\nconst currentItem = $('Process Queue Items').item.json;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) return [{ json: { status:'no_queue' } }];\nconst idx = staticData.queue.findIndex(q => q.id === currentItem.id);\nif (idx >= 0) { staticData.queue[idx].attempts = (staticData.queue[idx].attempts||0)+1; staticData.queue[idx].lastError = `${providerLabel} API unhealthy`; staticData.queue[idx].status = 'retrying'; staticData.queue[idx].lastAttempt = new Date().toISOString(); }\nconst attempts = staticData.queue[idx]?.attempts || 0;\nreturn [{ json: { itemId:currentItem.id, attempts, overLimit: attempts > 10, status:'retrying', provider: providerLabel } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -159,7 +144,7 @@
         "operation": "post",
         "select": "channel",
         "channelId": { "__rl": true, "mode": "name", "value": "#dealership-ops" },
-        "text": "={{ 'CRITICAL: Activix API Down > 2.5 hours. Queue item ' + $json.itemId + ' exceeded 10 retries. Manual intervention required. Total attempts: ' + $json.attempts }}",
+        "text": "={{ 'CRITICAL: CRM API (' + ($json.provider || 'unknown') + ') Down > 2.5 hours. Queue item ' + $json.itemId + ' exceeded 10 retries. Manual intervention required. Total attempts: ' + $json.attempts }}",
         "otherOptions": {}
       },
       "onError": "continueRegularOutput"
@@ -171,7 +156,7 @@
       "typeVersion": 2,
       "position": [2220, 300],
       "parameters": {
-        "jsCode": "const input = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) return [{ json: { status:'no_queue' } }];\nconst idx = staticData.queue.findIndex(q => q.id === input.itemId);\nif (idx >= 0) { staticData.queue[idx].status = 'failed'; staticData.queue[idx].failedAt = new Date().toISOString(); staticData.queue[idx].lastError = 'Exceeded max retries (10). API down 2.5+ hours.'; }\nreturn [{ json: { status:'failed_permanently', itemId:input.itemId } }];"
+        "jsCode": "const input = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.queue) return [{ json: { status:'no_queue' } }];\nconst idx = staticData.queue.findIndex(q => q.id === input.itemId);\nif (idx >= 0) { staticData.queue[idx].status = 'failed'; staticData.queue[idx].failedAt = new Date().toISOString(); staticData.queue[idx].lastError = `Exceeded max retries (10). ${input.provider || 'CRM'} API down 2.5+ hours.`; }\nreturn [{ json: { status:'failed_permanently', itemId:input.itemId } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -197,8 +182,8 @@
     "Check Queue": { "main": [[{ "node": "Has Items?", "type": "main", "index": 0 }]] },
     "Has Items?": { "main": [[{ "node": "Prepare Items", "type": "main", "index": 0 }], [{ "node": "No Items - Skip", "type": "main", "index": 0 }]] },
     "Prepare Items": { "main": [[{ "node": "Process Queue Items", "type": "main", "index": 0 }]] },
-    "Process Queue Items": { "main": [[{ "node": "Activix Health Check", "type": "main", "index": 0 }]] },
-    "Activix Health Check": { "main": [[{ "node": "API Healthy?", "type": "main", "index": 0 }]] },
+    "Process Queue Items": { "main": [[{ "node": "CRM Health Check", "type": "main", "index": 0 }]] },
+    "CRM Health Check": { "main": [[{ "node": "API Healthy?", "type": "main", "index": 0 }]] },
     "API Healthy?": { "main": [[{ "node": "Execute Queued Operation", "type": "main", "index": 0 }], [{ "node": "Increment Attempt", "type": "main", "index": 0 }]] },
     "Execute Queued Operation": { "main": [[{ "node": "Mark Completed", "type": "main", "index": 0 }]] },
     "Mark Completed": { "main": [[{ "node": "Process Queue Items", "type": "main", "index": 0 }]] },

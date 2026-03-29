@@ -205,3 +205,35 @@
 - [x] Write internal runbook — how to deploy for a new dealership, configure Activix webhook, set up Twilio number
 - [x] Write troubleshooting guide — common issues (webhook not firing, SMS not delivering, AI response slow)
 - [x] Update docs/agency/n8n-setup-guide.md with dealership vertical section
+
+## Epic 20: Meta Conversions API (CAPI) — Server-Side Tracking
+- [x] Create n8n workflow via MCP: Webhook trigger (POST /webhook/meta-capi) receives conversion events from dealer websites
+- [x] Add Parse Event node — extract event_name (Lead, ViewContent, Schedule, Purchase, Contact, SubmitApplication, Search), user_data, custom_data
+- [x] Add Hash PII node — SHA256 hash email and phone per Meta requirements (lowercase, trim, normalize phone with country code)
+- [x] Add Build CAPI Payload node — format for Meta Conversions API: data[] array with event_name, event_time, action_source, user_data (em, ph, fbc, fbp, IP, UA), custom_data (vehicle_make, vehicle_model, value, currency)
+- [x] Add HTTP Request node — POST to https://graph.facebook.com/v19.0/{PIXEL_ID}/events, uses META_PIXEL_ID and META_ACCESS_TOKEN env vars, retry 3x with 5s wait
+- [x] Add Log Success node — logs events_received, fbtrace_id, returns success to caller
+- [x] Add Dead Letter node — stores failed events in workflow static data (capped 100), returns error to caller
+- [x] Add event_id deduplication support — browser + server events can share event_id to prevent double-counting
+- [x] Save workflow JSON to workflows/meta-capi-tracking.json
+- [ ] Test workflow end-to-end with n8n_test_workflow (requires META_PIXEL_ID and META_ACCESS_TOKEN configured)
+
+## Epic 21: n8n Workflow 5 — Ad Lead Capture (Meta & Google Lead Forms)
+- [x] Create n8n workflow via MCP: Webhook trigger node (POST /webhook/ad-lead) receives leads from LeadsBridge, Facebook Lead Ads, or Google Lead Form Extensions
+- [x] Add Detect Source code node — identifies facebook_lead_form vs google_lead_form based on payload structure (lead_id/form_id/page_id = Meta, gcl_id/campaign_id/user_column_data = Google)
+- [x] Add Normalize Lead code node — extracts firstName, lastName, email, phone, source, campaign, adName, formId, vehicleInterest into common format. CASL implied consent with 6-month window. Supports Meta field_data[] arrays, Google user_column_data[], and flat payloads. Bilingual field names (English + French). Validates at least email or phone present.
+- [x] Add Deduplicate code node — searches CRM by email then phone (Activix GET /v2/leads/search or GHL GET /contacts/search/duplicate based on CRM_PROVIDER env var). Safe default: treats as new lead if CRM search fails.
+- [x] Add IF node (New Lead?) — routes based on _isNew dedup result
+- [x] New Lead branch: Create Lead in CRM (Activix POST /v2/leads or GHL POST /contacts/) with retry 3x/3s
+- [x] New Lead branch: Trigger Instant Response workflow (POST to /webhook/activix-lead-webhook with normalized lead data) with retry 2x/5s
+- [x] New Lead branch: Log new lead event with PII-redacted details, CRM ID, consent info
+- [x] Existing Lead branch: Update existing CRM lead with new source/campaign info (Activix: comment, GHL: tags) with retry 3x/3s
+- [x] Existing Lead branch: Log duplicate detection with PII-redacted details
+- [x] Slack notification for new leads — summary with name, source, campaign, vehicle interest, CRM ID, consent status, instant response confirmation
+- [x] Slack notification for duplicates — summary with name, source, existing CRM ID, action taken
+- [x] Error handling: CRM calls retry on failure, Slack has continueOnFail, dedup defaults to new on search failure, validation rejects leads missing both email and phone
+- [x] Respond OK node — returns 200 JSON to webhook caller
+- [x] Deploy to nexusagents.app.n8n.cloud via n8n MCP (workflow ID: JCmUCJVgfyj059VM)
+- [x] Save workflow JSON to workflows/ad-lead-capture.json
+- [ ] Test workflow end-to-end with n8n_test_workflow
+- [ ] Configure LeadsBridge or direct Facebook/Google webhook to POST to /webhook/ad-lead

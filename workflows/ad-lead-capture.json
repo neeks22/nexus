@@ -1,0 +1,223 @@
+{
+  "name": "Ad Lead Capture — Meta & Google Lead Forms",
+  "description": "n8n Workflow 5: Receives leads from Meta Lead Forms and Google Lead Forms via webhook (/webhook/ad-lead), detects source platform, normalizes into common format (firstName, lastName, email, phone, source, campaign, adName, formId, vehicleInterest, consent), deduplicates against CRM (Activix or GHL), creates new leads or updates existing ones, triggers Instant Response workflow for new leads, and sends Slack notifications. CASL implied consent with 6-month window enforced.",
+  "n8n_workflow_id": "JCmUCJVgfyj059VM",
+  "n8n_instance": "https://nexusagents.app.n8n.cloud",
+  "webhook_path": "/webhook/ad-lead",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Toronto",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveExecutionProgress": true
+  },
+  "nodes": [
+    {
+      "id": "node-webhook",
+      "name": "Ad Lead Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 300],
+      "parameters": {
+        "path": "ad-lead",
+        "httpMethod": "POST",
+        "responseMode": "responseNode",
+        "options": { "rawBody": true }
+      },
+      "purpose": "Receives POST at /webhook/ad-lead from LeadsBridge, Facebook Lead Ads, or Google Lead Form Extensions."
+    },
+    {
+      "id": "node-detect-source",
+      "name": "Detect Source",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "parameters": {
+        "jsCode": "// Detect whether payload is from Meta Lead Form or Google Lead Form\nconst input = $input.first().json;\nconst body = input.body || input;\n\nlet source = 'unknown';\nlet rawLead = body;\n\n// Meta / Facebook Lead Form indicators\nif (body.lead_id || body.leadgen_id || body.form_id || body.page_id ||\n    (body.entry && Array.isArray(body.entry))) {\n  source = 'facebook_lead_form';\n  if (body.entry && body.entry[0]?.changes) {\n    const change = body.entry[0].changes[0]?.value || {};\n    rawLead = {\n      lead_id: change.leadgen_id || change.lead_id,\n      form_id: change.form_id,\n      page_id: change.page_id,\n      ad_id: change.ad_id,\n      created_time: change.created_time,\n      field_data: change.field_data || body.field_data || []\n    };\n  }\n}\nelse if (body.gcl_id || body.google_key || body.campaign_id ||\n         body.user_column_data || body.gclid ||\n         (body.form_data && (body.campaign_name || body.campaign_id))) {\n  source = 'google_lead_form';\n  rawLead = body;\n}\nelse if (body.platform === 'facebook' || body.platform === 'meta') {\n  source = 'facebook_lead_form';\n} else if (body.platform === 'google' || body.platform === 'google_ads') {\n  source = 'google_lead_form';\n}\n\nreturn [{ json: { source, rawLead, _receivedAt: new Date().toISOString() } }];"
+      },
+      "purpose": "Determines if payload is from Meta Lead Form or Google Lead Form based on payload structure (lead_id/form_id/page_id = Meta, gcl_id/campaign_id/user_column_data = Google)."
+    },
+    {
+      "id": "node-normalize",
+      "name": "Normalize Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 300],
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst { source, rawLead, _receivedAt } = input;\n\nfunction getMetaField(fieldData, ...names) {\n  if (!Array.isArray(fieldData)) return null;\n  for (const name of names) {\n    const field = fieldData.find(f =>\n      (f.name || '').toLowerCase() === name.toLowerCase() ||\n      (f.label || '').toLowerCase().includes(name.toLowerCase())\n    );\n    if (field) return (field.values && field.values[0]) || field.value || null;\n  }\n  return null;\n}\n\nlet normalized = {\n  firstName: null, lastName: null, email: null, phone: null,\n  source: source, campaign: null, adName: null, formId: null,\n  vehicleInterest: null,\n  consent: 'implied',\n  consentNote: 'Form submission constitutes implied consent under CASL - 6-month window from submission date',\n  consentDate: _receivedAt,\n  consentExpiry: new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString(),\n  timestamp: _receivedAt, rawLeadId: null, _raw: rawLead\n};\n\nif (source === 'facebook_lead_form') {\n  const fd = rawLead.field_data || [];\n  normalized.firstName = getMetaField(fd, 'first_name', 'firstname', 'prenom') || rawLead.first_name || null;\n  normalized.lastName = getMetaField(fd, 'last_name', 'lastname', 'nom') || rawLead.last_name || null;\n  normalized.email = getMetaField(fd, 'email', 'courriel', 'email_address') || rawLead.email || null;\n  normalized.phone = getMetaField(fd, 'phone_number', 'phone', 'telephone', 'tel') || rawLead.phone || null;\n  normalized.campaign = rawLead.campaign_name || rawLead.campaign || null;\n  normalized.adName = rawLead.ad_name || rawLead.ad_id || null;\n  normalized.formId = rawLead.form_id || null;\n  normalized.rawLeadId = rawLead.lead_id || rawLead.leadgen_id || null;\n  normalized.vehicleInterest = getMetaField(fd, 'vehicle', 'vehicle_interest', 'vehicule', 'make_model', 'which_vehicle', 'quel_vehicule') || null;\n  if (!normalized.vehicleInterest) {\n    const make = getMetaField(fd, 'make', 'marque');\n    const model = getMetaField(fd, 'model', 'modele');\n    if (make || model) normalized.vehicleInterest = [make, model].filter(Boolean).join(' ');\n  }\n  if (!normalized.firstName) {\n    const fullName = getMetaField(fd, 'full_name', 'name', 'nom_complet') || rawLead.full_name;\n    if (fullName) {\n      const parts = fullName.trim().split(/\\s+/);\n      normalized.firstName = parts[0] || null;\n      normalized.lastName = parts.slice(1).join(' ') || normalized.lastName;\n    }\n  }\n} else if (source === 'google_lead_form') {\n  const ucd = rawLead.user_column_data || [];\n  function getGoogleField(...names) {\n    for (const name of names) {\n      const field = ucd.find(f =>\n        (f.column_id || '').toLowerCase().includes(name.toLowerCase()) ||\n        (f.column_name || '').toLowerCase().includes(name.toLowerCase())\n      );\n      if (field) return field.string_value || field.value || null;\n    }\n    return null;\n  }\n  normalized.firstName = getGoogleField('first_name', 'given_name') || rawLead.first_name || null;\n  normalized.lastName = getGoogleField('last_name', 'family_name') || rawLead.last_name || null;\n  normalized.email = getGoogleField('email', 'user_email') || rawLead.email || null;\n  normalized.phone = getGoogleField('phone', 'phone_number', 'user_phone') || rawLead.phone || null;\n  normalized.campaign = rawLead.campaign_name || rawLead.campaign || null;\n  normalized.adName = rawLead.ad_group_name || rawLead.ad_name || null;\n  normalized.formId = rawLead.form_id || rawLead.asset_id || null;\n  normalized.rawLeadId = rawLead.lead_id || rawLead.gcl_id || rawLead.gclid || null;\n  normalized.vehicleInterest = getGoogleField('vehicle', 'vehicle_interest', 'which_vehicle') || rawLead.vehicle_interest || null;\n  if (!normalized.firstName) {\n    const fullName = getGoogleField('full_name', 'name') || rawLead.full_name || rawLead.name;\n    if (fullName) {\n      const parts = fullName.trim().split(/\\s+/);\n      normalized.firstName = parts[0] || null;\n      normalized.lastName = parts.slice(1).join(' ') || normalized.lastName;\n    }\n  }\n} else {\n  normalized.firstName = rawLead.first_name || rawLead.firstName || null;\n  normalized.lastName = rawLead.last_name || rawLead.lastName || null;\n  normalized.email = rawLead.email || null;\n  normalized.phone = rawLead.phone || rawLead.phone_number || null;\n  normalized.campaign = rawLead.campaign || rawLead.campaign_name || null;\n  normalized.formId = rawLead.form_id || null;\n  normalized.vehicleInterest = rawLead.vehicle_interest || rawLead.vehicle || null;\n}\n\nif (!normalized.email && !normalized.phone) {\n  throw new Error('Lead missing both email and phone - cannot process. Source: ' + source);\n}\n\nreturn [{ json: normalized }];"
+      },
+      "purpose": "Extracts into common format: firstName, lastName, email, phone, source, campaign, adName, formId, vehicleInterest, consent (implied CASL 6-month), timestamp."
+    },
+    {
+      "id": "node-dedup",
+      "name": "Deduplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 300],
+      "parameters": {
+        "jsCode": "const lead = $input.first().json;\nconst provider = $env.CRM_PROVIDER || 'activix';\nlet existingLead = null;\nlet isNew = true;\n\ntry {\n  if (provider === 'ghl') {\n    const ghlApiKey = $env.GHL_API_KEY;\n    const ghlBaseUrl = $env.GHL_BASE_URL || 'https://services.leadconnectorhq.com';\n    const locationId = $env.GHL_LOCATION_ID;\n    if (lead.email) {\n      const emailRes = await fetch(`${ghlBaseUrl}/contacts/search/duplicate?locationId=${locationId}&email=${encodeURIComponent(lead.email)}`, {\n        method: 'GET',\n        headers: { 'Authorization': `Bearer ${ghlApiKey}`, 'Version': '2021-07-28', 'Content-Type': 'application/json' }\n      });\n      if (emailRes.ok) {\n        const data = await emailRes.json();\n        if (data.contact) { existingLead = data.contact; isNew = false; }\n      }\n    }\n    if (isNew && lead.phone) {\n      const phoneRes = await fetch(`${ghlBaseUrl}/contacts/search/duplicate?locationId=${locationId}&phone=${encodeURIComponent(lead.phone)}`, {\n        method: 'GET',\n        headers: { 'Authorization': `Bearer ${ghlApiKey}`, 'Version': '2021-07-28', 'Content-Type': 'application/json' }\n      });\n      if (phoneRes.ok) {\n        const data = await phoneRes.json();\n        if (data.contact) { existingLead = data.contact; isNew = false; }\n      }\n    }\n  } else {\n    const activixToken = $env.ACTIVIX_API_TOKEN;\n    const activixBase = $env.ACTIVIX_BASE_URL || 'https://api.activix.ca';\n    if (lead.email) {\n      const emailRes = await fetch(`${activixBase}/v2/leads/search?query=${encodeURIComponent(lead.email)}`, {\n        method: 'GET',\n        headers: { 'Authorization': `Bearer ${activixToken}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }\n      });\n      if (emailRes.ok) {\n        const data = await emailRes.json();\n        if (data.data && data.data.length > 0) { existingLead = data.data[0]; isNew = false; }\n      }\n    }\n    if (isNew && lead.phone) {\n      const phoneRes = await fetch(`${activixBase}/v2/leads/search?query=${encodeURIComponent(lead.phone)}`, {\n        method: 'GET',\n        headers: { 'Authorization': `Bearer ${activixToken}`, 'Content-Type': 'application/json', 'Accept': 'application/json' }\n      });\n      if (phoneRes.ok) {\n        const data = await phoneRes.json();\n        if (data.data && data.data.length > 0) { existingLead = data.data[0]; isNew = false; }\n      }\n    }\n  }\n} catch (err) {\n  console.log('CRM search failed, treating as new lead:', err.message);\n  isNew = true; existingLead = null;\n}\n\nreturn [{ json: { ...lead, _isNew: isNew, _existingLead: existingLead, _provider: provider } }];"
+      },
+      "purpose": "Checks CRM (Activix or GHL based on CRM_PROVIDER env var) for existing lead by email then phone. Sets _isNew flag."
+    },
+    {
+      "id": "node-if-new",
+      "name": "New Lead?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1040, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": false, "typeValidation": "strict", "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-is-new",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true },
+              "leftValue": "={{ $json._isNew }}"
+            }
+          ]
+        }
+      },
+      "purpose": "Routes to New Lead branch (true output 0) or Existing Lead branch (false output 1)."
+    },
+    {
+      "id": "node-create-crm",
+      "name": "Create Lead in CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 160],
+      "parameters": {
+        "url": "Dynamic: Activix POST /v2/leads or GHL POST /contacts/ based on CRM_PROVIDER",
+        "method": "POST",
+        "sendHeaders": true,
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "purpose": "Creates lead in CRM. Activix: type=web, emails[], phones[], source, campaign, vehicles[], consent. GHL: firstName, lastName, email, phone, source, tags, locationId."
+    },
+    {
+      "id": "node-trigger-instant",
+      "name": "Trigger Instant Response",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1600, 160],
+      "parameters": {
+        "url": "POST to /webhook/activix-lead-webhook with normalized lead data",
+        "method": "POST"
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 5000,
+      "purpose": "Triggers Workflow 1 (Instant Lead Response) by POSTing normalized lead data to its webhook endpoint."
+    },
+    {
+      "id": "node-log-new",
+      "name": "Log New Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1880, 160],
+      "parameters": {
+        "jsCode": "Logs new lead event with PII-redacted email/phone, CRM ID, consent info."
+      },
+      "purpose": "Logs new lead creation event with PII redaction."
+    },
+    {
+      "id": "node-update-crm",
+      "name": "Update Existing Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, 460],
+      "parameters": {
+        "url": "Dynamic: Activix PUT /v2/leads/:id or GHL PUT /contacts/:id based on CRM_PROVIDER",
+        "method": "PUT",
+        "sendHeaders": true,
+        "sendBody": true,
+        "specifyBody": "json"
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "purpose": "Updates existing CRM lead with new source/campaign info. Activix: comment with details. GHL: tags + custom fields."
+    },
+    {
+      "id": "node-log-dupe",
+      "name": "Log Duplicate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 460],
+      "parameters": {
+        "jsCode": "Logs duplicate detection with PII-redacted email, existing CRM lead ID."
+      },
+      "purpose": "Logs duplicate lead detection event."
+    },
+    {
+      "id": "node-slack-new",
+      "name": "Slack Notify New Lead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2140, 160],
+      "parameters": {
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "method": "POST"
+      },
+      "continueOnFail": true,
+      "purpose": "Sends Slack notification with new lead summary: name, source, campaign, vehicle interest, CRM ID, consent status, instant response trigger confirmation."
+    },
+    {
+      "id": "node-slack-dupe",
+      "name": "Slack Notify Duplicate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1880, 460],
+      "parameters": {
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "method": "POST"
+      },
+      "continueOnFail": true,
+      "purpose": "Sends Slack notification for duplicate lead: name, source, campaign, existing CRM ID, action taken."
+    },
+    {
+      "id": "node-respond-ok",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2400, 300],
+      "parameters": {
+        "respondWith": "json",
+        "options": { "responseCode": 200 }
+      },
+      "purpose": "Returns 200 OK to the webhook caller with processing status."
+    }
+  ],
+  "connections": {
+    "Ad Lead Webhook": { "main": [[{ "node": "Detect Source", "type": "main", "index": 0 }]] },
+    "Detect Source": { "main": [[{ "node": "Normalize Lead", "type": "main", "index": 0 }]] },
+    "Normalize Lead": { "main": [[{ "node": "Deduplicate", "type": "main", "index": 0 }]] },
+    "Deduplicate": { "main": [[{ "node": "New Lead?", "type": "main", "index": 0 }]] },
+    "New Lead?": {
+      "main": [
+        [{ "node": "Create Lead in CRM", "type": "main", "index": 0 }],
+        [{ "node": "Update Existing Lead", "type": "main", "index": 0 }]
+      ]
+    },
+    "Create Lead in CRM": { "main": [[{ "node": "Trigger Instant Response", "type": "main", "index": 0 }]] },
+    "Trigger Instant Response": { "main": [[{ "node": "Log New Lead", "type": "main", "index": 0 }]] },
+    "Log New Lead": { "main": [[{ "node": "Slack Notify New Lead", "type": "main", "index": 0 }]] },
+    "Slack Notify New Lead": { "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]] },
+    "Update Existing Lead": { "main": [[{ "node": "Log Duplicate", "type": "main", "index": 0 }]] },
+    "Log Duplicate": { "main": [[{ "node": "Slack Notify Duplicate", "type": "main", "index": 0 }]] },
+    "Slack Notify Duplicate": { "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]] }
+  },
+  "flow_summary": {
+    "webhook": "POST /webhook/ad-lead",
+    "new_lead_path": "Webhook -> Detect Source -> Normalize -> Dedup -> IF(new) -> Create CRM -> Trigger Instant Response -> Log -> Slack -> Respond OK",
+    "existing_lead_path": "Webhook -> Detect Source -> Normalize -> Dedup -> IF(existing) -> Update CRM -> Log Duplicate -> Slack -> Respond OK",
+    "error_handling": "CRM calls retry 3x with 3s delay. Slack has continueOnFail. Dedup defaults to new on CRM search failure. Validation rejects leads missing both email and phone.",
+    "consent": "CASL implied consent, 6-month window from form submission date.",
+    "env_vars_required": ["CRM_PROVIDER", "ACTIVIX_API_TOKEN or GHL_API_KEY", "GHL_LOCATION_ID (if GHL)", "N8N_BASE_URL"]
+  }
+}
