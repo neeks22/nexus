@@ -10,3 +10,10 @@ PRD: PRD-security-fixes.md
 - Added length check before `timingSafeEqual` to prevent throw on mismatched buffer lengths
 - Added test: "rejects signature with different length (timing-safe)"
 - All 29 activix-client tests pass
+
+### [2026-03-29 07:50] Epic 1, Item 2: Remove PLACEHOLDER_TOKEN fallback in inbound-reply-handler.json
+- No literal `PLACEHOLDER_TOKEN` found — the actual issue was `|| ''` empty-string fallbacks on auth env vars
+- Fixed 5 nodes: Lookup Lead, Update CRM Handoff, Send Reply SMS, Send Opt-Out SMS, Update CRM Opt-Out
+- Auth tokens ($env.GHL_API_KEY, $env.TWILIO_ACCOUNT_SID, $env.TWILIO_AUTH_TOKEN, $env.ACTIVIX_API_TOKEN) now throw descriptive errors when missing instead of silently using empty strings
+- Non-auth fallbacks (message content, name formatting, location ID) left intact — those are safe data defaults
+- No tests applicable (n8n workflow JSON file, not TypeScript)

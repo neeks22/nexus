@@ -14,7 +14,10 @@
       "name": "Inbound Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1,
-      "position": [0, 300],
+      "position": [
+        0,
+        300
+      ],
       "parameters": {
         "path": "inbound-sms",
         "httpMethod": "POST",
@@ -28,13 +31,21 @@
       "name": "Respond OK",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5,
-      "position": [220, 300],
+      "position": [
+        220,
+        300
+      ],
       "parameters": {
         "respondWith": "text",
         "responseBody": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Response></Response>",
         "options": {
           "responseHeaders": {
-            "entries": [{ "name": "Content-Type", "value": "text/xml" }]
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/xml"
+              }
+            ]
           }
         }
       }
@@ -44,7 +55,10 @@
       "name": "Parse Inbound Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 300],
+      "position": [
+        440,
+        300
+      ],
       "parameters": {
         "jsCode": "// Parse inbound message from Twilio or GHL webhook into normalized format\nconst msgProvider = $env.MESSAGING_PROVIDER || 'twilio';\nconst input = $input.first().json;\nconst body = input.body || input;\n\nlet fromPhone = '';\nlet toPhone = '';\nlet messageBody = '';\nlet inboundContactId = null;\n\nif (msgProvider === 'ghl') {\n  // GHL inbound webhook format\n  fromPhone = (body.phone || body.contactPhone || body.from || '').replace(/[^\\d+]/g, '');\n  toPhone = (body.to || body.locationPhone || '').replace(/[^\\d+]/g, '');\n  messageBody = body.message || body.body || body.text || '';\n  inboundContactId = body.contactId || body.contact_id || null;\n} else {\n  // Default: Twilio webhook format\n  fromPhone = (body.From || '').replace(/[^\\d+]/g, '');\n  toPhone = (body.To || '').replace(/[^\\d+]/g, '');\n  messageBody = body.Body || '';\n}\n\nif (!fromPhone) throw new Error('No From phone number in webhook payload');\n\nreturn [{ json: { fromPhone, toPhone, messageBody, inboundContactId, _msgProvider: msgProvider, timestamp: new Date().toISOString() } }];"
       },
@@ -55,9 +69,12 @@
       "name": "Lookup Lead",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [660, 300],
+      "position": [
+        660,
+        300
+      ],
       "parameters": {
-        "jsCode": "// Lookup lead in CRM — supports Activix and GHL\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst input = $input.first().json;\nconst fromPhone = input.fromPhone;\nconst inboundContactId = input.inboundContactId;\n\nfunction getCrmConfig() {\n  if (provider === 'ghl') {\n    return {\n      baseUrl: 'https://services.leadconnectorhq.com',\n      headers: { 'Authorization': `Bearer ${$env.GHL_API_KEY}`, 'Version': '2021-07-28', 'Accept': 'application/json' },\n    };\n  }\n  return {\n    baseUrl: $env.ACTIVIX_API_URL || 'https://api.crm.activix.ca/v2',\n    headers: { 'Authorization': `Bearer ${$env.ACTIVIX_API_TOKEN}`, 'Accept': 'application/json' },\n  };\n}\n\nconst config = getCrmConfig();\nlet lead = null;\nlet leadName = 'Unknown';\nlet leadId = null;\nlet locale = 'en-CA';\nlet advisorName = null;\n\ntry {\n  if (provider === 'ghl') {\n    // GHL: lookup by contactId if available, otherwise search by phone\n    if (inboundContactId) {\n      const resp = await fetch(`${config.baseUrl}/contacts/${inboundContactId}`, { headers: config.headers });\n      if (resp.ok) {\n        const data = await resp.json();\n        lead = data.contact || data;\n      }\n    }\n    if (!lead) {\n      const GHL_LOCATION_ID = $env.GHL_LOCATION_ID || '';\n      const resp = await fetch(`${config.baseUrl}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID}&phone=${encodeURIComponent(fromPhone)}`, { headers: config.headers });\n      if (resp.ok) {\n        const data = await resp.json();\n        if (data.contact) lead = data.contact;\n      }\n    }\n    if (lead) {\n      leadId = lead.id || lead.contactId;\n      leadName = `${lead.firstName || lead.first_name || ''} ${lead.lastName || lead.last_name || ''}`.trim() || 'Unknown';\n      locale = lead.tags?.includes('french') ? 'fr-CA' : 'en-CA';\n      advisorName = lead.assignedTo || null;\n      // Normalize lead to common format for downstream nodes\n      lead = {\n        ...lead,\n        id: leadId,\n        first_name: lead.firstName || lead.first_name || null,\n        last_name: lead.lastName || lead.last_name || null,\n        locale: locale,\n        phones: lead.phone ? [{ number: lead.phone }] : [],\n        emails: lead.email ? [{ address: lead.email }] : [],\n        vehicles: [],\n        advisor: advisorName ? { first_name: advisorName, name: advisorName } : null,\n        consent_type: 'implied',\n        consent_date: lead.dateAdded || null,\n        unsubscribe_sms_date: lead.dndSettings?.SMS?.status === 'active' ? new Date().toISOString() : null,\n        unsubscribe_all_date: lead.dnd ? new Date().toISOString() : null,\n        _provider: 'ghl',\n      };\n    }\n  } else {\n    // Default: Activix search\n    const resp = await fetch(`${config.baseUrl}/leads/search?query=${encodeURIComponent(fromPhone)}`, { headers: config.headers });\n    if (resp.ok) {\n      const data = await resp.json();\n      if (data.data?.length > 0) {\n        lead = data.data[0];\n        lead._provider = 'activix';\n      }\n    }\n    if (lead) {\n      leadId = lead.id;\n      leadName = `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown';\n      locale = lead.locale || 'en-CA';\n      advisorName = lead.advisor?.first_name || null;\n    }\n  }\n} catch (err) {\n  console.error('CRM search failed:', err.message);\n}\n\nreturn [{ json: { ...input, lead, leadFound: !!lead, leadId, leadName, locale, advisorName, _crmProvider: provider } }];"
+        "jsCode": "// Lookup lead in CRM \u2014 supports Activix and GHL\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst input = $input.first().json;\nconst fromPhone = input.fromPhone;\nconst inboundContactId = input.inboundContactId;\n\nfunction getCrmConfig() {\n  if (provider === 'ghl') {\n    return {\n      baseUrl: 'https://services.leadconnectorhq.com',\n      headers: { 'Authorization': `Bearer ${$env.GHL_API_KEY || (() => { throw new Error('Missing required env var: GHL_API_KEY'); })()}`, 'Version': '2021-07-28', 'Accept': 'application/json' },\n    };\n  }\n  return {\n    baseUrl: $env.ACTIVIX_API_URL || 'https://api.crm.activix.ca/v2',\n    headers: { 'Authorization': `Bearer ${$env.ACTIVIX_API_TOKEN || (() => { throw new Error('Missing required env var: ACTIVIX_API_TOKEN'); })()}`, 'Accept': 'application/json' },\n  };\n}\n\nconst config = getCrmConfig();\nlet lead = null;\nlet leadName = 'Unknown';\nlet leadId = null;\nlet locale = 'en-CA';\nlet advisorName = null;\n\ntry {\n  if (provider === 'ghl') {\n    // GHL: lookup by contactId if available, otherwise search by phone\n    if (inboundContactId) {\n      const resp = await fetch(`${config.baseUrl}/contacts/${inboundContactId}`, { headers: config.headers });\n      if (resp.ok) {\n        const data = await resp.json();\n        lead = data.contact || data;\n      }\n    }\n    if (!lead) {\n      const GHL_LOCATION_ID = $env.GHL_LOCATION_ID || '';\n      const resp = await fetch(`${config.baseUrl}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID}&phone=${encodeURIComponent(fromPhone)}`, { headers: config.headers });\n      if (resp.ok) {\n        const data = await resp.json();\n        if (data.contact) lead = data.contact;\n      }\n    }\n    if (lead) {\n      leadId = lead.id || lead.contactId;\n      leadName = `${lead.firstName || lead.first_name || ''} ${lead.lastName || lead.last_name || ''}`.trim() || 'Unknown';\n      locale = lead.tags?.includes('french') ? 'fr-CA' : 'en-CA';\n      advisorName = lead.assignedTo || null;\n      // Normalize lead to common format for downstream nodes\n      lead = {\n        ...lead,\n        id: leadId,\n        first_name: lead.firstName || lead.first_name || null,\n        last_name: lead.lastName || lead.last_name || null,\n        locale: locale,\n        phones: lead.phone ? [{ number: lead.phone }] : [],\n        emails: lead.email ? [{ address: lead.email }] : [],\n        vehicles: [],\n        advisor: advisorName ? { first_name: advisorName, name: advisorName } : null,\n        consent_type: 'implied',\n        consent_date: lead.dateAdded || null,\n        unsubscribe_sms_date: lead.dndSettings?.SMS?.status === 'active' ? new Date().toISOString() : null,\n        unsubscribe_all_date: lead.dnd ? new Date().toISOString() : null,\n        _provider: 'ghl',\n      };\n    }\n  } else {\n    // Default: Activix search\n    const resp = await fetch(`${config.baseUrl}/leads/search?query=${encodeURIComponent(fromPhone)}`, { headers: config.headers });\n    if (resp.ok) {\n      const data = await resp.json();\n      if (data.data?.length > 0) {\n        lead = data.data[0];\n        lead._provider = 'activix';\n      }\n    }\n    if (lead) {\n      leadId = lead.id;\n      leadName = `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unknown';\n      locale = lead.locale || 'en-CA';\n      advisorName = lead.advisor?.first_name || null;\n    }\n  }\n} catch (err) {\n  console.error('CRM search failed:', err.message);\n}\n\nreturn [{ json: { ...input, lead, leadFound: !!lead, leadId, leadName, locale, advisorName, _crmProvider: provider } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -66,7 +83,10 @@
       "name": "Load Conversation History",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [880, 300],
+      "position": [
+        880,
+        300
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst leadId = input.leadId;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.transcripts) staticData.transcripts = {};\nconst transcript = staticData.transcripts[leadId] || { leadId, messages: [], touchNumber: 0, lastContactDate: null };\ntranscript.messages.push({ role: 'customer', content: input.messageBody, channel: 'sms', timestamp: input.timestamp });\ntranscript.lastContactDate = input.timestamp;\nstaticData.transcripts[leadId] = transcript;\nreturn [{ json: { ...input, transcript, touchNumber: transcript.touchNumber, conversationLength: transcript.messages.length } }];"
       },
@@ -77,7 +97,10 @@
       "name": "Classify Intent",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1100, 300],
+      "position": [
+        1100,
+        300
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst msg = (input.messageBody || '').toLowerCase();\nconst rules = [\n  { intent:'HUMAN_REQUEST', keywords:['talk to someone','real person','parler a quelquun','speak to','manager','representative'], confidence:0.95, action:'handoff' },\n  { intent:'FRUSTRATION', keywords:['angry','frustrated','terrible','worst','horrible','furieux','ridiculous','unacceptable'], confidence:0.90, action:'handoff' },\n  { intent:'NOT_INTERESTED', keywords:['not interested','remove me','stop','unsubscribe','pas interesse','arretez','leave me alone','no thanks'], confidence:0.95, action:'stop' },\n  { intent:'PRICE_INQUIRY', keywords:['how much','price','cost','prix','combien','pricing','msrp'], confidence:0.85, action:'handoff' },\n  { intent:'TEST_DRIVE_REQUEST', keywords:['test drive','come see','essai routier','come in','visit','see the car','book appointment'], confidence:0.90, action:'handoff' },\n  { intent:'FINANCING_QUESTION', keywords:['finance','payment','lease','financement','monthly','mensuel','credit','loan','down payment'], confidence:0.85, action:'handoff' },\n  { intent:'TRADE_IN_REQUEST', keywords:['trade in','trade-in','my car','echange','my vehicle','mon char'], confidence:0.85, action:'handoff' },\n  { intent:'TIMELINE_MENTION', keywords:['this week','today','soon','cette semaine','tomorrow','demain','this weekend','asap','this month'], confidence:0.85, action:'handoff' },\n  { intent:'OBJECTION', keywords:['too expensive','better deal','trop cher','cheaper','moins cher','competitor','other dealer','negotiate'], confidence:0.80, action:'handoff' }\n];\nlet matched = null;\nfor (const r of rules) { for (const kw of r.keywords) { if (msg.includes(kw)) { matched = r; break; } } if (matched) break; }\nconst result = matched ? { intent:matched.intent, confidence:matched.confidence, action:matched.action } : { intent:'INFO_REQUEST', confidence:0.60, action:'continue' };\nresult.shouldHandoff = result.action === 'handoff';\nreturn [{ json: { ...input, intentClassification: result } }];"
       },
@@ -88,13 +111,61 @@
       "name": "Route by Intent",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.4,
-      "position": [1320, 300],
+      "position": [
+        1320,
+        300
+      ],
       "parameters": {
         "rules": {
           "values": [
-            { "outputKey": "handoff", "conditions": { "combinator": "and", "conditions": [{ "leftValue": "={{ $json.intentClassification.action }}", "rightValue": "handoff", "operator": { "type": "string", "operation": "equals" } }] } },
-            { "outputKey": "continue", "conditions": { "combinator": "and", "conditions": [{ "leftValue": "={{ $json.intentClassification.action }}", "rightValue": "continue", "operator": { "type": "string", "operation": "equals" } }] } },
-            { "outputKey": "stop", "conditions": { "combinator": "and", "conditions": [{ "leftValue": "={{ $json.intentClassification.action }}", "rightValue": "stop", "operator": { "type": "string", "operation": "equals" } }] } }
+            {
+              "outputKey": "handoff",
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intentClassification.action }}",
+                    "rightValue": "handoff",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "continue",
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intentClassification.action }}",
+                    "rightValue": "continue",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "outputKey": "stop",
+              "conditions": {
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intentClassification.action }}",
+                    "rightValue": "stop",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ]
+              }
+            }
           ]
         },
         "options": {}
@@ -105,7 +176,10 @@
       "name": "Build Handoff Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1560, 100],
+      "position": [
+        1560,
+        100
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst transcript = input.transcript || { messages: [] };\nconst summary = transcript.messages.slice(-10).map(m => `${m.role === 'customer' ? 'Customer' : 'AI'}: ${m.content}`).join('\\n');\nconst ratingMap = { TEST_DRIVE_REQUEST:5, TIMELINE_MENTION:5, PRICE_INQUIRY:4, FINANCING_QUESTION:4, TRADE_IN_REQUEST:4, OBJECTION:4, FRUSTRATION:5, HUMAN_REQUEST:4 };\nconst actionMap = { TEST_DRIVE_REQUEST:'Book test drive immediately', TIMELINE_MENTION:'Reach out ASAP - buying signal', PRICE_INQUIRY:'Prepare pricing with incentives', FINANCING_QUESTION:'Connect with F&I department', TRADE_IN_REQUEST:'Schedule appraisal', OBJECTION:'Prepare competitive analysis', FRUSTRATION:'Manager call - immediate escalation', HUMAN_REQUEST:'Call customer directly' };\nconst vehicles = (input.lead?.vehicles || []).map(v => `${v.year||''} ${v.make||''} ${v.model||''}`.trim()).filter(Boolean);\nreturn [{ json: { ...input, handoffPayload: { customerName:input.leadName, phone:input.fromPhone, vehiclesOfInterest: vehicles.length > 0 ? vehicles : ['Unknown'], conversationSummary:summary, intent:input.intentClassification.intent, confidence:input.intentClassification.confidence, rating: ratingMap[input.intentClassification.intent] || 3, touchNumber:input.touchNumber, recommendedAction: actionMap[input.intentClassification.intent] || 'Follow up', timestamp:input.timestamp } } }];"
       },
@@ -116,12 +190,19 @@
       "name": "Slack Alert Rep",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.4,
-      "position": [1780, 0],
+      "position": [
+        1780,
+        0
+      ],
       "parameters": {
         "resource": "message",
         "operation": "post",
         "select": "channel",
-        "channelId": { "__rl": true, "mode": "name", "value": "#dealership-handoffs" },
+        "channelId": {
+          "__rl": true,
+          "mode": "name",
+          "value": "#dealership-handoffs"
+        },
         "text": "={{ 'HANDOFF - ' + $json.handoffPayload.intent + ' | Customer: ' + $json.handoffPayload.customerName + ' | Phone: ' + $json.handoffPayload.phone + ' | Vehicles: ' + ($json.handoffPayload.vehiclesOfInterest || []).join(', ') + ' | Rating: ' + $json.handoffPayload.rating + '/5 | Action: ' + $json.handoffPayload.recommendedAction }}",
         "otherOptions": {}
       },
@@ -132,9 +213,12 @@
       "name": "Update CRM Handoff",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1780, 200],
+      "position": [
+        1780,
+        200
+      ],
       "parameters": {
-        "jsCode": "// Update CRM with handoff status — supports Activix and GHL\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst input = $input.first().json;\nconst leadId = input.leadId;\nconst handoff = input.handoffPayload;\n\nfunction getCrmConfig() {\n  if (provider === 'ghl') {\n    return {\n      baseUrl: 'https://services.leadconnectorhq.com',\n      headers: { 'Authorization': `Bearer ${$env.GHL_API_KEY}`, 'Version': '2021-07-28', 'Content-Type': 'application/json', 'Accept': 'application/json' },\n    };\n  }\n  return {\n    baseUrl: $env.ACTIVIX_API_URL || 'https://api.crm.activix.ca/v2',\n    headers: { 'Authorization': `Bearer ${$env.ACTIVIX_API_TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n  };\n}\n\nconst config = getCrmConfig();\nlet updateResult = { success: false, error: null };\n\ntry {\n  if (provider === 'ghl') {\n    const response = await fetch(`${config.baseUrl}/contacts/${leadId}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({\n        tags: [...(input.lead?._raw?.tags || []), 'nexus-handoff', `intent-${handoff.intent.toLowerCase()}`],\n        customFields: [\n          { key: 'nexus_handoff_intent', value: handoff.intent },\n          { key: 'nexus_handoff_action', value: handoff.recommendedAction },\n          { key: 'nexus_handoff_rating', value: String(handoff.rating) },\n          { key: 'nexus_handoff_date', value: new Date().toISOString() },\n        ],\n      }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`GHL error: ${response.status} ${errText}`); }\n\n    // Add note\n    try {\n      await fetch(`${config.baseUrl}/contacts/${leadId}/notes`, {\n        method: 'POST',\n        headers: config.headers,\n        body: JSON.stringify({ body: `[AI Handoff] ${handoff.intent} | ${handoff.recommendedAction}` }),\n      });\n    } catch (e) { /* non-critical */ }\n  } else {\n    // Activix PUT\n    const response = await fetch(`${config.baseUrl}/leads/${leadId}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({\n        rating: handoff.rating,\n        result: 'reached',\n        comment: `[AI Handoff] ${handoff.intent} | ${handoff.recommendedAction}`,\n      }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`Activix error: ${response.status} ${errText}`); }\n  }\n} catch (err) {\n  updateResult = { success: false, error: err.message };\n}\n\nreturn [{ json: { ...input, _crmHandoffResult: updateResult } }];"
+        "jsCode": "// Update CRM with handoff status \u2014 supports Activix and GHL\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst input = $input.first().json;\nconst leadId = input.leadId;\nconst handoff = input.handoffPayload;\n\nfunction getCrmConfig() {\n  if (provider === 'ghl') {\n    return {\n      baseUrl: 'https://services.leadconnectorhq.com',\n      headers: { 'Authorization': `Bearer ${$env.GHL_API_KEY || (() => { throw new Error('Missing required env var: GHL_API_KEY'); })()}`, 'Version': '2021-07-28', 'Content-Type': 'application/json', 'Accept': 'application/json' },\n    };\n  }\n  return {\n    baseUrl: $env.ACTIVIX_API_URL || 'https://api.crm.activix.ca/v2',\n    headers: { 'Authorization': `Bearer ${$env.ACTIVIX_API_TOKEN || (() => { throw new Error('Missing required env var: ACTIVIX_API_TOKEN'); })()}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n  };\n}\n\nconst config = getCrmConfig();\nlet updateResult = { success: false, error: null };\n\ntry {\n  if (provider === 'ghl') {\n    const response = await fetch(`${config.baseUrl}/contacts/${leadId}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({\n        tags: [...(input.lead?._raw?.tags || []), 'nexus-handoff', `intent-${handoff.intent.toLowerCase()}`],\n        customFields: [\n          { key: 'nexus_handoff_intent', value: handoff.intent },\n          { key: 'nexus_handoff_action', value: handoff.recommendedAction },\n          { key: 'nexus_handoff_rating', value: String(handoff.rating) },\n          { key: 'nexus_handoff_date', value: new Date().toISOString() },\n        ],\n      }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`GHL error: ${response.status} ${errText}`); }\n\n    // Add note\n    try {\n      await fetch(`${config.baseUrl}/contacts/${leadId}/notes`, {\n        method: 'POST',\n        headers: config.headers,\n        body: JSON.stringify({ body: `[AI Handoff] ${handoff.intent} | ${handoff.recommendedAction}` }),\n      });\n    } catch (e) { /* non-critical */ }\n  } else {\n    // Activix PUT\n    const response = await fetch(`${config.baseUrl}/leads/${leadId}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({\n        rating: handoff.rating,\n        result: 'reached',\n        comment: `[AI Handoff] ${handoff.intent} | ${handoff.recommendedAction}`,\n      }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`Activix error: ${response.status} ${errText}`); }\n  }\n} catch (err) {\n  updateResult = { success: false, error: err.message };\n}\n\nreturn [{ json: { ...input, _crmHandoffResult: updateResult } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -143,7 +227,10 @@
       "name": "Generate AI Reply",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1560, 300],
+      "position": [
+        1560,
+        300
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst isFrench = (input.locale || 'en-CA').startsWith('fr');\nconst name = input.lead?.first_name || '';\nlet reply = '';\nif (isFrench) {\n  reply = name ? `Merci pour votre message, ${name}! Je serais heureux de vous aider. Laissez-moi verifier cela pour vous.` : 'Merci pour votre message! Je serais heureux de vous aider.';\n} else {\n  reply = name ? `Thanks for your message, ${name}! Happy to help. Let me look into it and get right back to you.` : 'Thanks for your message! Happy to help. Let me look into it and get right back to you.';\n}\nreturn [{ json: { ...input, generatedReply: reply } }];"
       },
@@ -154,7 +241,10 @@
       "name": "Compliance Check",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1780, 300],
+      "position": [
+        1780,
+        300
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst reply = input.generatedReply || '';\nconst lead = input.lead;\nconst violations = [];\nconst forbidden = [/\\$\\d+\\/month/i, /monthly payment/i, /interest rate/i, /\\d+\\.?\\d*\\s*%\\s*(apr|interest|rate)/i, /credit score/i, /paiement mensuel/i, /taux d.interet/i];\nfor (const p of forbidden) { if (p.test(reply)) violations.push('Forbidden financial language'); }\nif (lead?.unsubscribe_sms_date) violations.push('Lead unsubscribed from SMS');\nif (lead?.unsubscribe_all_date) violations.push('Lead unsubscribed from all');\nif (lead?.consent_type === 'implied' && lead?.consent_date) {\n  const exp = new Date(lead.consent_date); exp.setMonth(exp.getMonth() + 6);\n  if (new Date() > exp) violations.push('Implied consent expired');\n}\nif (!reply.trim()) violations.push('Empty reply');\nconst pass = violations.length === 0;\nlet finalReply = reply;\nif (pass && reply) finalReply += (input.locale || 'en-CA').startsWith('fr') ? '\\n\\nRepondez STOP pour ne plus recevoir de messages.' : '\\n\\nReply STOP to opt out.';\nreturn [{ json: { ...input, complianceResult: { pass, violations, checkedAt: new Date().toISOString() }, finalReply: pass ? finalReply : null } }];"
       },
@@ -165,12 +255,30 @@
       "name": "Compliance Pass?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
-      "position": [2000, 300],
+      "position": [
+        2000,
+        300
+      ],
       "parameters": {
         "conditions": {
-          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
           "combinator": "and",
-          "conditions": [{ "id": "c1", "leftValue": "={{ $json.complianceResult.pass }}", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }]
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.complianceResult.pass }}",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ]
         }
       }
     },
@@ -179,9 +287,12 @@
       "name": "Send Reply SMS",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2220, 250],
+      "position": [
+        2220,
+        250
+      ],
       "parameters": {
-        "jsCode": "// Send reply SMS via configured messaging provider (Twilio or GHL)\nconst msgProvider = $env.MESSAGING_PROVIDER || 'twilio';\nconst input = $input.first().json;\nconst message = input.finalReply || '';\nconst fromPhone = input.fromPhone;\nconst toPhone = input.toPhone;\nconst contactId = input.leadId;\n\nlet sendResult = { success: false, provider: msgProvider, error: null };\n\ntry {\n  if (!message) throw new Error('No message to send');\n\n  if (msgProvider === 'ghl') {\n    const GHL_API_KEY = $env.GHL_API_KEY || '';\n    if (!contactId) throw new Error('No GHL contact ID for reply');\n    const response = await fetch('https://services.leadconnectorhq.com/conversations/messages', {\n      method: 'POST',\n      headers: { 'Authorization': `Bearer ${GHL_API_KEY}`, 'Version': '2021-07-28', 'Content-Type': 'application/json' },\n      body: JSON.stringify({ type: 'SMS', contactId: contactId, message: message }),\n    });\n    const result = await response.json();\n    if (response.ok) sendResult = { success: true, provider: 'ghl', messageId: result.messageId || result.id };\n    else throw new Error(result.message || `GHL error: ${response.status}`);\n  } else {\n    // Default: Twilio\n    const TWILIO_ACCOUNT_SID = $env.TWILIO_ACCOUNT_SID || '';\n    const TWILIO_AUTH_TOKEN = $env.TWILIO_AUTH_TOKEN || '';\n    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;\n    const body = new URLSearchParams({ To: fromPhone, From: toPhone, Body: message });\n    const response = await fetch(twilioUrl, {\n      method: 'POST',\n      headers: { 'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`), 'Content-Type': 'application/x-www-form-urlencoded' },\n      body: body.toString(),\n    });\n    const result = await response.json();\n    if (response.ok) sendResult = { success: true, provider: 'twilio', messageId: result.sid };\n    else throw new Error(result.message || `Twilio error: ${response.status}`);\n  }\n} catch (err) {\n  sendResult = { success: false, provider: msgProvider, error: err.message };\n}\n\nreturn [{ json: { ...input, _smsResult: sendResult } }];"
+        "jsCode": "// Send reply SMS via configured messaging provider (Twilio or GHL)\nconst msgProvider = $env.MESSAGING_PROVIDER || 'twilio';\nconst input = $input.first().json;\nconst message = input.finalReply || '';\nconst fromPhone = input.fromPhone;\nconst toPhone = input.toPhone;\nconst contactId = input.leadId;\n\nlet sendResult = { success: false, provider: msgProvider, error: null };\n\ntry {\n  if (!message) throw new Error('No message to send');\n\n  if (msgProvider === 'ghl') {\n    const GHL_API_KEY = $env.GHL_API_KEY;\n    if (!GHL_API_KEY) throw new Error('Missing required env var: GHL_API_KEY');\n    if (!contactId) throw new Error('No GHL contact ID for reply');\n    const response = await fetch('https://services.leadconnectorhq.com/conversations/messages', {\n      method: 'POST',\n      headers: { 'Authorization': `Bearer ${GHL_API_KEY}`, 'Version': '2021-07-28', 'Content-Type': 'application/json' },\n      body: JSON.stringify({ type: 'SMS', contactId: contactId, message: message }),\n    });\n    const result = await response.json();\n    if (response.ok) sendResult = { success: true, provider: 'ghl', messageId: result.messageId || result.id };\n    else throw new Error(result.message || `GHL error: ${response.status}`);\n  } else {\n    // Default: Twilio\n    const TWILIO_ACCOUNT_SID = $env.TWILIO_ACCOUNT_SID;\n    const TWILIO_AUTH_TOKEN = $env.TWILIO_AUTH_TOKEN;\n    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) throw new Error('Missing required env vars: TWILIO_ACCOUNT_SID and/or TWILIO_AUTH_TOKEN');\n    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;\n    const body = new URLSearchParams({ To: fromPhone, From: toPhone, Body: message });\n    const response = await fetch(twilioUrl, {\n      method: 'POST',\n      headers: { 'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`), 'Content-Type': 'application/x-www-form-urlencoded' },\n      body: body.toString(),\n    });\n    const result = await response.json();\n    if (response.ok) sendResult = { success: true, provider: 'twilio', messageId: result.sid };\n    else throw new Error(result.message || `Twilio error: ${response.status}`);\n  }\n} catch (err) {\n  sendResult = { success: false, provider: msgProvider, error: err.message };\n}\n\nreturn [{ json: { ...input, _smsResult: sendResult } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -190,7 +301,10 @@
       "name": "Update Transcript",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2440, 250],
+      "position": [
+        2440,
+        250
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst staticData = $getWorkflowStaticData('global');\nif (staticData.transcripts?.[input.leadId]) {\n  staticData.transcripts[input.leadId].messages.push({ role:'assistant', content:input.finalReply, channel:'sms', timestamp:new Date().toISOString() });\n}\nreturn [{ json: { status:'reply_sent', leadId:input.leadId, intent:input.intentClassification.intent } }];"
       },
@@ -201,7 +315,10 @@
       "name": "Log Compliance Failure",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2220, 400],
+      "position": [
+        2220,
+        400
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconsole.error('COMPLIANCE BLOCKED:', JSON.stringify(input.complianceResult.violations));\nreturn [{ json: { status:'compliance_blocked', leadId:input.leadId, violations:input.complianceResult.violations, timestamp:new Date().toISOString() } }];"
       },
@@ -212,7 +329,10 @@
       "name": "Send Opt-Out Confirmation",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1560, 520],
+      "position": [
+        1560,
+        520
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst isFrench = (input.locale || 'en-CA').startsWith('fr');\nconst optOutMessage = isFrench ? 'Nous avons bien recu votre demande. Vous ne recevrez plus de messages de notre part.' : 'We have received your request. You will not receive any more messages from us.';\nreturn [{ json: { ...input, optOutMessage } }];"
       },
@@ -223,9 +343,12 @@
       "name": "Send Opt-Out SMS",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1780, 520],
+      "position": [
+        1780,
+        520
+      ],
       "parameters": {
-        "jsCode": "// Send opt-out confirmation via configured messaging provider\nconst msgProvider = $env.MESSAGING_PROVIDER || 'twilio';\nconst input = $input.first().json;\nconst message = input.optOutMessage || '';\nconst fromPhone = input.fromPhone;\nconst toPhone = input.toPhone;\nconst contactId = input.leadId;\n\nlet sendResult = { success: false, provider: msgProvider, error: null };\n\ntry {\n  if (msgProvider === 'ghl') {\n    const GHL_API_KEY = $env.GHL_API_KEY || '';\n    if (!contactId) throw new Error('No GHL contact ID');\n    const response = await fetch('https://services.leadconnectorhq.com/conversations/messages', {\n      method: 'POST',\n      headers: { 'Authorization': `Bearer ${GHL_API_KEY}`, 'Version': '2021-07-28', 'Content-Type': 'application/json' },\n      body: JSON.stringify({ type: 'SMS', contactId: contactId, message: message }),\n    });\n    if (response.ok) sendResult = { success: true, provider: 'ghl' };\n    else { const r = await response.json(); throw new Error(r.message || `GHL error: ${response.status}`); }\n  } else {\n    // Default: Twilio\n    const TWILIO_ACCOUNT_SID = $env.TWILIO_ACCOUNT_SID || '';\n    const TWILIO_AUTH_TOKEN = $env.TWILIO_AUTH_TOKEN || '';\n    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;\n    const body = new URLSearchParams({ To: fromPhone, From: toPhone, Body: message });\n    const response = await fetch(twilioUrl, {\n      method: 'POST',\n      headers: { 'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`), 'Content-Type': 'application/x-www-form-urlencoded' },\n      body: body.toString(),\n    });\n    if (response.ok) sendResult = { success: true, provider: 'twilio' };\n    else { const r = await response.json(); throw new Error(r.message || `Twilio error: ${response.status}`); }\n  }\n} catch (err) {\n  sendResult = { success: false, provider: msgProvider, error: err.message };\n}\n\nreturn [{ json: { ...input, _optOutSmsResult: sendResult } }];"
+        "jsCode": "// Send opt-out confirmation via configured messaging provider\nconst msgProvider = $env.MESSAGING_PROVIDER || 'twilio';\nconst input = $input.first().json;\nconst message = input.optOutMessage || '';\nconst fromPhone = input.fromPhone;\nconst toPhone = input.toPhone;\nconst contactId = input.leadId;\n\nlet sendResult = { success: false, provider: msgProvider, error: null };\n\ntry {\n  if (msgProvider === 'ghl') {\n    const GHL_API_KEY = $env.GHL_API_KEY;\n    if (!GHL_API_KEY) throw new Error('Missing required env var: GHL_API_KEY');\n    if (!contactId) throw new Error('No GHL contact ID');\n    const response = await fetch('https://services.leadconnectorhq.com/conversations/messages', {\n      method: 'POST',\n      headers: { 'Authorization': `Bearer ${GHL_API_KEY}`, 'Version': '2021-07-28', 'Content-Type': 'application/json' },\n      body: JSON.stringify({ type: 'SMS', contactId: contactId, message: message }),\n    });\n    if (response.ok) sendResult = { success: true, provider: 'ghl' };\n    else { const r = await response.json(); throw new Error(r.message || `GHL error: ${response.status}`); }\n  } else {\n    // Default: Twilio\n    const TWILIO_ACCOUNT_SID = $env.TWILIO_ACCOUNT_SID;\n    const TWILIO_AUTH_TOKEN = $env.TWILIO_AUTH_TOKEN;\n    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN) throw new Error('Missing required env vars: TWILIO_ACCOUNT_SID and/or TWILIO_AUTH_TOKEN');\n    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`;\n    const body = new URLSearchParams({ To: fromPhone, From: toPhone, Body: message });\n    const response = await fetch(twilioUrl, {\n      method: 'POST',\n      headers: { 'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`), 'Content-Type': 'application/x-www-form-urlencoded' },\n      body: body.toString(),\n    });\n    if (response.ok) sendResult = { success: true, provider: 'twilio' };\n    else { const r = await response.json(); throw new Error(r.message || `Twilio error: ${response.status}`); }\n  }\n} catch (err) {\n  sendResult = { success: false, provider: msgProvider, error: err.message };\n}\n\nreturn [{ json: { ...input, _optOutSmsResult: sendResult } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -234,9 +357,12 @@
       "name": "Update CRM Opt-Out",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2000, 520],
+      "position": [
+        2000,
+        520
+      ],
       "parameters": {
-        "jsCode": "// Update CRM with opt-out status — supports Activix and GHL\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst input = $input.first().json;\nconst leadId = input.leadId;\n\nfunction getCrmConfig() {\n  if (provider === 'ghl') {\n    return {\n      baseUrl: 'https://services.leadconnectorhq.com',\n      headers: { 'Authorization': `Bearer ${$env.GHL_API_KEY}`, 'Version': '2021-07-28', 'Content-Type': 'application/json', 'Accept': 'application/json' },\n    };\n  }\n  return {\n    baseUrl: $env.ACTIVIX_API_URL || 'https://api.crm.activix.ca/v2',\n    headers: { 'Authorization': `Bearer ${$env.ACTIVIX_API_TOKEN}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n  };\n}\n\nconst config = getCrmConfig();\nlet updateResult = { success: false, error: null };\n\ntry {\n  if (provider === 'ghl') {\n    // GHL: enable DND for the contact\n    const response = await fetch(`${config.baseUrl}/contacts/${leadId}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({\n        dnd: true,\n        dndSettings: { SMS: { status: 'active', message: 'Customer opted out via automated SMS' }, Email: { status: 'active', message: 'Customer opted out via automated SMS' } },\n        tags: [...(input.lead?._raw?.tags || []), 'opted-out', 'nexus-optout'],\n      }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`GHL error: ${response.status} ${errText}`); }\n\n    try {\n      await fetch(`${config.baseUrl}/contacts/${leadId}/notes`, {\n        method: 'POST',\n        headers: config.headers,\n        body: JSON.stringify({ body: '[AI] Customer opted out via SMS. Sequence stopped.' }),\n      });\n    } catch (e) { /* non-critical */ }\n  } else {\n    // Activix PUT\n    const response = await fetch(`${config.baseUrl}/leads/${leadId}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({ result: 'lost', comment: '[AI] Customer opted out via SMS. Sequence stopped.' }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`Activix error: ${response.status} ${errText}`); }\n  }\n} catch (err) {\n  updateResult = { success: false, error: err.message };\n}\n\nreturn [{ json: { ...input, _crmOptOutResult: updateResult } }];"
+        "jsCode": "// Update CRM with opt-out status \u2014 supports Activix and GHL\nconst provider = $env.CRM_PROVIDER || 'activix';\nconst input = $input.first().json;\nconst leadId = input.leadId;\n\nfunction getCrmConfig() {\n  if (provider === 'ghl') {\n    return {\n      baseUrl: 'https://services.leadconnectorhq.com',\n      headers: { 'Authorization': `Bearer ${$env.GHL_API_KEY || (() => { throw new Error('Missing required env var: GHL_API_KEY'); })()}`, 'Version': '2021-07-28', 'Content-Type': 'application/json', 'Accept': 'application/json' },\n    };\n  }\n  return {\n    baseUrl: $env.ACTIVIX_API_URL || 'https://api.crm.activix.ca/v2',\n    headers: { 'Authorization': `Bearer ${$env.ACTIVIX_API_TOKEN || (() => { throw new Error('Missing required env var: ACTIVIX_API_TOKEN'); })()}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },\n  };\n}\n\nconst config = getCrmConfig();\nlet updateResult = { success: false, error: null };\n\ntry {\n  if (provider === 'ghl') {\n    // GHL: enable DND for the contact\n    const response = await fetch(`${config.baseUrl}/contacts/${leadId}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({\n        dnd: true,\n        dndSettings: { SMS: { status: 'active', message: 'Customer opted out via automated SMS' }, Email: { status: 'active', message: 'Customer opted out via automated SMS' } },\n        tags: [...(input.lead?._raw?.tags || []), 'opted-out', 'nexus-optout'],\n      }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`GHL error: ${response.status} ${errText}`); }\n\n    try {\n      await fetch(`${config.baseUrl}/contacts/${leadId}/notes`, {\n        method: 'POST',\n        headers: config.headers,\n        body: JSON.stringify({ body: '[AI] Customer opted out via SMS. Sequence stopped.' }),\n      });\n    } catch (e) { /* non-critical */ }\n  } else {\n    // Activix PUT\n    const response = await fetch(`${config.baseUrl}/leads/${leadId}`, {\n      method: 'PUT',\n      headers: config.headers,\n      body: JSON.stringify({ result: 'lost', comment: '[AI] Customer opted out via SMS. Sequence stopped.' }),\n    });\n    if (response.ok) updateResult = { success: true, error: null };\n    else { const errText = await response.text(); throw new Error(`Activix error: ${response.status} ${errText}`); }\n  }\n} catch (err) {\n  updateResult = { success: false, error: err.message };\n}\n\nreturn [{ json: { ...input, _crmOptOutResult: updateResult } }];"
       },
       "onError": "continueRegularOutput"
     },
@@ -245,7 +371,10 @@
       "name": "Reset Cadence Timer",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2660, 300],
+      "position": [
+        2660,
+        300
+      ],
       "parameters": {
         "jsCode": "const input = $input.first().json;\nconst leadId = input.leadId;\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.cadenceTimers) staticData.cadenceTimers = {};\nstaticData.cadenceTimers[leadId] = { lastReplyAt: new Date().toISOString(), cooldownHours: 72, intent: input.intentClassification?.intent || input.intent || 'unknown' };\nreturn [{ json: { status:'cadence_reset', leadId, cooldownUntil: new Date(Date.now() + 72*60*60*1000).toISOString() } }];"
       },
@@ -253,21 +382,207 @@
     }
   ],
   "connections": {
-    "Inbound Webhook Trigger": { "main": [[{ "node": "Respond OK", "type": "main", "index": 0 }]] },
-    "Respond OK": { "main": [[{ "node": "Parse Inbound Message", "type": "main", "index": 0 }]] },
-    "Parse Inbound Message": { "main": [[{ "node": "Lookup Lead", "type": "main", "index": 0 }]] },
-    "Lookup Lead": { "main": [[{ "node": "Load Conversation History", "type": "main", "index": 0 }]] },
-    "Load Conversation History": { "main": [[{ "node": "Classify Intent", "type": "main", "index": 0 }]] },
-    "Classify Intent": { "main": [[{ "node": "Route by Intent", "type": "main", "index": 0 }]] },
-    "Route by Intent": { "main": [[{ "node": "Build Handoff Payload", "type": "main", "index": 0 }], [{ "node": "Generate AI Reply", "type": "main", "index": 0 }], [{ "node": "Send Opt-Out Confirmation", "type": "main", "index": 0 }]] },
-    "Build Handoff Payload": { "main": [[{ "node": "Slack Alert Rep", "type": "main", "index": 0 }, { "node": "Update CRM Handoff", "type": "main", "index": 0 }]] },
-    "Slack Alert Rep": { "main": [[{ "node": "Reset Cadence Timer", "type": "main", "index": 0 }]] },
-    "Generate AI Reply": { "main": [[{ "node": "Compliance Check", "type": "main", "index": 0 }]] },
-    "Compliance Check": { "main": [[{ "node": "Compliance Pass?", "type": "main", "index": 0 }]] },
-    "Compliance Pass?": { "main": [[{ "node": "Send Reply SMS", "type": "main", "index": 0 }], [{ "node": "Log Compliance Failure", "type": "main", "index": 0 }]] },
-    "Send Reply SMS": { "main": [[{ "node": "Update Transcript", "type": "main", "index": 0 }]] },
-    "Update Transcript": { "main": [[{ "node": "Reset Cadence Timer", "type": "main", "index": 0 }]] },
-    "Send Opt-Out Confirmation": { "main": [[{ "node": "Send Opt-Out SMS", "type": "main", "index": 0 }]] },
-    "Send Opt-Out SMS": { "main": [[{ "node": "Update CRM Opt-Out", "type": "main", "index": 0 }]] }
+    "Inbound Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Respond OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond OK": {
+      "main": [
+        [
+          {
+            "node": "Parse Inbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Inbound Message": {
+      "main": [
+        [
+          {
+            "node": "Lookup Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lookup Lead": {
+      "main": [
+        [
+          {
+            "node": "Load Conversation History",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load Conversation History": {
+      "main": [
+        [
+          {
+            "node": "Classify Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Intent": {
+      "main": [
+        [
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Intent": {
+      "main": [
+        [
+          {
+            "node": "Build Handoff Payload",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate AI Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Opt-Out Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Handoff Payload": {
+      "main": [
+        [
+          {
+            "node": "Slack Alert Rep",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update CRM Handoff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Alert Rep": {
+      "main": [
+        [
+          {
+            "node": "Reset Cadence Timer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate AI Reply": {
+      "main": [
+        [
+          {
+            "node": "Compliance Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compliance Check": {
+      "main": [
+        [
+          {
+            "node": "Compliance Pass?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compliance Pass?": {
+      "main": [
+        [
+          {
+            "node": "Send Reply SMS",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Compliance Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Reply SMS": {
+      "main": [
+        [
+          {
+            "node": "Update Transcript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Transcript": {
+      "main": [
+        [
+          {
+            "node": "Reset Cadence Timer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Opt-Out Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Send Opt-Out SMS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Opt-Out SMS": {
+      "main": [
+        [
+          {
+            "node": "Update CRM Opt-Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   }
 }
