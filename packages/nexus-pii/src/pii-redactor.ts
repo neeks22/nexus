@@ -23,8 +23,15 @@ const EMAIL = /\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b/g;
 /** Canadian postal code: A1A 1A1 or A1A1A1 */
 const CANADIAN_POSTAL = /\b[A-Za-z]\d[A-Za-z]\s?\d[A-Za-z]\d\b/g;
 
-/** US zip code: 5 digits or 5+4 */
-const US_ZIP = /\b\d{5}(?:-\d{4})?\b/g;
+/** US zip code: 5 digits or 5+4, only when near contextual keywords */
+const US_ZIP = /(?:(?:zip|postal|zip\s*code)\s*[:.]?\s*)\d{5}(?:-\d{4})?|(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY)\s+\d{5}(?:-\d{4})?/gi;
+
+/** Street address: number + street name + street suffix */
+const STREET_ADDRESS = /\b\d{1,6}\s+[A-Za-z][A-Za-z\s]{1,30}\b(?:St|Street|Ave|Avenue|Blvd|Boulevard|Dr|Drive|Rd|Road|Ln|Lane|Ct|Court|Pl|Place|Way|Cir|Circle|Terr|Terrace|Cres|Crescent|Pkwy|Parkway)\b\.?/gi;
+
+/** Date of birth: MM/DD/YYYY, MM-DD-YYYY, YYYY-MM-DD, YYYY/MM/DD */
+const DOB_MDY = /\b(?:0[1-9]|1[0-2])[/-](?:0[1-9]|[12]\d|3[01])[/-](?:19|20)\d{2}\b/g;
+const DOB_YMD = /\b(?:19|20)\d{2}[/-](?:0[1-9]|1[0-2])[/-](?:0[1-9]|[12]\d|3[01])\b/g;
 
 /** Credit card: 16 digits with optional spaces or dashes (groups of 4) */
 const CREDIT_CARD = /\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b/g;
@@ -42,6 +49,9 @@ const DEFAULT_PATTERNS: PiiPattern[] = [
   { name: 'PHONE', pattern: PHONE_DASHED, replacement: '[REDACTED_PHONE]' },
   { name: 'PHONE', pattern: PHONE_PLUS, replacement: '[REDACTED_PHONE]' },
   { name: 'EMAIL', pattern: EMAIL, replacement: '[REDACTED_EMAIL]' },
+  { name: 'ADDRESS', pattern: STREET_ADDRESS, replacement: '[REDACTED_ADDRESS]' },
+  { name: 'DOB', pattern: DOB_MDY, replacement: '[REDACTED_DOB]' },
+  { name: 'DOB', pattern: DOB_YMD, replacement: '[REDACTED_DOB]' },
   { name: 'POSTAL_CODE', pattern: CANADIAN_POSTAL, replacement: '[REDACTED_POSTAL_CODE]' },
   { name: 'ZIP_CODE', pattern: US_ZIP, replacement: '[REDACTED_ZIP_CODE]' },
   { name: 'SIN_SSN', pattern: SIN_SSN_DASHED, replacement: '[REDACTED_SIN_SSN]' },

@@ -103,18 +103,99 @@ describe('PiiRedactor', () => {
     });
   });
 
-  // --- US zip codes ---
+  // --- US zip codes (context-aware) ---
 
   describe('US zip codes', () => {
-    it('should redact 5-digit zip code', () => {
+    it('should redact zip code near "zip" keyword', () => {
       const result: RedactionResult = redactor.redact('Zip: 90210');
-      expect(result.redacted).toBe('Zip: [REDACTED_ZIP_CODE]');
+      expect(result.redacted).toBe('[REDACTED_ZIP_CODE]');
       expect(result.patternsMatched).toContain('ZIP_CODE');
     });
 
-    it('should redact 5+4 zip code', () => {
-      const result: RedactionResult = redactor.redact('Full zip: 90210-1234');
-      expect(result.redacted).toBe('Full zip: [REDACTED_ZIP_CODE]');
+    it('should redact zip code near "zip code" keyword', () => {
+      const result: RedactionResult = redactor.redact('Zip code: 90210-1234');
+      expect(result.redacted).toBe('[REDACTED_ZIP_CODE]');
+    });
+
+    it('should redact zip code near "postal" keyword', () => {
+      const result: RedactionResult = redactor.redact('postal 12345');
+      expect(result.redacted).toBe('[REDACTED_ZIP_CODE]');
+    });
+
+    it('should redact zip code after state abbreviation', () => {
+      const result: RedactionResult = redactor.redact('New York, NY 10001');
+      expect(result.redacted).toContain('[REDACTED_ZIP_CODE]');
+    });
+
+    it('should NOT redact bare 5-digit numbers without context', () => {
+      const result: RedactionResult = redactor.redact('Order number 54321 confirmed');
+      expect(result.redacted).toBe('Order number 54321 confirmed');
+      expect(result.patternsMatched).not.toContain('ZIP_CODE');
+    });
+
+    it('should NOT redact year-like numbers', () => {
+      const result: RedactionResult = redactor.redact('Built in 2024 with 50000 miles');
+      expect(result.redacted).not.toContain('[REDACTED_ZIP_CODE]');
+    });
+  });
+
+  // --- Street addresses ---
+
+  describe('street addresses', () => {
+    it('should redact standard street address', () => {
+      const result: RedactionResult = redactor.redact('I live at 123 Main St');
+      expect(result.redacted).toBe('I live at [REDACTED_ADDRESS]');
+      expect(result.patternsMatched).toContain('ADDRESS');
+    });
+
+    it('should redact avenue address', () => {
+      const result: RedactionResult = redactor.redact('Office at 456 Oak Avenue');
+      expect(result.redacted).toBe('Office at [REDACTED_ADDRESS]');
+    });
+
+    it('should redact boulevard address', () => {
+      const result: RedactionResult = redactor.redact('Located at 789 Sunset Blvd');
+      expect(result.redacted).toBe('Located at [REDACTED_ADDRESS]');
+    });
+
+    it('should redact drive address', () => {
+      const result: RedactionResult = redactor.redact('Meet at 100 Riverside Drive');
+      expect(result.redacted).toBe('Meet at [REDACTED_ADDRESS]');
+    });
+
+    it('should redact crescent address (Canadian)', () => {
+      const result: RedactionResult = redactor.redact('Dealer at 55 Maple Cres');
+      expect(result.redacted).toBe('Dealer at [REDACTED_ADDRESS]');
+    });
+  });
+
+  // --- Dates of birth ---
+
+  describe('dates of birth', () => {
+    it('should redact MM/DD/YYYY format', () => {
+      const result: RedactionResult = redactor.redact('DOB: 03/15/1990');
+      expect(result.redacted).toBe('DOB: [REDACTED_DOB]');
+      expect(result.patternsMatched).toContain('DOB');
+    });
+
+    it('should redact MM-DD-YYYY format', () => {
+      const result: RedactionResult = redactor.redact('Born 12-25-1985');
+      expect(result.redacted).toBe('Born [REDACTED_DOB]');
+    });
+
+    it('should redact YYYY-MM-DD format', () => {
+      const result: RedactionResult = redactor.redact('Date of birth: 1990-03-15');
+      expect(result.redacted).toBe('Date of birth: [REDACTED_DOB]');
+    });
+
+    it('should redact YYYY/MM/DD format', () => {
+      const result: RedactionResult = redactor.redact('DOB is 1985/12/25');
+      expect(result.redacted).toBe('DOB is [REDACTED_DOB]');
+    });
+
+    it('should NOT redact invalid dates', () => {
+      const result: RedactionResult = redactor.redact('Code 13/32/2025 is not a date');
+      expect(result.patternsMatched).not.toContain('DOB');
     });
   });
 

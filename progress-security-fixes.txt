@@ -48,3 +48,10 @@ PRD: PRD-security-fixes.md
 - cost-logger.ts: replaced idCounter with `cost_${randomUUID()}`
 - trace-logger.ts: replaced traceCounter with `trace-${randomUUID()}`
 - All 924 tests pass
+
+### [2026-03-29 07:57] Epic 3, Items 3-5: PII redactor enhancements
+- Added street address redaction pattern (number + street name + suffix like St/Ave/Blvd/Dr/Rd/Ln/Ct/Cres etc.)
+- Added date-of-birth redaction for MM/DD/YYYY, MM-DD-YYYY, YYYY-MM-DD, YYYY/MM/DD formats
+- Fixed US zip code false positives: now requires context (near "zip", "postal", or after state abbreviation)
+- Added 17 new tests: 6 zip (context-aware), 5 address, 5 DOB, 1 invalid date rejection
+- All 65 PII tests pass

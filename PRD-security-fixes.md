@@ -15,9 +15,9 @@
 ## Epic 3: Data Integrity
 - [x] Add Zod validation on Activix API responses in activix-client.ts — validate response body against schemas before casting
 - [x] Replace module-level `let` ID counters with crypto.randomUUID() in: nexus-transcript/src/lead-transcript.ts, nexus-billing/src/cost-logger.ts, nexus-observability/src/trace-logger.ts
-- [ ] Add address redaction pattern to nexus-pii/src/pii-redactor.ts (street addresses like "123 Main St")
-- [ ] Add date-of-birth redaction pattern to nexus-pii/src/pii-redactor.ts (MM/DD/YYYY, YYYY-MM-DD)
-- [ ] Fix US zip code regex false positives — add context requirement (near "zip", "postal", or after state abbreviation)
+- [x] Add address redaction pattern to nexus-pii/src/pii-redactor.ts (street addresses like "123 Main St")
+- [x] Add date-of-birth redaction pattern to nexus-pii/src/pii-redactor.ts (MM/DD/YYYY, YYYY-MM-DD)
+- [x] Fix US zip code regex false positives — add context requirement (near "zip", "postal", or after state abbreviation)
 
 ## Epic 4: Compliance Hardening
 - [ ] Wire CASL opt-out language (from templates/opt-out.ts) into the instant response agent — auto-append to every outbound SMS
