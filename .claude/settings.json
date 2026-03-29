@@ -18,5 +18,28 @@
       "Read(.env)",
       "Read(./secrets/**)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(echo $CLAUDE_TOOL_INPUT | jq -r '.file_path // empty'); if [ -n \"$file\" ] && [[ \"$file\" == *.ts ]]; then npx prettier --write \"$file\" 2>/dev/null; fi"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude Code finished working\" with title \"Nexus AI\"' 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
   }
 }
