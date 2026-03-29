@@ -1,0 +1,68 @@
+{
+  "agent_name": "ReadyRide AI Receptionist",
+  "voice": {
+    "voice_id": "eleven_labs_rachel",
+    "voice_model": "eleven_turbo_v2",
+    "description": "Natural, friendly, female voice",
+    "tts_provider": "elevenlabs"
+  },
+  "language": {
+    "primary": "en-CA",
+    "fallback": "fr-CA",
+    "auto_detect": true,
+    "supported": ["en-CA", "fr-CA"]
+  },
+  "response_speed": "normal",
+  "timing": {
+    "max_call_duration_seconds": 600,
+    "silence_timeout_seconds": 10,
+    "end_call_after_silence_seconds": 30
+  },
+  "behavior": {
+    "enable_backchannel": true,
+    "backchannel_frequency": "medium",
+    "responsiveness": 0.8,
+    "interruption_sensitivity": 0.7,
+    "enable_voicemail_detection": true,
+    "post_call_analysis": true
+  },
+  "dealership": {
+    "name": "ReadyRide",
+    "ai_name": "Alex",
+    "address": "PLACEHOLDER — ReadyRide dealership address",
+    "phone": "+1-XXX-XXX-XXXX",
+    "timezone": "America/Toronto"
+  },
+  "transfer_numbers": {
+    "sales": "+1-XXX-XXX-XXXX",
+    "service": "+1-XXX-XXX-XXXX",
+    "parts": "+1-XXX-XXX-XXXX",
+    "manager": "+1-XXX-XXX-XXXX"
+  },
+  "after_hours_schedule": {
+    "monday": { "open": "10:00", "close": "18:00" },
+    "tuesday": { "open": "10:00", "close": "18:00" },
+    "wednesday": { "open": "10:00", "close": "18:00" },
+    "thursday": { "open": "10:00", "close": "18:00" },
+    "friday": { "open": "10:00", "close": "18:00" },
+    "saturday": { "open": "10:00", "close": "16:00" },
+    "sunday": null
+  },
+  "staff_directory": [
+    {
+      "name": "PLACEHOLDER",
+      "role": "Sales Manager",
+      "extension": "101"
+    },
+    {
+      "name": "PLACEHOLDER",
+      "role": "Service Advisor",
+      "extension": "201"
+    }
+  ],
+  "voicemail_message": "Hi, you've reached ReadyRide. We're sorry we missed your call. Please leave a message and we'll get back to you as soon as possible.",
+  "cost_estimate": {
+    "per_minute_usd": 0.13,
+    "notes": "Mid-tier config: GPT-4.1 + Retell TTS + telephony"
+  }
+}
