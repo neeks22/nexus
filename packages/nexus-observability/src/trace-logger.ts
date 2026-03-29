@@ -5,13 +5,11 @@
  * and provides aggregation methods for dashboards and alerting.
  */
 
+import { randomUUID } from 'node:crypto';
 import type { TraceEntry, TraceFilters, DateRange } from './types.js';
 
-let traceCounter = 0;
-
 function generateTraceId(): string {
-  traceCounter += 1;
-  return `trace-${Date.now()}-${traceCounter}`;
+  return `trace-${randomUUID()}`;
 }
 
 export class TraceLogger {

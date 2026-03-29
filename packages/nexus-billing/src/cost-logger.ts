@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { ApiCostEntry, TwilioCostEntry } from './types.js';
 import { CostStore } from './cost-store.js';
 
@@ -12,11 +13,8 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   'claude-haiku-3.5': { inputPerMillion: 0.80, outputPerMillion: 4 },
 };
 
-let idCounter = 0;
-
 function generateId(): string {
-  idCounter += 1;
-  return `cost_${Date.now()}_${idCounter}`;
+  return `cost_${randomUUID()}`;
 }
 
 export class CostLogger {

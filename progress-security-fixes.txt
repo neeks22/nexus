@@ -42,3 +42,9 @@ PRD: PRD-security-fixes.md
 - list/search validate paginated responses via PaginatedResponseSchema(ActivixLeadSchema)
 - Added 4 tests: invalid get, invalid list, invalid create, valid get
 - All 33 activix-client tests pass
+
+### [2026-03-29 07:56] Epic 3, Item 2: Replace module-level let ID counters with crypto.randomUUID()
+- lead-transcript.ts: replaced entryCounter with `entry_${randomUUID()}`
+- cost-logger.ts: replaced idCounter with `cost_${randomUUID()}`
+- trace-logger.ts: replaced traceCounter with `trace-${randomUUID()}`
+- All 924 tests pass

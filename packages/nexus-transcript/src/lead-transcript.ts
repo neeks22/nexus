@@ -2,6 +2,7 @@
 //  LeadTranscript — Immutable, append-only conversation log
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+import { randomUUID } from 'node:crypto';
 import type {
   TranscriptEntry,
   TranscriptRole,
@@ -10,11 +11,8 @@ import type {
   ComplianceCheckResult,
 } from './types.js';
 
-let entryCounter = 0;
-
 function generateId(): string {
-  entryCounter += 1;
-  return `entry_${Date.now()}_${entryCounter}`;
+  return `entry_${randomUUID()}`;
 }
 
 export interface AppendMessageOptions {
