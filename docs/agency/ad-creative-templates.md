@@ -5,6 +5,24 @@
 > **Markets:** Ottawa/Gatineau, Ontario, Quebec
 > **Audience:** 575-699 credit score, working professionals, first-time buyers, credit rebuilders
 > **Languages:** English + Quebec French
+> **Copywriting Framework:** NESB (Kyle Milligan's "Take Their Money" Big 4)
+
+---
+
+## NESB FRAMEWORK — APPLY TO EVERY AD
+
+Every ad in this library is built on the NESB framework. Each template is tagged with the elements it uses. **Every ad must hit at least 2 of the Big 4.**
+
+| Element | Alter Ego | Core Psychology | Power Words |
+|---------|-----------|-----------------|-------------|
+| **N = NEW** | ONLY | Categorization is death. New = hope. | Breakthrough, Revolutionary, Discovery, Announcing, Revealed, Exclusive, Just Launched |
+| **E = EASY** | ANYBODY | Remove barriers. Push-button simple. Use "Not Statements." | Simple, Automatic, Step-by-step, System, "All you have to do is..." |
+| **S = SAFE** | PREDICTABLE | Risk averse. Proof + track record = trust. | Proven, Guaranteed, Track record, Trusted, Certified, Documented |
+| **B = BIG** | FAST | Demands attention. Triggers FOMO. Fast multiplies Big. | Monster, Huge, Once in a lifetime, Overnight, Instantly, Massive |
+
+**"Not Statements" for subprime ads:** "You don't need perfect credit. You don't need a huge down payment. You don't need to be a financial expert. You don't need to spend hours at a dealership."
+
+**NESB Scoring:** Rate each ad N(1-5) E(1-5) S(1-5) B(1-5). Only run ads scoring 12+ total.
 
 ---
 
@@ -47,15 +65,15 @@ Each template below includes a compliance flag:
 > **Placement:** Facebook Feed, Instagram Feed, Marketplace
 > **Special Ad Category:** Credit
 
-### Headline Templates (30 chars max for clean display)
+### Headline Templates (30 chars max for clean display) [NESB tags per headline]
 
-| # | Headline Template | Compliance |
-|---|---|---|
-| H1 | `{{year}} {{make}} {{model}} — {{city}}` | `[COMPLIANT]` |
-| H2 | `{{make}} {{model}} — From ${{price}}/mo` | `[COMPLIANT]` |
-| H3 | `{{year}} {{make}} — {{mileage}} km` | `[COMPLIANT]` |
-| H4 | `Drive This {{make}} {{model}} Today` | `[COMPLIANT]` |
-| H5 | `{{make}} {{model}} — Financing Available` | `[COMPLIANT]` |
+| # | Headline Template | NESB | Compliance |
+|---|---|---|---|
+| H1 | `Just In: {{year}} {{make}} {{model}}` | N | `[COMPLIANT]` |
+| H2 | `{{make}} {{model}} — From ${{price}}/mo` | B | `[COMPLIANT]` |
+| H3 | `New Arrival: {{year}} {{make}}` | N | `[COMPLIANT]` |
+| H4 | `Drive This {{make}} {{model}} Today` | B | `[COMPLIANT]` |
+| H5 | `{{make}} {{model}} — Easy Financing` | E | `[COMPLIANT]` |
 
 ### Primary Text Templates (125 chars for mobile optimization)
 
@@ -108,78 +126,83 @@ Each template below includes a compliance flag:
 
 ---
 
-### Template LG-1: "Your Job Is Your Credit"
+### Template LG-1: "Your Job Is Your Credit" [NESB: N+E+S+B]
 
 **Target angle:** Working professionals who think they need perfect credit
+**NESB:** NEW (this is a new kind of program), EASY (just show your pay stub), SAFE (98% approval track record = predictable), BIG/FAST (drive home TODAY)
 
 | Element | Content |
 |---|---|
-| **Headline** | Your Job Is Your Credit |
-| **Primary Text** | Working full-time? That's the #1 thing lenders look at. We work with 20+ lenders who focus on income and stability — not just a number. See what you qualify for in 60 seconds. |
-| **Description** | Full-time or part-time — apply in 60 seconds |
+| **Headline** | Your Job Is Your Credit — A New Way to Get Approved |
+| **Primary Text** | Announcing a breakthrough program: your pay stub is all you need. You don't need perfect credit. You don't need a cosigner. You don't need to be a financial expert. 20+ lenders competing for you. 98% approval track record. See your options in 60 seconds — drive home today. |
+| **Description** | Proven program — apply in 60 seconds |
 | **CTA Button** | Apply Now |
-| **Image Guidance** | Professional-looking person (diverse representation) standing next to a clean, late-model SUV or sedan. Warm lighting. Text overlay: "EMPLOYED? YOU'RE ALREADY HALFWAY THERE." Use dealership branding. |
-| **Compliance** | `[REVIEW]` — "Your Job Is Your Credit" could imply credit knowledge. **Compliant alt headline:** `Working? You Qualify for More Than You Think` **Compliant alt primary text:** `Full-time or part-time employment opens the door to flexible financing. We work with 20+ lenders to find the best fit for your situation. See your options in 60 seconds.` |
+| **Image Guidance** | Professional-looking person (diverse representation) standing next to a clean, late-model SUV or sedan. Warm lighting. Text overlay: "YOUR PAY STUB IS ALL YOU NEED." Use dealership branding. |
+| **Compliance** | `[REVIEW]` — "Your Job Is Your Credit" could imply credit knowledge. **Compliant alt headline:** `A New Program: Working? You Qualify for More Than You Think` **Compliant alt primary text:** `A breakthrough approach to auto financing. Full-time or part-time employment opens the door to flexible options. 20+ lenders, proven track record. See your options in 60 seconds.` |
 
 ---
 
-### Template LG-2: "$0 Down — Drive Today"
+### Template LG-2: "$0 Down — Drive Today" [NESB: E+B]
 
 **Target angle:** Removing the cash barrier — people who don't have savings for a down payment
+**NESB:** EASY (no barrier, no down payment needed), BIG (save thousands instantly), FAST (same day, drive today)
 
 | Element | Content |
 |---|---|
-| **Headline** | $0 Down — Drive Today |
-| **Primary Text** | No savings for a down payment? No problem. We have $0-down financing options that get you behind the wheel today. Over 200 vehicles in stock. |
-| **Description** | Zero down payment options available |
+| **Headline** | $0 Down — Save Thousands, Drive Today |
+| **Primary Text** | You don't need savings for a down payment. You don't need to wait weeks. Our $0-down program gets you behind the wheel the same day you apply. Over 200 vehicles in stock — the biggest selection in Ottawa. All you have to do is apply. 60 seconds. |
+| **Description** | $0 down — same day, simple |
 | **CTA Button** | Get Offer |
-| **Image Guidance** | Split image: left side shows a person looking frustrated at a piggy bank, right side shows them smiling with car keys. Bold text overlay: "$0 DOWN." Clean, modern design. |
+| **Image Guidance** | Split image: left side shows a person looking frustrated at a piggy bank, right side shows them smiling with car keys. Bold text overlay: "$0 DOWN. DRIVE TODAY." Clean, modern design. |
 | **Compliance** | `[COMPLIANT]` — $0 down is a financing feature, not a credit-score claim. |
 
 ---
 
-### Template LG-3: "Fresh Start Program"
+### Template LG-3: "Fresh Start Program" [NESB: N+S+E]
 
 **Target angle:** Empowerment — people recovering from financial setbacks
+**NESB:** NEW (brand new program, just launched), SAFE (proven track record, hundreds helped), EASY/ANYBODY (no matter your situation, simple application)
 
 | Element | Content |
 |---|---|
-| **Headline** | The Fresh Start Auto Program |
-| **Primary Text** | Everyone deserves a second chance. Our Fresh Start Program is designed to get you driving AND build your financial future at the same time. Apply in 60 seconds — no obligation. |
-| **Description** | A new beginning starts here |
+| **Headline** | Announcing: The All-New Fresh Start Program |
+| **Primary Text** | A brand-new program with a proven track record. Hundreds of families have already used Fresh Start to get driving AND build their financial future at the same time. You don't need perfect credit. You don't need a cosigner. No matter your situation, this program was built for you. Apply in 60 seconds — no obligation. |
+| **Description** | Proven program — hundreds helped |
 | **CTA Button** | Apply Now |
-| **Image Guidance** | Sunrise or "new day" imagery. Person receiving car keys with a genuine smile. Warm, hopeful tone. Text overlay: "YOUR FRESH START IS HERE." Avoid any imagery that looks predatory or desperate. |
+| **Image Guidance** | Sunrise or "new day" imagery. Person receiving car keys with a genuine smile. Warm, hopeful tone. Text overlay: "THE ALL-NEW FRESH START PROGRAM." Avoid any imagery that looks predatory or desperate. |
 | **Compliance** | `[COMPLIANT]` — "Fresh Start" is an empowerment message, not a credit-specific claim. Keep it aspirational, not pitying. |
 
 ---
 
-### Template LG-4: "Pre-Approved in 60 Seconds"
+### Template LG-4: "Pre-Approved in 60 Seconds" [NESB: E+B]
 
 **Target angle:** Speed and ease — people who hate long processes
+**NESB:** EASY (push-button simple, 60 seconds, skip the runaround), BIG/FAST (instant answer, drive today, 200+ vehicles)
 
 | Element | Content |
 |---|---|
-| **Headline** | Pre-Approved in 60 Seconds |
-| **Primary Text** | Skip the dealership runaround. Apply online in 60 seconds, get your approval, then come pick your car. It really is that simple. 200+ vehicles ready to go. |
-| **Description** | Fast, easy, no-hassle financing |
+| **Headline** | Pre-Approved in 60 Seconds Flat |
+| **Primary Text** | Skip the dealership runaround forever. One simple application — 60 seconds — and you have your answer instantly. Then come pick your car from 200+ vehicles. You don't need to sit in an office for hours. You don't need to fill out stacks of paperwork. All you have to do is tap "Apply." |
+| **Description** | Push-button simple — instant answer |
 | **CTA Button** | Apply Now |
 | **Image Guidance** | Phone screen showing a timer/stopwatch at 60 seconds with a green checkmark. Clean, techy feel. Text overlay: "60 SECONDS. THAT'S IT." Minimize text — let the visual tell the story. |
 | **Compliance** | `[COMPLIANT]` — Speed claim is about the process, not credit. Ensure the 60-second claim is accurate for the actual application flow. |
 
 ---
 
-### Template LG-5: "Credit Rebuilding Program"
+### Template LG-5: "Credit Rebuilding Program" [NESB: N+S+E]
 
 **Target angle:** Long-term value — people who want to fix their credit, not just get a car
+**NESB:** NEW (new program, revolutionary approach), SAFE (proven results, documented track record, lenders report to bureaus), EASY (automatic, your payments do the work)
 
 | Element | Content |
 |---|---|
-| **Headline** | Rebuild Your Credit While You Drive |
-| **Primary Text** | Every on-time payment builds your credit score. Our Credit Rebuilding Program pairs you with lenders who report to credit bureaus — so your car payment actually helps your future. |
-| **Description** | Drive today, build credit for tomorrow |
+| **Headline** | A Revolutionary Program: Drive AND Build Your Future |
+| **Primary Text** | Announcing a proven system where every on-time payment automatically builds your financial future. Our program pairs you with lenders who report to credit bureaus — your car payment works for you, automatically. Hundreds have already done it. You don't need to do anything extra. Just drive and pay — the system does the rest. |
+| **Description** | Proven system — automatic results |
 | **CTA Button** | Learn More |
-| **Image Guidance** | Upward-trending graph overlaid on a car driving toward a horizon. Optimistic, forward-looking. Text overlay: "EVERY PAYMENT BUILDS YOUR FUTURE." Professional, not gimmicky. |
-| **Compliance** | `[FLAGGED]` — "Rebuild Your Credit" directly references credit status. **Compliant alt headline:** `Build a Stronger Financial Future` **Compliant alt primary text:** `Every on-time payment is a step forward. Our program connects you with lenders who report to credit bureaus — so your car payment works for your future. Apply and see your options.` **Compliant alt description:** `Your car payment works for you` |
+| **Image Guidance** | Upward-trending graph overlaid on a car driving toward a horizon. Optimistic, forward-looking. Text overlay: "A PROVEN SYSTEM THAT BUILDS YOUR FUTURE." Professional, not gimmicky. |
+| **Compliance** | `[FLAGGED]` — "Rebuild Your Credit" directly references credit status. **Compliant alt headline:** `A Proven System to Build a Stronger Financial Future` **Compliant alt primary text:** `Every on-time payment is a step forward. Our proven program connects you with lenders who report to credit bureaus — so your car payment works for your future, automatically. Hundreds have already done it. Apply and see your options.` **Compliant alt description:** `Proven system — your payment works for you` |
 
 ---
 
@@ -194,70 +217,80 @@ Each template below includes a compliance flag:
 
 ---
 
-### Template RT-1: "Still Thinking About It?"
+### Template RT-1: "Still Thinking About It?" [NESB: B+E]
+
+**NESB:** BIG/FAST (scarcity — won't last, act now), EASY (60 seconds, simple)
 
 | Element | Content |
 |---|---|
-| **Headline** | Still Thinking About the {{make}} {{model}}? |
-| **Primary Text** | We noticed you were checking out the {{year}} {{make}} {{model}}. It's still here — but not for long. Get your financing options in 60 seconds. |
-| **Description** | Your vehicle is still available |
+| **Headline** | The {{make}} {{model}} You Loved — Still Here |
+| **Primary Text** | That {{year}} {{make}} {{model}} you were looking at? It's still available — but vehicles like this move fast. Don't miss it. All you have to do is apply — takes 60 seconds. |
+| **Description** | Won't last — apply in 60 seconds |
 | **CTA Button** | Get Offer |
 | **Image** | Dynamic — pulls from catalog (same vehicle they viewed) |
 | **Compliance** | `[COMPLIANT]` — Behavioral retargeting based on site visit is allowed. Does not reference credit. |
 
 ---
 
-### Template RT-2: "Still Available"
+### Template RT-2: "Still Available" [NESB: B+S]
+
+**NESB:** BIG (scarcity, FOMO — before it's gone), SAFE (financing available, proven options)
 
 | Element | Content |
 |---|---|
-| **Headline** | The {{make}} {{model}} You Viewed Is Still Available |
-| **Primary Text** | Good news — that {{year}} {{make}} {{model}} you were looking at hasn't sold yet. Financing options available. Don't miss it this time. |
-| **Description** | Apply now before it's gone |
+| **Headline** | The {{make}} {{model}} You Viewed — Act Fast |
+| **Primary Text** | That {{year}} {{make}} {{model}} you were looking at hasn't sold yet — but it could any day. Proven financing options available. Hundreds of drivers have taken the same step. Don't miss it this time. |
+| **Description** | Proven options — before it's gone |
 | **CTA Button** | Learn More |
 | **Image** | Dynamic catalog image of the vehicle |
 | **Compliance** | `[COMPLIANT]` |
 
 ---
 
-### Template RT-3: Social Proof
+### Template RT-3: Social Proof [NESB: S+B]
+
+**NESB:** SAFE (social proof, track record, hundreds of happy drivers = predictable), BIG (massive numbers, FOMO)
 
 | Element | Content |
 |---|---|
-| **Headline** | {{X}} People Approved This Week |
-| **Primary Text** | You're not alone — {{X}} people got approved for financing this week at {{dealership_name}}. See what you qualify for. It takes 60 seconds and won't affect your credit score. |
-| **Description** | Join hundreds of happy drivers |
+| **Headline** | {{X}} People Drove Away Happy This Week |
+| **Primary Text** | The track record speaks: {{X}} people drove away in a new vehicle this week from {{dealership_name}}. It happens week after week — proven, predictable results. See your options in 60 seconds. Won't affect your score. |
+| **Description** | Proven track record — join them |
 | **CTA Button** | Apply Now |
-| **Image** | Collage of happy customers with their new cars (use real customer photos with permission, or diverse stock photos). Text overlay: "{{X}}+ APPROVED THIS WEEK." |
-| **Compliance** | `[REVIEW]` — "got approved for financing" is borderline. **Compliant alt primary text:** `{{X}} people drove away in a new vehicle this week from {{dealership_name}}. See your financing options — takes 60 seconds and won't affect your credit score.` |
+| **Image** | Collage of happy customers with their new cars (use real customer photos with permission, or diverse stock photos). Text overlay: "{{X}}+ HAPPY DRIVERS THIS WEEK." |
+| **Compliance** | `[REVIEW]` — "got approved for financing" is borderline. **Compliant alt primary text:** `{{X}} people drove away in a new vehicle this week from {{dealership_name}}. A proven track record. See your financing options — takes 60 seconds and won't affect your credit score.` |
 
 > **Operational note:** Update {{X}} weekly in the ad creative. Use actual numbers — fabricating approval counts is an advertising violation.
 
 ---
 
-### Template RT-4: Urgency / Scarcity
+### Template RT-4: Urgency / Scarcity [NESB: B+E]
+
+**NESB:** BIG (once they're gone, they're gone — massive FOMO), EASY (lock in your rate, simple action)
 
 | Element | Content |
 |---|---|
-| **Headline** | Only {{X}} Left at This Price |
-| **Primary Text** | The {{year}} {{make}} {{model}} you were eyeing? We only have {{X}} left at this price. Once they're gone, they're gone. Lock in your rate today. |
-| **Description** | Limited stock — act now |
+| **Headline** | Only {{X}} Left — Once-in-a-Lifetime Price |
+| **Primary Text** | The {{year}} {{make}} {{model}} you were eyeing? Only {{X}} left at this price. Once they're gone, they're gone forever. All you have to do is lock in your rate — takes 60 seconds. Don't let this one slip away. |
+| **Description** | Limited — act now or miss out |
 | **CTA Button** | Get Offer |
 | **Image** | Dynamic catalog image with a "LOW STOCK" badge overlay |
 | **Compliance** | `[COMPLIANT]` — Scarcity claims are fine as long as they are truthful. Ensure inventory counts are accurate. False scarcity is an FTC/Competition Bureau violation. |
 
 ---
 
-### Template RT-5: Objection Handler
+### Template RT-5: Objection Handler [NESB: E+S]
+
+**NESB:** EASY (simple, push-button, "Not Statements"), SAFE (20+ lenders = proven network, track record of approvals)
 
 | Element | Content |
 |---|---|
-| **Headline** | Worried About Financing? Don't Be. |
-| **Primary Text** | We work with 20+ lenders to find the right fit for YOUR situation. Not just one bank — twenty. That's why our approval rate is so high. Apply in 60 seconds — it won't affect your score. |
-| **Description** | 20+ lenders competing for you |
+| **Headline** | Financing Made Simple — Proven Results |
+| **Primary Text** | You don't need to worry about finding the right lender. You don't need to call 20 banks yourself. Our proven network of 20+ lenders does the work for you — automatically. That's why our approval track record is so strong. Simple 60-second application. Won't affect your score. |
+| **Description** | Proven network — 20+ lenders |
 | **CTA Button** | Apply Now |
 | **Image** | Clean graphic showing logos of multiple lender partners (or generic bank icons) funneling down to one "APPROVED" stamp. Professional, trustworthy design. |
-| **Compliance** | `[FLAGGED]` — "Worried about financing?" implies knowledge of the viewer's situation. **Compliant alt headline:** `Financing Made Simple` **Compliant alt primary text:** `We work with 20+ lenders to find the best fit for every situation. More lenders means more options — and higher approval rates. Apply in 60 seconds. It won't affect your score.` |
+| **Compliance** | `[FLAGGED]` — "Worried about financing?" implies knowledge of the viewer's situation. **Compliant alt headline:** `A Proven System: 20+ Lenders, One Simple Application` **Compliant alt primary text:** `Our proven network of 20+ lenders finds the best fit for every situation automatically. More lenders = more options = a stronger track record. Apply in 60 seconds. Won't affect your score.` |
 
 ---
 
@@ -271,8 +304,9 @@ Each template below includes a compliance flag:
 
 ---
 
-### Template VID-1: "They Said You Can't"
+### Template VID-1: "They Said You Can't" [NESB: N+E+S+B]
 
+**NESB:** NEW (a different way, not the bank), EASY ($0 down, 60-second app), SAFE (20+ lenders proven), BIG/FAST (fresh start, one click away)
 **Hook (0-3 sec):** Text overlay on black screen: `"They said you can't get approved."`
 
 | Element | Content |
@@ -286,8 +320,9 @@ Each template below includes a compliance flag:
 
 ---
 
-### Template VID-2: "$0 Down, Ottawa's #1"
+### Template VID-2: "$0 Down, Ottawa's #1" [NESB: E+B+S]
 
+**NESB:** EASY ($0 down, no hassle), BIG (200+ vehicles, Ottawa's #1), SAFE (proven approval track record)
 **Hook (0-3 sec):** Text overlay: `"$0 down. No hassle. Ottawa's #1 approval rate."`
 
 | Element | Content |
@@ -301,8 +336,9 @@ Each template below includes a compliance flag:
 
 ---
 
-### Template VID-3: "POV: You Just Got Approved"
+### Template VID-3: "POV: You Just Got Approved" [NESB: N+B]
 
+**NESB:** NEW (fresh experience, aspirational), BIG/FAST (dream car, tomorrow, instant)
 **Hook (0-3 sec):** Text overlay: `"POV: You just got approved for your dream car"`
 
 | Element | Content |
@@ -316,8 +352,9 @@ Each template below includes a compliance flag:
 
 ---
 
-### Template VID-4: "3 Things Your Dealer Isn't Telling You"
+### Template VID-4: "3 Things Your Dealer Isn't Telling You" [NESB: N+E+S]
 
+**NESB:** NEW (insider secrets revealed), EASY (you don't need perfect credit, simple), SAFE (20+ lenders = proven, higher approvals)
 **Hook (0-3 sec):** Text overlay: `"3 things your dealer isn't telling you about financing"`
 
 | Element | Content |
@@ -331,8 +368,9 @@ Each template below includes a compliance flag:
 
 ---
 
-### Template VID-5: "From Denied to Driving"
+### Template VID-5: "From Denied to Driving" [NESB: N+S+B]
 
+**NESB:** NEW (a different approach), SAFE (proven — customer testimonial), BIG/FAST (48 hours, life-changing)
 **Hook (0-3 sec):** Text overlay: `"From denied to driving in 48 hours — here's how"`
 
 | Element | Content |

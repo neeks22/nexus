@@ -25,28 +25,46 @@ export const META_DESCRIPTION_MAX_CHARS = 30;
 export const GOOGLE_HEADLINE_MAX_CHARS = 30;
 export const GOOGLE_DESCRIPTION_MAX_CHARS = 90;
 
-// --- Subprime Hooks ---
+// --- NESB Framework (Kyle Milligan's "Take Their Money" Big 4) ---
+// Every ad must score 12+ on NESB (1-5 each element)
+
+export const NESB_POWER_WORDS = {
+  NEW: ["Breakthrough", "Revolutionary", "Discovery", "Game Changing", "Announcing", "Revealed", "Exclusive", "Proprietary", "Only", "First-ever", "Just launched"],
+  EASY: ["Simple", "Push-button", "Automatic", "Step-by-step", "System", "All you have to do is", "Effortless", "Turnkey", "Done-for-you"],
+  SAFE: ["Happened before", "History repeating", "Guaranteed", "Proven", "Track record", "Predictable", "Trusted", "Certified", "Documented"],
+  BIG: ["Monster", "Huge", "Once in a lifetime", "Overnight", "Instantly", "Massive", "Life-changing", "Unprecedented", "Record-breaking"],
+} as const;
+
+// --- Subprime Hooks (NESB-Powered) ---
 
 const SUBPRIME_HOOKS_EN: ReadonlyArray<string> = [
-  "Your Job Is Your Credit",
-  "$0 Down — Drive Today",
-  "Fresh Start Program",
-  "Pre-Approved in 60 Seconds",
-  "All Credit Levels Welcome",
-  "We Work With 20+ Lenders",
-  "Soft Pull Only — No Impact to Your Score",
-  "Payments from $199/month",
+  // [NESB: N+E+S+B] NEW program, EASY (just show pay stub), SAFE (98% approval), BIG/FAST (drive home TODAY)
+  "Your Job Is Your Credit — A Breakthrough Program Where Your Pay Stub Is All You Need. 98% Approval Track Record. Drive Home Today.",
+  // [NESB: E+B] EASY (no barrier), BIG (save thousands), FAST (same day)
+  "$0 Down — Save Thousands Instantly. Same-Day Approval. The Easiest Path to Your Next Car.",
+  // [NESB: N+S+E] NEW (brand new program), SAFE (proven track record), ANYBODY
+  "The All-New Fresh Start Program — A Proven System That Has Helped Hundreds of Families. No Perfect Credit Needed. No Hoops to Jump Through.",
+  // [NESB: E+B] EASY (push-button), FAST (60 seconds)
+  "Pre-Approved in 60 Seconds — One Simple Application. Instant Answer. That's It.",
+  // [NESB: S+E] SAFE (all welcome), EASY (no barriers)
+  "All Credit Levels Welcome — You Don't Need Perfect Credit. You Don't Need a Cosigner. You Don't Need to Be a Financial Expert.",
+  // [NESB: S+B] SAFE (proven), BIG (20+ lenders)
+  "20+ Lenders Competing for You — A Proven Network That Finds Your Best Rate, Guaranteed.",
+  // [NESB: S+E] SAFE (no impact), EASY (simple)
+  "Soft Pull Only — Zero Impact to Your Score. Simple. Safe. Predictable.",
+  // [NESB: E+B] EASY (low cost), BIG (affordable)
+  "Payments from $199/month — The Simplest Way to Drive a Quality Vehicle Starting Today.",
 ];
 
 const SUBPRIME_HOOKS_FR: ReadonlyArray<string> = [
-  "Ton emploi, c'est ta cle",
-  "0$ de mise de fonds — Roule aujourd'hui",
-  "Programme Nouveau Depart",
-  "Pre-approuve en 60 secondes",
-  "Tous les niveaux de credit bienvenus",
-  "On travaille avec 20+ preteurs",
-  "Aucun impact sur ton dossier de credit",
-  "Paiements a partir de 199$/mois",
+  "Ton emploi, c'est ta cle — Un nouveau programme ou ta preuve de revenu suffit. Taux d'approbation de 98%. Roule aujourd'hui.",
+  "0$ de mise de fonds — Economise des milliers instantanement. Approbation le jour meme.",
+  "Le tout nouveau Programme Nouveau Depart — Un systeme eprouve qui a aide des centaines de familles.",
+  "Pre-approuve en 60 secondes — Une seule demande simple. Reponse instantanee.",
+  "Tous les niveaux de credit bienvenus — Pas besoin de credit parfait. Pas besoin de cosignataire.",
+  "20+ preteurs en competition pour toi — Un reseau eprouve qui trouve ton meilleur taux.",
+  "Aucun impact sur ton dossier de credit — Simple. Securitaire. Previsible.",
+  "Paiements a partir de 199$/mois — La facon la plus simple de rouler en vehicule de qualite.",
 ];
 
 // --- Compliance Patterns ---
@@ -86,7 +104,38 @@ const STYLE_RULES = `<style_rules>
 - Urgency must be real (actual end dates, actual limited stock)
 - No emoji spam — one emoji maximum per primary text
 - Write naturally, not like a robot. Confident, local, trustworthy tone.
-</style_rules>`;
+</style_rules>
+
+<nesb_framework>
+## NESB Copywriting Framework (Kyle Milligan's "Take Their Money" Big 4)
+
+Every ad you generate MUST be built on the NESB framework. These are the 4 emotional triggers that compel action:
+
+### N = NEW (Alter Ego: ONLY)
+Categorization is DEATH. If the reader thinks "I've seen this before," you lose them. NEW = hope. If it's new, maybe THIS is the solution that finally works. ONLY amplifies NEW through exclusivity.
+Power words: Breakthrough, Revolutionary, Discovery, Game Changing, Announcing, Revealed, Exclusive, Proprietary, Only, First-ever
+"New and different is better than better."
+
+### E = EASY (Alter Ego: ANYBODY)
+Nobody likes work. Make the solution push-button simple. People are insecure — they blame themselves for past failures. Use "Not Statements" to demolish objections: "You don't need perfect credit. You don't need a huge down payment. You don't need to be a financial expert."
+Power words: Simple, Push-button, Automatic, Step-by-step, System, Effortless, "All you have to do is..."
+
+### S = SAFE (Alter Ego: PREDICTABLE)
+People are risk averse — they'd rather avoid loss than pursue gain. Safe reduces skepticism AND increases perceived value. Use patterns, track records, testimonials to make results PREDICTABLE.
+Power words: Happened before, History repeating, Guaranteed, Proven, Track record, Trusted, Certified
+
+### B = BIG (Alter Ego: FAST)
+Big demands attention and triggers FOMO. Fast multiplies Big — "not just life-changing, but OVERNIGHT."
+Power words: Monster, Huge, Once in a lifetime, Overnight, Instantly, Massive, Life-changing
+
+### NESB Application Rules:
+- Every ad must hit at least 2 of the Big 4
+- Headlines should lead with N or B (attention-grabbers)
+- Primary text should layer in E and S (conversion drivers)
+- Descriptions should reinforce the strongest element
+- Subprime ads should lean heavily on E (remove barriers) and S (reduce fear)
+- Use "Not Statements" in every subprime ad to demolish objections
+</nesb_framework>`;
 
 // --- Prompt Builder ---
 
@@ -167,6 +216,8 @@ function buildRoleSection(isEnglish: boolean): string {
 You are a senior automotive advertising copywriter with 15 years of experience in dealership marketing. You specialize in Meta Ads (Facebook/Instagram) and Google Ads that drive showroom traffic. You have deep expertise in subprime and near-prime auto financing ad copy — you know how to write ads that convert for the 575-699 credit score audience without triggering Meta Special Ad Category violations.
 
 You understand that this audience is made up of working professionals — nurses, tradespeople, union workers — who have income and stability but imperfect credit. Your copy treats them with dignity, never as charity cases.
+
+You are trained in Kyle Milligan's NESB copywriting framework ("Take Their Money"). Every ad you write is engineered around the Big 4: NEW (differentiation and hope), EASY (remove all barriers), SAFE (proof and predictability), and BIG (attention and urgency). You never let your ads be categorized as "just another dealer ad." You use Not Statements to demolish objections. You score every ad on NESB and only deliver ads scoring 12+ out of 20.
 </role>`;
   }
 
@@ -288,6 +339,17 @@ For EVERY ad, include a compliance flag:
 
 ### IMAGE GUIDANCE
 For each Meta ad, include a brief image description (what the creative should show).
+
+### NESB SCORING — MANDATORY
+For EVERY ad you generate, score it on the NESB framework:
+- N (New/Only): 1-5
+- E (Easy/Anybody): 1-5
+- S (Safe/Predictable): 1-5
+- B (Big/Fast): 1-5
+- Total: sum of all 4
+
+ONLY output ads scoring 12+ total. If an ad scores below 12, rewrite it until it hits the threshold. Include the score breakdown with each ad in the format:
+[NESB Score: N=X E=X S=X B=X | Total: XX]
 </output_requirements>`;
 }
 
