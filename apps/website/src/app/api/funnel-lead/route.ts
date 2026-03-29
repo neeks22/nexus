@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 /**
  * POST /api/funnel-lead
  *
- * Receives multi-step funnel data from the /apply page,
+ * Receives multi-step funnel data from the /apply page (9 steps),
  * forwards it to the n8n webhook for CRM creation and instant response,
  * and returns success/error.
  */
@@ -11,9 +11,12 @@ import { NextResponse } from 'next/server';
 interface FunnelLeadPayload {
   vehicleType: string;
   budget: string;
+  monthlyIncome: string;
+  jobTitle: string;
   employment: string;
   creditSituation: string;
   tradeIn: string;
+  tradeInYear: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -63,9 +66,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       funnelData: {
         vehicleType: body.vehicleType,
         budget: body.budget,
+        monthlyIncome: body.monthlyIncome,
+        jobTitle: body.jobTitle,
         employment: body.employment,
         creditSituation: body.creditSituation,
         tradeIn: body.tradeIn,
+        tradeInYear: body.tradeInYear || '',
       },
       contact: {
         firstName: body.firstName,
@@ -109,7 +115,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     console.log(
       `[funnel-lead] Lead submitted: ${body.firstName} ${body.lastName} | ` +
         `vehicle=${body.vehicleType} budget=${body.budget} ` +
+        `income=${body.monthlyIncome} job=${body.jobTitle} ` +
         `credit=${body.creditSituation} employment=${body.employment} ` +
+        `tradeIn=${body.tradeIn} tradeInYear=${body.tradeInYear || 'n/a'} ` +
         `utm_source=${body.utmSource || 'direct'}`
     );
 

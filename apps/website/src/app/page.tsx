@@ -9,6 +9,9 @@ export default function HomePage() {
     <>
       {/* ── HERO ─────────────────────────────────── */}
       <section className={styles.hero}>
+        <div className={styles.heroGrid} />
+        <div className={styles.heroOrb} />
+        <div className={styles.heroOrbSecondary} />
         <div className={styles.heroInner}>
           <div className={styles.heroBadge}>
             <span className={styles.heroBadgeDot} />
@@ -24,7 +27,7 @@ export default function HomePage() {
           </p>
           <div className={styles.heroActions}>
             <Link href="/contact" className={styles.heroPrimary}>
-              Book a Free Audit <span>→</span>
+              Book a Free Audit <span>&#8594;</span>
             </Link>
             <Link href="/services" className={styles.heroSecondary}>
               See How It Works
@@ -53,7 +56,10 @@ export default function HomePage() {
       <section className={styles.problems}>
         <div className={styles.container}>
           <div className={styles.problemsHeader}>
-            <p className={styles.label}>The Problem</p>
+            <div className={styles.labelPill}>
+              <span className={styles.labelPillDot} />
+              The Problem
+            </div>
             <h2 className={styles.sectionTitle}>
               AI agents are powerful.<br />They&rsquo;re also fragile.
             </h2>
@@ -64,7 +70,7 @@ export default function HomePage() {
               <h3 className={styles.problemTitle}>AI projects fail before production</h3>
               <p className={styles.problemText}>
                 Most AI agent projects never make it out of the demo. They hit a rate limit,
-                hallucinate once, or crash on a bad API call — and that&rsquo;s the end.
+                hallucinate once, or crash on a bad API call &mdash; and that&rsquo;s the end.
               </p>
             </div>
             <div className={styles.problemCard}>
@@ -79,16 +85,19 @@ export default function HomePage() {
               <div className={styles.problemStat}>$10K/mo</div>
               <h3 className={styles.problemTitle}>Burned on failed API calls</h3>
               <p className={styles.problemText}>
-                Every retry loop, every halluci&shy;nation, every timeout — your API bill grows.
+                Every retry loop, every halluci&shy;nation, every timeout &mdash; your API bill grows.
                 Companies routinely waste thousands monthly on calls that never should have been made.
               </p>
             </div>
           </div>
           <div className={styles.solutionBanner}>
             <div className={styles.solutionLeft}>
-              <p className={styles.solutionLabel}>The Nexus Difference</p>
+              <div className={styles.labelPill}>
+                <span className={styles.labelPillDotGreen} />
+                The Nexus Difference
+              </div>
               <p className={styles.solutionText}>
-                Nexus agents don&rsquo;t just fail gracefully — they recover automatically.
+                Nexus agents don&rsquo;t just fail gracefully &mdash; they recover automatically.
                 Circuit breakers prevent cascade failures. Health scoring catches degraded agents before
                 they crash. Self-healing keeps your pipeline running even when individual agents fail.
               </p>
@@ -97,8 +106,8 @@ export default function HomePage() {
               <code className={styles.solutionCode}>
                 <span className={styles.codeComment}>// What happens when an agent fails</span>{'\n'}
                 <span className={styles.codeDim}>[self-heal]</span> Agent:ResearcherA timed out{'\n'}
-                <span className={styles.codeDim}>         </span> → redistributed to Agent:ResearcherB{'\n'}
-                <span className={styles.codeGreen}>[recovered]</span> Pipeline continues ✓
+                <span className={styles.codeDim}>         </span> &#8594; redistributed to Agent:ResearcherB{'\n'}
+                <span className={styles.codeGreen}>[recovered]</span> Pipeline continues &#10003;
               </code>
             </div>
           </div>
@@ -109,7 +118,10 @@ export default function HomePage() {
       <section className={styles.services}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <p className={styles.label}>What We Build</p>
+            <div className={styles.labelPill}>
+              <span className={styles.labelPillDot} />
+              What We Build
+            </div>
             <h2 className={styles.sectionTitle}>Three ways we work together</h2>
             <p className={styles.sectionSubtitle}>
               From a quick audit that finds your hidden AI opportunities, to a fully managed
@@ -118,9 +130,9 @@ export default function HomePage() {
           </div>
           <div className={styles.servicesGrid}>
             <ServiceCard
-              icon="🔍"
+              icon="&#128269;"
               title="AI Agent Audit"
-              priceRange="$5,000 – $15,000"
+              priceRange="$5,000 - $15,000"
               description="We study your business, find automation opportunities, and build an ROI projection. You leave with a clear picture of what AI agents can do for you — and what it will cost."
               deliverables={[
                 'Full AI opportunity assessment',
@@ -132,9 +144,9 @@ export default function HomePage() {
               cta="Start with an Audit"
             />
             <ServiceCard
-              icon="⚡"
+              icon="&#9889;"
               title="Custom Agent Build"
-              priceRange="$15,000 – $50,000"
+              priceRange="$15,000 - $50,000"
               description="We design, build, and deploy a self-healing multi-agent system custom to your business. Every agent has a circuit breaker, health score, and automatic recovery built in."
               deliverables={[
                 'Multi-agent architecture design',
@@ -147,9 +159,9 @@ export default function HomePage() {
               cta="Start a Custom Build"
             />
             <ServiceCard
-              icon="🛡️"
+              icon="&#128737;"
               title="Managed Operations"
-              priceRange="$5,000 – $25,000/mo"
+              priceRange="$5,000 - $25,000/mo"
               description="We run your agents 24/7. Self-healing keeps them alive. Monthly reports prove the value. You focus on your business — we keep your AI running."
               deliverables={[
                 '24/7 monitoring & recovery',
@@ -163,7 +175,7 @@ export default function HomePage() {
           </div>
           <div className={styles.servicesFooter}>
             <Link href="/services" className={styles.servicesLink}>
-              View full service details →
+              View full service details &#8594;
             </Link>
           </div>
         </div>
@@ -173,40 +185,39 @@ export default function HomePage() {
       <section className={styles.howItWorks}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <p className={styles.label}>Our Process</p>
+            <div className={styles.labelPill}>
+              <span className={styles.labelPillDot} />
+              Our Process
+            </div>
             <h2 className={styles.sectionTitle}>From audit to autonomous operation</h2>
           </div>
           <div className={styles.steps}>
             <div className={styles.step}>
               <div className={styles.stepNumber}>01</div>
-              <div className={styles.stepIcon}>🔍</div>
               <h3 className={styles.stepTitle}>Audit</h3>
               <p className={styles.stepText}>
-                We map your workflows, identify automation opportunities, and produce an ROI projection with specifics — which agents to build, what they&rsquo;ll do, what they&rsquo;ll return.
+                We map your workflows, identify automation opportunities, and produce an ROI projection with specifics &mdash; which agents to build, what they&rsquo;ll do, what they&rsquo;ll return.
               </p>
             </div>
-            <div className={styles.stepArrow}>→</div>
+            <div className={styles.stepConnector}><span /></div>
             <div className={styles.step}>
               <div className={styles.stepNumber}>02</div>
-              <div className={styles.stepIcon}>📐</div>
               <h3 className={styles.stepTitle}>Design</h3>
               <p className={styles.stepText}>
-                We architect the agent team: which agents, which protocols, how they hand off to each other. Circuit breakers and health monitors designed in from day one — not bolted on later.
+                We architect the agent team: which agents, which protocols, how they hand off to each other. Circuit breakers and health monitors designed in from day one &mdash; not bolted on later.
               </p>
             </div>
-            <div className={styles.stepArrow}>→</div>
+            <div className={styles.stepConnector}><span /></div>
             <div className={styles.step}>
               <div className={styles.stepNumber}>03</div>
-              <div className={styles.stepIcon}>⚙️</div>
               <h3 className={styles.stepTitle}>Build</h3>
               <p className={styles.stepText}>
-                We build on the Nexus framework — every agent wrapped in a self-healing pipeline. You get a dashboard, an immutable transcript of every agent conversation, and a structured handoff.
+                We build on the Nexus framework &mdash; every agent wrapped in a self-healing pipeline. You get a dashboard, an immutable transcript of every agent conversation, and a structured handoff.
               </p>
             </div>
-            <div className={styles.stepArrow}>→</div>
+            <div className={styles.stepConnector}><span /></div>
             <div className={styles.step}>
               <div className={styles.stepNumber}>04</div>
-              <div className={styles.stepIcon}>🛡️</div>
               <h3 className={styles.stepTitle}>Operate</h3>
               <p className={styles.stepText}>
                 We run it. Agents monitor themselves, recover from failures, and flag anomalies. Monthly reports show exactly what your agents did, what they saved, and what to improve.
@@ -220,11 +231,14 @@ export default function HomePage() {
       <section className={styles.healingDemo}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <p className={styles.label}>Self-Healing in Action</p>
+            <div className={styles.labelPill}>
+              <span className={styles.labelPillDot} />
+              Self-Healing in Action
+            </div>
             <h2 className={styles.sectionTitle}>Watch the recovery happen</h2>
             <p className={styles.sectionSubtitle}>
               When an agent fails, Nexus doesn&rsquo;t panic. It classifies the error,
-              selects a recovery strategy, and retries — automatically.
+              selects a recovery strategy, and retries &mdash; automatically.
             </p>
           </div>
           <div className={styles.terminalWindow}>
@@ -234,72 +248,72 @@ export default function HomePage() {
                 <span className={styles.dotYellow} />
                 <span className={styles.dotGreen} />
               </div>
-              <span className={styles.terminalTitle}>nexus-agents — production pipeline</span>
+              <span className={styles.terminalTitle}>nexus-agents &mdash; production pipeline</span>
             </div>
             <div className={styles.terminalBody}>
               <div className={`${styles.terminalLine} ${styles.lineNormal}`}>
                 <span className={styles.lineTime}>09:14:02</span>
                 <span className={styles.lineDim}>[team]</span>
-                <span> Pipeline started — 4 agents, sequential protocol</span>
+                <span> Pipeline started &mdash; 4 agents, sequential protocol</span>
               </div>
               <div className={`${styles.terminalLine} ${styles.lineNormal}`}>
                 <span className={styles.lineTime}>09:14:03</span>
                 <span className={styles.lineGreen}>[healthy]</span>
-                <span> Agent:Researcher health=1.00 — executing</span>
+                <span> Agent:Researcher health=1.00 &mdash; executing</span>
               </div>
               <div className={`${styles.terminalLine} ${styles.lineNormal}`}>
                 <span className={styles.lineTime}>09:14:05</span>
                 <span className={styles.lineGreen}>[healthy]</span>
-                <span> Agent:Researcher completed — handoff to Agent:Analyst</span>
+                <span> Agent:Researcher completed &mdash; handoff to Agent:Analyst</span>
               </div>
-              <div className={`${styles.terminalLine} ${styles.lineError} ${styles.animateLine}`}>
+              <div className={`${styles.terminalLine} ${styles.lineError}`}>
                 <span className={styles.lineTime}>09:14:07</span>
                 <span className={styles.lineRed}>[failure]</span>
-                <span> Agent:Analyst — rate_limit error (429)</span>
+                <span> Agent:Analyst &mdash; rate_limit error (429)</span>
               </div>
-              <div className={`${styles.terminalLine} ${styles.lineWarning} ${styles.animateLineDelay1}`}>
+              <div className={`${styles.terminalLine} ${styles.lineWarning}`}>
                 <span className={styles.lineTime}>09:14:07</span>
                 <span className={styles.lineYellow}>[diagnose]</span>
-                <span> Classifying: infrastructure → rate_limit strategy selected</span>
+                <span> Classifying: infrastructure &#8594; rate_limit strategy selected</span>
               </div>
-              <div className={`${styles.terminalLine} ${styles.lineWarning} ${styles.animateLineDelay2}`}>
+              <div className={`${styles.terminalLine} ${styles.lineWarning}`}>
                 <span className={styles.lineTime}>09:14:08</span>
                 <span className={styles.lineYellow}>[recover]</span>
-                <span> Exponential backoff — waiting 2.4s with jitter...</span>
+                <span> Exponential backoff &mdash; waiting 2.4s with jitter...</span>
               </div>
-              <div className={`${styles.terminalLine} ${styles.lineSuccess} ${styles.animateLineDelay3}`}>
+              <div className={`${styles.terminalLine} ${styles.lineSuccess}`}>
                 <span className={styles.lineTime}>09:14:10</span>
                 <span className={styles.lineGreen}>[healed]</span>
-                <span> Agent:Analyst recovered — attempt 2/3 succeeded</span>
+                <span> Agent:Analyst recovered &mdash; attempt 2/3 succeeded</span>
               </div>
-              <div className={`${styles.terminalLine} ${styles.lineSuccess} ${styles.animateLineDelay4}`}>
+              <div className={`${styles.terminalLine} ${styles.lineSuccess}`}>
                 <span className={styles.lineTime}>09:14:12</span>
                 <span className={styles.lineGreen}>[complete]</span>
-                <span> Pipeline finished — healingSummary: &#123; successRate: 1.0, tombstones: [] &#125;</span>
+                <span> Pipeline finished &mdash; healingSummary: &#123; successRate: 1.0, tombstones: [] &#125;</span>
               </div>
               <div className={styles.terminalCursor}>
-                <span className={styles.cursor}>█</span>
+                <span className={styles.cursor}>&#9608;</span>
               </div>
             </div>
           </div>
           <div className={styles.healingSteps}>
             <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="fail">✕</div>
+              <div className={styles.healingStepIcon} data-state="fail">&#10005;</div>
               <div className={styles.healingStepLabel}>Agent Fails</div>
             </div>
-            <div className={styles.healingArrow}>→</div>
+            <div className={styles.healingArrow}>&#8594;</div>
             <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="diagnose">⚡</div>
+              <div className={styles.healingStepIcon} data-state="diagnose">&#9889;</div>
               <div className={styles.healingStepLabel}>Self-Healing Kicks In</div>
             </div>
-            <div className={styles.healingArrow}>→</div>
+            <div className={styles.healingArrow}>&#8594;</div>
             <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="recover">↺</div>
+              <div className={styles.healingStepIcon} data-state="recover">&#8634;</div>
               <div className={styles.healingStepLabel}>Agent Recovers</div>
             </div>
-            <div className={styles.healingArrow}>→</div>
+            <div className={styles.healingArrow}>&#8594;</div>
             <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="continue">✓</div>
+              <div className={styles.healingStepIcon} data-state="continue">&#10003;</div>
               <div className={styles.healingStepLabel}>Pipeline Continues</div>
             </div>
           </div>
@@ -310,7 +324,10 @@ export default function HomePage() {
       <section className={styles.testimonials}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <p className={styles.label}>Client Results</p>
+            <div className={styles.labelPill}>
+              <span className={styles.labelPillDotGreen} />
+              Client Results
+            </div>
             <h2 className={styles.sectionTitle}>Companies that stopped losing sleep over AI</h2>
           </div>
           <div className={styles.testimonialsGrid}>
@@ -344,12 +361,15 @@ export default function HomePage() {
         <div className={styles.container}>
           <div className={styles.roiInner}>
             <div className={styles.roiLeft}>
-              <p className={styles.label}>The Business Case</p>
+              <div className={styles.labelPill}>
+                <span className={styles.labelPillDot} />
+                The Business Case
+              </div>
               <h2 className={styles.roiTitle}>The math on self-healing AI</h2>
               <p className={styles.roiText}>
-                The average company running AI agents wastes $2,000–$10,000/month on failed
+                The average company running AI agents wastes $2,000&ndash;$10,000/month on failed
                 calls, downtime, and manual recovery. Nexus recovers 89% of those failures automatically.
-                Our clients average <strong>$47,000 in annual savings</strong> — and that&rsquo;s before
+                Our clients average <strong>$47,000 in annual savings</strong> &mdash; and that&rsquo;s before
                 counting the revenue from faster operations.
               </p>
               <div className={styles.roiMetrics}>
@@ -367,7 +387,7 @@ export default function HomePage() {
                 </div>
               </div>
               <Link href="/contact" className={styles.roiCta}>
-                Calculate Your ROI →
+                Calculate Your ROI &#8594;
               </Link>
             </div>
             <div className={styles.roiRight}>
@@ -375,15 +395,15 @@ export default function HomePage() {
                 <div className={styles.roiCardTitle}>Typical client economics</div>
                 <div className={styles.roiRow}>
                   <span className={styles.roiRowLabel}>Monthly API waste before Nexus</span>
-                  <span className={styles.roiRowValueNeg}>–$6,200</span>
+                  <span className={styles.roiRowValueNeg}>&ndash;$6,200</span>
                 </div>
                 <div className={styles.roiRow}>
-                  <span className={styles.roiRowLabel}>Agent downtime cost (hrs × rate)</span>
-                  <span className={styles.roiRowValueNeg}>–$2,800</span>
+                  <span className={styles.roiRowLabel}>Agent downtime cost (hrs &times; rate)</span>
+                  <span className={styles.roiRowValueNeg}>&ndash;$2,800</span>
                 </div>
                 <div className={styles.roiRow}>
                   <span className={styles.roiRowLabel}>Manual recovery engineering time</span>
-                  <span className={styles.roiRowValueNeg}>–$1,400</span>
+                  <span className={styles.roiRowValueNeg}>&ndash;$1,400</span>
                 </div>
                 <div className={styles.roiDivider} />
                 <div className={styles.roiRow}>
@@ -392,7 +412,7 @@ export default function HomePage() {
                 </div>
                 <div className={styles.roiRow}>
                   <span className={styles.roiRowLabel}>Nexus Managed Operations</span>
-                  <span className={styles.roiRowValueNeg}>–$8,000</span>
+                  <span className={styles.roiRowValueNeg}>&ndash;$8,000</span>
                 </div>
                 <div className={styles.roiDivider} />
                 <div className={`${styles.roiRow} ${styles.roiTotal}`}>

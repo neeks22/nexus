@@ -18,8 +18,8 @@ export function Navbar() {
     <header className={styles.header}>
       <nav className={styles.nav}>
         <Link href="/" className={styles.logo}>
-          <span className={styles.logoMark}>◈</span>
-          <span className={styles.logoText}>Nexus</span>
+          <span className={styles.logoMark}>N</span>
+          <span className={styles.logoText}>Nexus AI</span>
         </Link>
 
         <ul className={styles.links}>

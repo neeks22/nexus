@@ -2,10 +2,17 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(10, 10, 10, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(10, 10, 15, 0.7);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-bottom: 1px solid transparent;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+/* On-scroll state handled by CSS — when content scrolls behind, the
+   glassmorphism naturally reveals the border via compositing */
+.header:hover {
+  border-bottom-color: var(--border-subtle);
 }
 
 .nav {
@@ -26,13 +33,21 @@
 }
 
 .logoMark {
-  font-size: 20px;
-  color: var(--accent-green);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  background: var(--accent-gradient);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 14px;
+  border-radius: 8px;
   line-height: 1;
 }
 
 .logoText {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--text-primary);
@@ -46,38 +61,65 @@
 }
 
 .link {
-  padding: 6px 12px;
+  position: relative;
+  padding: 6px 14px;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-secondary);
-  border-radius: 6px;
-  transition: color 0.15s ease, background 0.15s ease;
+  border-radius: 8px;
+  transition: color var(--transition), background var(--transition);
+}
+
+.link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: var(--accent-gradient);
+  border-radius: 1px;
+  transition: width var(--transition), left var(--transition);
 }
 
 .link:hover {
   color: var(--text-primary);
-  background: var(--bg-card);
+}
+
+.link:hover::after {
+  width: 60%;
+  left: 20%;
 }
 
 .link.active {
   color: var(--text-primary);
-  background: var(--bg-card);
+}
+
+.link.active::after {
+  width: 60%;
+  left: 20%;
 }
 
 .cta {
-  padding: 8px 18px;
-  background: var(--accent-green);
-  color: #000;
-  font-size: 14px;
-  font-weight: 700;
-  border-radius: var(--radius);
-  transition: background 0.15s ease;
+  padding: 8px 20px;
+  background: var(--accent-gradient);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  transition: transform var(--transition), box-shadow var(--transition);
   white-space: nowrap;
   flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(99,102,241,0.2);
 }
 
 .cta:hover {
-  background: var(--accent-green-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+}
+
+.cta:active {
+  transform: scale(0.98);
 }
 
 .mobileToggle {
@@ -94,6 +136,11 @@
   height: 2px;
   background: var(--text-secondary);
   border-radius: 2px;
+  transition: background var(--transition);
+}
+
+.mobileToggle:hover span {
+  background: var(--text-primary);
 }
 
 @media (max-width: 768px) {

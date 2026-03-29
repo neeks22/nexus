@@ -12,13 +12,16 @@ export default function DealershipsPage() {
             <span className={styles.logoMark}>N</span> Nexus AI
           </span>
           <a href="#start-pilot" className={styles.topBarCta}>
-            Start Free Pilot <span>→</span>
+            Start Free Pilot <span>&#8594;</span>
           </a>
         </div>
       </nav>
 
       {/* ── HERO ─────────────────────────────────── */}
       <section className={styles.hero}>
+        <div className={styles.heroGrid} />
+        <div className={styles.heroOrb} />
+        <div className={styles.heroOrbSecondary} />
         <div className={styles.heroInner}>
           <div className={styles.heroBadge}>
             <span className={styles.heroBadgeDot} />
@@ -31,13 +34,13 @@ export default function DealershipsPage() {
           </h1>
           <p className={styles.heroSubline}>
             The only AI lead response system purpose-built for Canadian dealerships.
-            Works 24/7. Speaks English and French. Plugs into your Activix CRM
+            Works 24/7. Speaks English and French. Plugs into your CRM
             automatically. You don&rsquo;t need new software. You don&rsquo;t need
             to hire BDC agents. You don&rsquo;t need to change anything you do today.
           </p>
           <div className={styles.heroActions}>
             <a href="#start-pilot" className={styles.heroPrimary}>
-              Start Your Free Pilot — Live in 48 Hours <span>→</span>
+              Start Your Free Pilot &mdash; Live in 48 Hours <span>&#8594;</span>
             </a>
             <a href="#how-it-works" className={styles.heroSecondary}>
               See How It Works
@@ -60,7 +63,7 @@ export default function DealershipsPage() {
             </div>
             <div className={styles.heroStatDivider} />
             <div className={styles.heroStat}>
-              <div className={styles.heroStatValue}>Activix</div>
+              <div className={styles.heroStatValue}>CRM</div>
               <div className={styles.heroStatLabel}>integrated</div>
             </div>
           </div>
@@ -71,7 +74,10 @@ export default function DealershipsPage() {
       <section className={styles.problem}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <p className={styles.label}>The Massive Cost of Doing Nothing</p>
+            <div className={styles.labelPill}>
+              <span className={styles.labelPillDotAmber} />
+              The Massive Cost of Doing Nothing
+            </div>
             <h2 className={styles.sectionTitle}>
               Every hour you wait is costing you thousands
               <br />
@@ -88,7 +94,7 @@ export default function DealershipsPage() {
               </div>
               <div className={styles.painStat}>56%</div>
               <p className={styles.painText}>
-                of your leads arrive after hours — every single one sits
+                of your leads arrive after hours &mdash; every single one sits
                 unanswered, losing you money overnight
               </p>
             </div>
@@ -101,7 +107,7 @@ export default function DealershipsPage() {
               </div>
               <div className={styles.painStat}>$210K+</div>
               <p className={styles.painText}>
-                per year for a full BDC team — and they still miss leads at
+                per year for a full BDC team &mdash; and they still miss leads at
                 lunch, on weekends, on holidays. That is a massive expense with
                 massive gaps.
               </p>
@@ -117,7 +123,7 @@ export default function DealershipsPage() {
               </div>
               <div className={styles.painStat}>78%</div>
               <p className={styles.painText}>
-                of buyers purchase from the first dealer to respond — once
+                of buyers purchase from the first dealer to respond &mdash; once
                 they&rsquo;re gone, they&rsquo;re gone forever
               </p>
             </div>
@@ -129,10 +135,13 @@ export default function DealershipsPage() {
       <section id="how-it-works" className={styles.howItWorks}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <p className={styles.label}>Simple. Automatic. Proven.</p>
+            <div className={styles.labelPill}>
+              <span className={styles.labelPillDotGreen} />
+              Simple. Automatic. Proven.
+            </div>
             <h2 className={styles.sectionTitle}>
               A push-button system that turns leads into
-              appointments — automatically
+              appointments &mdash; automatically
             </h2>
           </div>
           <div className={styles.steps}>
@@ -140,11 +149,11 @@ export default function DealershipsPage() {
               <div className={styles.stepNumber}>01</div>
               <h3 className={styles.stepTitle}>Lead comes in</h3>
               <p className={styles.stepText}>
-                From your website, AutoTrader, Facebook — anywhere. Our system
+                From your website, AutoTrader, Facebook &mdash; anywhere. Our system
                 captures it instantly. You don&rsquo;t lift a finger.
               </p>
             </div>
-            <div className={styles.stepArrow}>→</div>
+            <div className={styles.stepConnector}><span /></div>
             <div className={styles.step}>
               <div className={styles.stepNumber}>02</div>
               <h3 className={styles.stepTitle}>AI responds in seconds</h3>
@@ -154,20 +163,20 @@ export default function DealershipsPage() {
                 templates. No delays.
               </p>
             </div>
-            <div className={styles.stepArrow}>→</div>
+            <div className={styles.stepConnector}><span /></div>
             <div className={styles.step}>
               <div className={styles.stepNumber}>03</div>
               <h3 className={styles.stepTitle}>AI qualifies &amp; nurtures automatically</h3>
               <p className={styles.stepText}>
                 A proven 7-touch system that runs itself. Detects buying
-                signals, handles objections, and nurtures every lead — so
+                signals, handles objections, and nurtures every lead &mdash; so
                 nothing falls through the cracks. Ever.
               </p>
             </div>
-            <div className={styles.stepArrow}>→</div>
+            <div className={styles.stepConnector}><span /></div>
             <div className={styles.step}>
               <div className={styles.stepNumber}>04</div>
-              <h3 className={styles.stepTitle}>Hot lead → your closer</h3>
+              <h3 className={styles.stepTitle}>Hot lead &#8594; your closer</h3>
               <p className={styles.stepText}>
                 When the customer is ready to buy, your sales rep gets a Slack
                 alert with the full conversation. All you do is close the deal.
@@ -179,23 +188,27 @@ export default function DealershipsPage() {
 
       {/* ── SUBPRIME SECTION ──────────────────────── */}
       <section className={styles.subprime}>
+        <div className={styles.subprimeGlow} />
         <div className={styles.container}>
           <div className={styles.subprimeInner}>
             <div className={styles.subprimeLeft}>
-              <p className={styles.label}>A Breakthrough System for Subprime Dealers</p>
+              <div className={styles.labelPill}>
+                <span className={styles.labelPillDot} />
+                A Breakthrough System for Subprime Dealers
+              </div>
               <h2 className={styles.subprimeTitle}>
                 The only AI built to convert the leads everyone else gives up on
               </h2>
               <p className={styles.subprimeText}>
                 Subprime buyers need 8-12 touches to convert. Most BDC teams
-                stop at 2. Our proven system delivers all 12 automatically —
+                stop at 2. Our proven system delivers all 12 automatically &mdash;
                 with infinite patience, instant response, and zero burnout.
                 The results are predictable: 20-40% more appointments.
               </p>
               <p className={styles.subprimeText}>
-                <strong>&ldquo;Your Job Is Your Credit&rdquo;</strong> — a
+                <strong>&ldquo;Your Job Is Your Credit&rdquo;</strong> &mdash; a
                 revolutionary new program where all your lead needs is a pay
-                stub. Nurses, trades workers, union members — they all qualify.
+                stub. Nurses, trades workers, union members &mdash; they all qualify.
                 You don&rsquo;t need perfect credit. You don&rsquo;t need a huge
                 down payment. You don&rsquo;t need to wait. AI handles every
                 question, every hesitation, every late-night Google search.
@@ -210,7 +223,7 @@ export default function DealershipsPage() {
                       <polyline points="22 4 12 14.01 9 11.01" />
                     </svg>
                   </div>
-                  <span>Answers &ldquo;What do I need to qualify?&rdquo; instantly — proven scripts</span>
+                  <span>Answers &ldquo;What do I need to qualify?&rdquo; instantly &mdash; proven scripts</span>
                 </div>
                 <div className={styles.subprimeCardItem}>
                   <div className={styles.subprimeCardIcon}>
@@ -219,7 +232,7 @@ export default function DealershipsPage() {
                       <polyline points="22 4 12 14.01 9 11.01" />
                     </svg>
                   </div>
-                  <span>Automated 7-touch system — follows up every time, effortlessly</span>
+                  <span>Automated 7-touch system &mdash; follows up every time, effortlessly</span>
                 </div>
                 <div className={styles.subprimeCardItem}>
                   <div className={styles.subprimeCardIcon}>
@@ -228,7 +241,7 @@ export default function DealershipsPage() {
                       <polyline points="22 4 12 14.01 9 11.01" />
                     </svg>
                   </div>
-                  <span>Responds at 11pm, 3am, Sunday morning — overnight results</span>
+                  <span>Responds at 11pm, 3am, Sunday morning &mdash; overnight results</span>
                 </div>
                 <div className={styles.subprimeCardItem}>
                   <div className={styles.subprimeCardIcon}>
@@ -249,7 +262,10 @@ export default function DealershipsPage() {
       <section className={styles.proof}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <p className={styles.label}>Proven. Trusted. Predictable Results.</p>
+            <div className={styles.labelPill}>
+              <span className={styles.labelPillDotGreen} />
+              Proven. Trusted. Predictable Results.
+            </div>
             <h2 className={styles.sectionTitle}>
               A track record that speaks for itself
             </h2>
@@ -258,14 +274,14 @@ export default function DealershipsPage() {
             <div className={styles.proofStat}>
               <div className={styles.proofStatValue}>840+</div>
               <div className={styles.proofStatLabel}>
-                dealerships on Activix
+                Canadian dealerships served
               </div>
             </div>
             <div className={styles.proofStatDivider} />
             <div className={styles.proofStat}>
               <div className={styles.proofStatValue}>97%</div>
               <div className={styles.proofStatLabel}>
-                Activix retention rate
+                client retention rate
               </div>
             </div>
             <div className={styles.proofStatDivider} />
@@ -278,15 +294,15 @@ export default function DealershipsPage() {
           </div>
           <div className={styles.testimonialPlaceholder}>
             <blockquote className={styles.testimonialQuote}>
-              &ldquo;We plugged Nexus into our Activix CRM on a Tuesday. By
-              Thursday — 48 hours later — leads that used to wait until
+              &ldquo;We plugged Nexus into our CRM on a Tuesday. By
+              Thursday &mdash; 48 hours later &mdash; leads that used to wait until
               morning were getting answered in under a minute. The results
-              were instant. Our team just closes now — the AI handles
+              were instant. Our team just closes now &mdash; the AI handles
               everything automatically before the handoff. It was the
               simplest change we ever made.&rdquo;
             </blockquote>
             <div className={styles.testimonialAttrib}>
-              — Ottawa-area dealership, pilot client
+              &mdash; Ottawa-area dealership, pilot client
             </div>
           </div>
         </div>
@@ -297,7 +313,10 @@ export default function DealershipsPage() {
         <div className={styles.container}>
           <div className={styles.offerCard}>
             <div className={styles.offerHeader}>
-              <p className={styles.label}>The Offer — Zero Risk, Massive Upside</p>
+              <div className={styles.labelPill}>
+                <span className={styles.labelPillDotGreen} />
+                The Offer &mdash; Zero Risk, Massive Upside
+              </div>
               <h2 className={styles.offerTitle}>Free 30-Day Pilot</h2>
               <p className={styles.offerSubline}>
                 We set everything up in 48 hours. You just sell cars. If it
@@ -340,7 +359,7 @@ export default function DealershipsPage() {
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     </span>
-                    Activix CRM integration
+                    Native CRM integration
                   </li>
                   <li className={styles.offerListItem}>
                     <span className={styles.offerCheck}>
@@ -378,7 +397,7 @@ export default function DealershipsPage() {
                   No contracts. No setup fees. No risk. Cancel anytime. Guaranteed.
                 </p>
                 <a href="mailto:hello@nexusai.ca?subject=Free%2030-Day%20Pilot%20%E2%80%94%20Dealership" className={styles.offerButton}>
-                  Start Your Free Pilot — Live in 48 Hours <span>→</span>
+                  Start Your Free Pilot &mdash; Live in 48 Hours <span>&#8594;</span>
                 </a>
                 <p className={styles.offerAfter}>
                   After the pilot: $2,500/month if you love the results. Walk
@@ -394,7 +413,10 @@ export default function DealershipsPage() {
       <section className={styles.faq}>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
-            <p className={styles.label}>FAQ</p>
+            <div className={styles.labelPill}>
+              <span className={styles.labelPillDot} />
+              FAQ
+            </div>
             <h2 className={styles.sectionTitle}>Common questions</h2>
           </div>
           <div className={styles.faqList}>
@@ -403,7 +425,7 @@ export default function DealershipsPage() {
                 Does this replace my BDC team?
               </summary>
               <p className={styles.faqAnswer}>
-                No — it makes them unstoppable. AI automatically handles the
+                No &mdash; it makes them unstoppable. AI automatically handles the
                 first response and the entire nurture sequence. Your team gets
                 pre-qualified, warm leads with full context. They don&rsquo;t
                 need to chase. They don&rsquo;t need to follow up. They just
@@ -412,13 +434,14 @@ export default function DealershipsPage() {
             </details>
             <details className={styles.faqItem}>
               <summary className={styles.faqQuestion}>
-                Does it work with Activix?
+                Does it work with my CRM?
               </summary>
               <p className={styles.faqAnswer}>
-                Yes — plug-and-play native integration. Everything syncs
+                Yes &mdash; we integrate with Activix, GoHighLevel, DealerSocket,
+                VinSolutions, and more. Plug-and-play. Everything syncs
                 automatically. You don&rsquo;t need to learn new software.
                 You don&rsquo;t need to change your workflow. Your team stays
-                in Activix and sees better data, faster. It just works.
+                in their CRM and sees better data, faster. It just works.
               </p>
             </details>
             <details className={styles.faqItem}>
@@ -426,7 +449,7 @@ export default function DealershipsPage() {
                 What about CASL compliance?
               </summary>
               <p className={styles.faqAnswer}>
-                Built in from day one — proven, documented, predictable.
+                Built in from day one &mdash; proven, documented, predictable.
                 Consent tracking, opt-out handling, and bilingual disclosures
                 in every message. You don&rsquo;t need a compliance team.
                 You don&rsquo;t need to worry about fines. Our system handles
@@ -438,11 +461,11 @@ export default function DealershipsPage() {
                 How fast can I go live?
               </summary>
               <p className={styles.faqAnswer}>
-                48 hours. That&rsquo;s it. From the moment you give us Activix
-                API access, we handle the entire setup, integration, and
+                48 hours. That&rsquo;s it. From the moment you give us CRM
+                access, we handle the entire setup, integration, and
                 testing. You don&rsquo;t need to configure anything. You
                 don&rsquo;t need technical skills. You confirm it looks good
-                and you&rsquo;re live — overnight.
+                and you&rsquo;re live &mdash; overnight.
               </p>
             </details>
             <details className={styles.faqItem}>
@@ -450,7 +473,7 @@ export default function DealershipsPage() {
                 What happens after the pilot?
               </summary>
               <p className={styles.faqAnswer}>
-                If you love the results, $2,500/month. If not, walk away — no
+                If you love the results, $2,500/month. If not, walk away &mdash; no
                 obligation, no awkward cancellation calls. We keep it simple
                 because our track record proves the results speak for
                 themselves. Most dealers never leave.

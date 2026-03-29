@@ -1,17 +1,47 @@
 .section {
   padding: 80px 24px;
-  background: var(--bg-secondary);
-  border-top: 1px solid var(--border-subtle);
-  border-bottom: 1px solid var(--border-subtle);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Floating background shapes */
+.section::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  left: -200px;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.section::after {
+  content: '';
+  position: absolute;
+  bottom: -100px;
+  right: -200px;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(139,92,246,0.06) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .inner {
   max-width: var(--max-width);
   margin: 0 auto;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 64px 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 48px;
+  position: relative;
+  z-index: 1;
 }
 
 .content {
@@ -22,10 +52,13 @@
 
 .label {
   font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 500;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--accent-green);
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .headline {
@@ -41,6 +74,7 @@
   font-size: 16px;
   color: var(--text-secondary);
   max-width: 480px;
+  line-height: 1.7;
 }
 
 .actions {
@@ -54,18 +88,23 @@
   display: inline-flex;
   align-items: center;
   padding: 14px 28px;
-  background: var(--accent-green);
-  color: #000;
+  background: var(--accent-gradient);
+  color: #ffffff;
   font-size: 15px;
-  font-weight: 700;
-  border-radius: var(--radius);
+  font-weight: 600;
+  border-radius: var(--radius-lg);
   white-space: nowrap;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: transform var(--transition), box-shadow var(--transition);
+  box-shadow: 0 4px 20px rgba(99,102,241,0.25);
 }
 
 .primaryCta:hover {
-  background: var(--accent-green-hover);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(99,102,241,0.35);
+}
+
+.primaryCta:active {
+  transform: scale(0.98);
 }
 
 .secondaryCta {
@@ -76,20 +115,22 @@
   font-size: 15px;
   font-weight: 600;
   border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: all var(--transition);
 }
 
 .secondaryCta:hover {
   color: var(--text-primary);
-  border-color: var(--text-muted);
+  border-color: rgba(255,255,255,0.15);
+  background: var(--bg-glass);
 }
 
 @media (max-width: 768px) {
   .inner {
     flex-direction: column;
     text-align: center;
+    padding: 48px 28px;
   }
 
   .actions {

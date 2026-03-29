@@ -8,8 +8,8 @@ export function Footer() {
         <div className={styles.top}>
           <div className={styles.brand}>
             <Link href="/" className={styles.logo}>
-              <span className={styles.logoMark}>◈</span>
-              <span className={styles.logoText}>Nexus</span>
+              <span className={styles.logoMark}>N</span>
+              <span className={styles.logoText}>Nexus AI</span>
             </Link>
             <p className={styles.tagline}>
               Self-healing AI agent systems for companies that can't afford downtime.
@@ -57,11 +57,11 @@ export function Footer() {
         </div>
 
         <div className={styles.bottom}>
-          <p className={styles.copy}>© 2026 Nexus AI Inc. All rights reserved.</p>
+          <p className={styles.copy}>&copy; 2026 Nexus AI Inc. All rights reserved.</p>
           <p className={styles.built}>
             Built with{' '}
             <code className={styles.code}>nexus-core</code>
-            {' '}— self-healing, always.
+            {' '}&mdash; self-healing, always.
           </p>
         </div>
       </div>
