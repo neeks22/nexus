@@ -1,5 +1,5 @@
 {
-  "name": "nexus-agents",
+  "name": "nexus-core",
   "version": "0.1.0",
   "description": "Self-healing multi-agent orchestration framework for TypeScript",
   "type": "module",
