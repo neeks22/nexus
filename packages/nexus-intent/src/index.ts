@@ -4,10 +4,16 @@ export type {
   HandoffRule,
   HandoffAction,
   HandoffEvaluation,
+  BantScore,
+  BantLabel,
+  LeadQualification,
 } from './types.js';
 
 export { IntentClassifier } from './intent-classifier.js';
 export { HandoffRuleEngine } from './handoff-rules.js';
+export type { BantHandoffEvaluation } from './handoff-rules.js';
+export { BantScorer } from './bant-scorer.js';
+export { LeadQualifier } from './lead-qualifier.js';
 
 export {
   getTemplate,

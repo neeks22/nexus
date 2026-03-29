@@ -20,6 +20,28 @@ export interface IntentResult {
   readonly intent: Intent;
   readonly confidence: number;
   readonly reasoning: string;
+  readonly bantScore?: BantScore;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  BANT Lead Scoring Types
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export interface BantScore {
+  readonly budget: 1 | 2 | 3;
+  readonly authority: 1 | 2 | 3;
+  readonly need: 1 | 2 | 3;
+  readonly timeline: 1 | 2 | 3;
+  readonly total: number;
+}
+
+export type BantLabel = 'HOT' | 'WARM' | 'COOL' | 'COLD';
+
+export interface LeadQualification {
+  readonly intent: IntentResult;
+  readonly bant: BantScore;
+  readonly label: BantLabel;
+  readonly recommendedAction: string;
 }
 
 export type HandoffAction = 'handoff' | 'continue' | 'stop';
