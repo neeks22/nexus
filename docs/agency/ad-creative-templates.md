@@ -75,25 +75,25 @@ Each template below includes a compliance flag:
 | H4 | `Drive This {{make}} {{model}} Today` | B | `[COMPLIANT]` |
 | H5 | `{{make}} {{model}} — Easy Financing` | E | `[COMPLIANT]` |
 
-### Primary Text Templates (125 chars for mobile optimization)
+### Primary Text Templates (125 chars for mobile optimization) [NESB tags per text]
 
-| # | Primary Text | Compliance |
-|---|---|---|
-| P1 | `This {{year}} {{make}} {{model}} is available now in {{city}}. Flexible financing options for every situation. Apply today.` | `[COMPLIANT]` |
-| P2 | `Looking for a {{make}} {{model}}? We have this {{year}} in stock with financing available. Same-day approval possible.` | `[COMPLIANT]` |
-| P3 | `{{year}} {{make}} {{model}} — {{mileage}} km. All credit situations welcome. Get your personalized rate in minutes.` | `[REVIEW]` — "All credit situations welcome" is borderline. **Alt:** `Financing options available for everyone. Get your personalized rate in minutes.` |
-| P4 | `Don't wait. This {{year}} {{make}} {{model}} in {{city}} won't last. Apply for financing and drive it home today.` | `[COMPLIANT]` |
-| P5 | `Your next car is here. {{year}} {{make}} {{model}} with flexible payment plans. See if you qualify — takes 60 seconds.` | `[COMPLIANT]` |
+| # | Primary Text | NESB | Compliance |
+|---|---|---|---|
+| P1 | `Just arrived in {{city}}: {{year}} {{make}} {{model}}. Proven financing options. Apply in 60 seconds — drive today.` | N+S+B | `[COMPLIANT]` |
+| P2 | `A {{year}} {{make}} {{model}} just hit our lot. Same-day approval available. Simple application — 60 seconds. Don't miss it.` | N+E+B | `[COMPLIANT]` |
+| P3 | `{{year}} {{make}} {{model}} — {{mileage}} km. Proven financing for every situation. Your personalized rate in minutes.` | S+B | `[REVIEW]` — **Alt:** `Proven financing options for everyone. Your personalized rate in minutes.` |
+| P4 | `This {{year}} {{make}} {{model}} in {{city}} won't last. Vehicles like this move fast. Apply and drive it home today.` | B+E | `[COMPLIANT]` |
+| P5 | `Your next car just arrived. {{year}} {{make}} {{model}} with simple payment plans. All you do is apply — takes 60 seconds.` | N+E | `[COMPLIANT]` |
 
-### Description Templates (under 30 chars)
+### Description Templates (under 30 chars) [NESB tags per description]
 
-| # | Description | Compliance |
-|---|---|---|
-| D1 | `From ${{weekly_payment}}/week` | `[COMPLIANT]` |
-| D2 | `Apply now — quick approval` | `[COMPLIANT]` |
-| D3 | `$0 down options available` | `[COMPLIANT]` |
-| D4 | `Financing for every situation` | `[COMPLIANT]` |
-| D5 | `See your rate in 60 seconds` | `[COMPLIANT]` |
+| # | Description | NESB | Compliance |
+|---|---|---|---|
+| D1 | `From ${{weekly_payment}}/week` | B | `[COMPLIANT]` |
+| D2 | `Instant approval — apply now` | B | `[COMPLIANT]` |
+| D3 | `$0 down — drive today` | E+B | `[COMPLIANT]` |
+| D4 | `Proven financing — simple` | S+E | `[COMPLIANT]` |
+| D5 | `60 seconds — that's it` | E | `[COMPLIANT]` |
 
 ### CTA Button
 - **Primary:** `Get Offer`
@@ -402,13 +402,13 @@ Example: `2022 Toyota RAV4 LE — Ottawa | DriveSmart Auto`
 ```
 Example: `2022 Toyota RAV4 LE. 45,000 km. Automatic. Heated seats, backup camera. Financing available — apply online for fast approval. Located in Ottawa.`
 
-### Promotion Text Options
+### Promotion Text Options [NESB-tagged]
 
-| # | Promotion Text |
-|---|---|
-| 1 | `$0 down financing available` |
-| 2 | `Apply online — approved in minutes` |
-| 3 | `Free Carfax report with every vehicle` |
+| # | Promotion Text | NESB |
+|---|---|---|
+| 1 | `$0 down — drive today` | E+B |
+| 2 | `Simple application — instant answer` | E+B |
+| 3 | `Free Carfax — certified quality` | S |
 
 ---
 
@@ -420,76 +420,76 @@ Example: `2022 Toyota RAV4 LE. 45,000 km. Automatic. Heated seats, backup camera
 
 ---
 
-### Template SA-1: "Bad Credit Car Loans"
+### Template SA-1: "Bad Credit Car Loans" [NESB: N+E+S+B]
 **Keyword:** `bad credit car loans ottawa`
 
 | Element | Content |
 |---|---|
-| **Headline 1** | Bad Credit? Get Approved Today |
-| **Headline 2** | Car Loans Ottawa — All Credit |
-| **Headline 3** | $0 Down Options Available |
-| **Description 1** | Turned down before? We work with 20+ lenders to find the right car loan for you. Apply in 60 seconds. Drive today. |
-| **Description 2** | Over 200 vehicles in stock. Flexible financing for every situation. Same-day approvals available in Ottawa. |
+| **Headline 1** | New Program: Get Approved Today |
+| **Headline 2** | Ottawa's Proven Approval System |
+| **Headline 3** | $0 Down — Drive Today |
+| **Description 1** | A breakthrough program with 20+ lenders competing for you. You don't need perfect credit. Apply in 60 seconds. Proven track record. Drive today. |
+| **Description 2** | Over 200 vehicles in stock. The simplest financing process in Ottawa. Same-day approvals. Hundreds of happy drivers — proven results. |
 | **Display URL Path** | `/bad-credit` / `car-loans` |
 | **Sitelinks** | `Apply Now` — `$0 Down Program` — `View Inventory` — `Fresh Start Program` |
 
 ---
 
-### Template SA-2: "No Credit Check"
+### Template SA-2: "No Credit Check" [NESB: E+S+B]
 **Keyword:** `buy car no credit check`
 
 | Element | Content |
 |---|---|
-| **Headline 1** | No Credit Check Car Loans |
-| **Headline 2** | Drive Today — Apply Online |
-| **Headline 3** | Ottawa's Top-Rated Dealer |
-| **Description 1** | Skip the credit check stress. We focus on income and employment to get you approved. 200+ vehicles ready. Apply in 60 seconds. |
-| **Description 2** | Your job is your approval. Full-time or part-time — we have financing solutions. $0 down available. Visit us today. |
+| **Headline 1** | Simple Car Loans — No Hassle |
+| **Headline 2** | Drive Today — Instant Answer |
+| **Headline 3** | Ottawa's Trusted Dealer |
+| **Description 1** | A proven, simple system: we focus on your income to get you approved. You don't need perfect credit. 200+ vehicles. Apply in 60 seconds. |
+| **Description 2** | Your job is all you need. Full-time or part-time — our proven lender network finds your best option. $0 down available. Drive today. |
 | **Display URL Path** | `/no-credit-check` / `apply` |
 | **Sitelinks** | `Apply Now` — `View Inventory` — `$0 Down Financing` — `About Our Program` |
 
 ---
 
-### Template SA-3: "Car Financing All Credit"
+### Template SA-3: "Car Financing All Credit" [NESB: E+S+B]
 **Keyword:** `car financing all credit`
 
 | Element | Content |
 |---|---|
-| **Headline 1** | Car Financing — All Welcome |
-| **Headline 2** | 20+ Lenders Competing for You |
-| **Headline 3** | Approved in 60 Seconds |
-| **Description 1** | All credit situations considered. We partner with 20+ lenders to find the best rate and terms for you. Apply online now. |
-| **Description 2** | New to credit? Rebuilding? No problem. Flexible auto financing with $0 down options. 200+ vehicles in Ottawa. |
+| **Headline 1** | Proven Financing — All Welcome |
+| **Headline 2** | 20+ Lenders — Instant Results |
+| **Headline 3** | Simple 60-Second Application |
+| **Description 1** | A proven lender network of 20+ partners finds your best rate automatically. Simple application. Track record of approvals. Apply now. |
+| **Description 2** | You don't need perfect credit. You don't need a huge down payment. Simple auto financing with $0 down options. 200+ vehicles in Ottawa. |
 | **Display URL Path** | `/financing` / `all-credit` |
 | **Sitelinks** | `Apply Online` — `See Today's Inventory` — `Fresh Start Program` — `Trade-In Welcome` |
 
 ---
 
-### Template SA-4: "Used Cars Ottawa Financing"
+### Template SA-4: "Used Cars Ottawa Financing" [NESB: S+B+E]
 **Keyword:** `used cars ottawa financing`
 
 | Element | Content |
 |---|---|
-| **Headline 1** | Used Cars Ottawa + Financing |
-| **Headline 2** | 200+ Vehicles — From $99/wk |
-| **Headline 3** | Same-Day Approval Available |
-| **Description 1** | Browse 200+ quality used cars in Ottawa with on-site financing. Every vehicle inspected. Flexible payments starting at $99/week. |
-| **Description 2** | Toyota, Honda, Hyundai, Ford & more. Financing for every situation. $0 down available. Apply online or visit us today. |
+| **Headline 1** | 200+ Inspected Cars — Ottawa |
+| **Headline 2** | Biggest Selection — $99/wk |
+| **Headline 3** | Instant Same-Day Approval |
+| **Description 1** | Ottawa's biggest selection: 200+ certified vehicles with proven on-site financing. Every car inspected. Simple payments from $99/week. |
+| **Description 2** | Toyota, Honda, Hyundai, Ford & more. Proven financing. $0 down available. All you do is apply online — drive today. |
 | **Display URL Path** | `/used-cars` / `ottawa` |
 | **Sitelinks** | `SUVs in Stock` — `Sedans Under $20K` — `Apply for Financing` — `Trade-In Value` |
 
 ---
 
-### Template SA-5: "Second Chance Auto"
+### Template SA-5: "Second Chance Auto" [NESB: N+S+E]
 **Keyword:** `second chance auto loans`
 
 | Element | Content |
 |---|---|
-| **Headline 1** | Second Chance Auto Financing |
-| **Headline 2** | Everyone Deserves a Fresh Start |
-| **Headline 3** | Apply Online — 60 Seconds |
-| **Description 1** | Our Second Chance Program has helped hundreds get back on the road. 20+ lenders, $0 down options, and real support. Apply now. |
-| **Description 2** | Life happens. We get it. Flexible auto financing designed to get you driving and build your financial future. Ottawa. |
+| **Headline 1** | New: Second Chance Program |
+| **Headline 2** | Proven — Hundreds Helped |
+| **Headline 3** | Simple Application — 60 Sec |
+| **Description 1** | A brand-new program with a proven track record. Hundreds of families helped. 20+ lenders, $0 down. You don't need perfect credit. Apply now. |
+| **Description 2** | Life happens. Our proven Fresh Start system gets you driving and builds your future — automatically. Simple. Safe. Ottawa. |
 | **Display URL Path** | `/second-chance` / `auto` |
 | **Sitelinks** | `Apply Now` — `How It Works` — `View Inventory` — `Customer Stories` |
 
@@ -501,45 +501,45 @@ Example: `2022 Toyota RAV4 LE. 45,000 km. Automatic. Heated seats, backup camera
 > **Asset Groups:** Create 1 asset group per vehicle category (SUV, Sedan, Truck) + 1 "Financing" group
 > **Audience Signals:** In-market for vehicles, custom intent (search terms from above), remarketing lists
 
-### Headline Options (15 headlines, 30 chars max each)
+### Headline Options (15 headlines, 30 chars max each) [NESB-tagged]
 
-| # | Headline |
-|---|---|
-| 1 | Get Approved — Drive Today |
-| 2 | $0 Down Car Financing |
-| 3 | Used Cars Ottawa — 200+ |
-| 4 | Financing for Every Situation |
-| 5 | Apply Online in 60 Seconds |
-| 6 | Ottawa's #1 Used Car Dealer |
-| 7 | Second Chance Auto Program |
-| 8 | 20+ Lenders Competing for You |
-| 9 | Quality Used Cars + Financing |
-| 10 | Same-Day Approval Available |
-| 11 | Drive Today — Easy Financing |
-| 12 | Cars From $99/Week |
-| 13 | SUVs, Sedans, Trucks in Stock |
-| 14 | Fresh Start Auto Program |
-| 15 | Your Next Car Starts Here |
+| # | Headline | NESB |
+|---|---|---|
+| 1 | Just Launched: Drive Today | N+B |
+| 2 | $0 Down — Instant Approval | E+B |
+| 3 | 200+ Cars — Ottawa's Biggest | B |
+| 4 | Proven Financing — Simple | S+E |
+| 5 | 60-Second Application | E |
+| 6 | Ottawa's Trusted Auto Dealer | S |
+| 7 | New: Fresh Start Program | N |
+| 8 | 20+ Lenders — Best Rate | S+B |
+| 9 | Certified Cars + Easy Finance | S+E |
+| 10 | Same-Day — Drive Home Today | B |
+| 11 | Push-Button Easy Financing | E |
+| 12 | Cars From $99/Week | B |
+| 13 | Huge Selection — All Types | B |
+| 14 | All-New Fresh Start Program | N |
+| 15 | Breakthrough Auto Financing | N |
 
-### Long Headlines (5 long headlines, 90 chars max each)
+### Long Headlines (5 long headlines, 90 chars max each) [NESB-tagged]
 
-| # | Long Headline |
-|---|---|
-| 1 | Get Approved for a Quality Used Car in Ottawa — $0 Down Options Available |
-| 2 | 200+ Vehicles in Stock with Flexible Financing for Every Situation |
-| 3 | Ottawa's Trusted Used Car Dealer — 20+ Lenders, Same-Day Approval |
-| 4 | Skip the Runaround — Apply Online in 60 Seconds and Drive Today |
-| 5 | Your Fresh Start Begins Here — Financing Designed Around Your Life |
+| # | Long Headline | NESB |
+|---|---|---|
+| 1 | A Breakthrough Program: Get Approved in Ottawa — $0 Down, Drive Today | N+E+B |
+| 2 | Ottawa's Biggest Selection: 200+ Certified Vehicles with Proven Financing | B+S |
+| 3 | Ottawa's Trusted Dealer — 20+ Lenders, Proven Track Record, Instant Approval | S+B |
+| 4 | The Simplest Way to Get a Car — 60-Second Application, Same-Day Answer | E+B |
+| 5 | The All-New Fresh Start Program — A Proven System Built Around Your Life | N+S |
 
-### Asset Group Descriptions (5 descriptions, 90 chars max each)
+### Asset Group Descriptions (5 descriptions, 90 chars max each) [NESB-tagged]
 
-| # | Description |
-|---|---|
-| 1 | Quality used cars with flexible financing. 20+ lenders, $0 down options. Apply in 60 sec. |
-| 2 | Over 200 inspected vehicles in Ottawa. Financing for every situation. Drive same day. |
-| 3 | Everyone deserves reliable transportation. Flexible payments from $99/week. Apply today. |
-| 4 | Skip the bank hassle. We match you with 20+ lenders for the best rate. Fast approvals. |
-| 5 | Ottawa's trusted auto financing — 100s of happy drivers this year. See what you qualify for. |
+| # | Description | NESB |
+|---|---|---|
+| 1 | Certified used cars with proven financing. 20+ lenders, $0 down. Simple 60-sec application. | S+E |
+| 2 | 200+ inspected vehicles — Ottawa's biggest selection. Proven financing. Drive home today. | B+S |
+| 3 | You don't need perfect credit. Simple payments from $99/week. Hundreds of happy drivers. | E+S |
+| 4 | A breakthrough system: 20+ lenders competing for your best rate. Instant approvals. | N+B |
+| 5 | Ottawa's trusted auto financing — proven track record, hundreds of happy drivers this year. | S |
 
 ### Image Guidance
 
@@ -574,36 +574,36 @@ Example: `2022 Toyota RAV4 LE. 45,000 km. Automatic. Heated seats, backup camera
 
 ---
 
-### FR-1: Lead Gen — "Ton emploi, c'est ta cle" (LG-1 Translation)
+### FR-1: Lead Gen — "Ton emploi, c'est ta cle" (LG-1 Translation) [NESB: N+E+S+B]
 
 | Element | Content |
 |---|---|
-| **Headline** | Ton emploi, c'est ta cle |
-| **Primary Text** | Tu travailles a temps plein? C'est ce que les preteurs regardent en premier. On travaille avec 20+ preteurs qui se concentrent sur ton revenu, pas juste un chiffre. Decouvre tes options en 60 secondes. |
-| **Description** | Temps plein ou partiel — applique en 60 sec |
+| **Headline** | Nouveau programme: Ton emploi, c'est ta cle |
+| **Primary Text** | Un nouveau programme revolutionnaire: ta preuve de revenu suffit. Pas besoin de credit parfait. Pas besoin de cosignataire. 20+ preteurs en competition pour toi. Resultats prouves. Decouvre tes options en 60 secondes — roule aujourd'hui. |
+| **Description** | Programme eprouve — 60 secondes |
 | **CTA Button** | Faire une demande |
-| **Compliance** | `[REVIEW]` — Same as English. **Alt:** `Tu travailles? T'as plus d'options que tu penses` |
+| **Compliance** | `[REVIEW]` — Same as English. **Alt:** `Nouveau: Tu travailles? T'as plus d'options que tu penses` |
 
 ---
 
-### FR-2: Lead Gen — "0$ de mise de fonds" (LG-2 Translation)
+### FR-2: Lead Gen — "0$ de mise de fonds" (LG-2 Translation) [NESB: E+B]
 
 | Element | Content |
 |---|---|
-| **Headline** | 0$ de mise de fonds — Roule aujourd'hui |
-| **Primary Text** | Pas de cash pour un depot? Pas de stress. On a des options de financement a 0$ de mise de fonds. Plus de 200 vehicules en inventaire. |
-| **Description** | Aucune mise de fonds requise |
+| **Headline** | 0$ comptant — Economise, roule aujourd'hui |
+| **Primary Text** | Pas besoin de cash pour un depot. Pas besoin d'attendre. Notre programme a 0$ de mise de fonds te met au volant la meme journee. Plus de 200 vehicules — la plus grande selection a Ottawa. Tout ce que t'as a faire c'est appliquer. |
+| **Description** | 0$ comptant — simple et rapide |
 | **CTA Button** | Voir l'offre |
 
 ---
 
-### FR-3: Lead Gen — "Programme Nouveau Depart" (LG-3 Translation)
+### FR-3: Lead Gen — "Programme Nouveau Depart" (LG-3 Translation) [NESB: N+S+E]
 
 | Element | Content |
 |---|---|
-| **Headline** | Programme Nouveau Depart |
-| **Primary Text** | Tout le monde merite une deuxieme chance. Notre Programme Nouveau Depart te met au volant ET batit ton avenir financier en meme temps. Demande en 60 secondes — sans obligation. |
-| **Description** | Un nouveau depart commence ici |
+| **Headline** | Nouveau: Programme Nouveau Depart |
+| **Primary Text** | Un tout nouveau programme avec des resultats prouves. Des centaines de familles ont deja utilise le Nouveau Depart. Pas besoin de credit parfait. Pas besoin de cosignataire. Peu importe ta situation. Demande en 60 secondes — sans obligation. |
+| **Description** | Programme eprouve — des centaines aides |
 | **CTA Button** | Faire une demande |
 
 ---

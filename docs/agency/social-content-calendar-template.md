@@ -4,20 +4,34 @@
 **Market:** Ottawa-Gatineau (bilingual), First Nations communities
 **Platforms:** Facebook, Instagram, TikTok
 **Time Investment:** ~2 hours per week per dealer
+**Copywriting Framework:** NESB (Kyle Milligan's "Take Their Money" Big 4)
+
+---
+
+## NESB Quick Reference — Apply to Every Post
+
+Every post should trigger at least 1 of the Big 4 (ideally 2+). Tags shown as [NESB: X, X] on each day.
+
+| Element | Social Media Application | Power Words |
+|---------|--------------------------|-------------|
+| **N = NEW** | New arrivals, just launched, exclusive, first time, never seen before | Just In, Announcing, Revealed, Exclusive, First Ever |
+| **E = EASY** | Simple process, no barriers, "Not Statements," anyone can do it | Simple, All you do is..., Push-button, No hassle |
+| **S = SAFE** | Testimonials, track record, proven results, social proof, trust | Proven, Trusted, Track record, Hundreds helped, Certified |
+| **B = BIG** | Massive selection, FOMO, limited time, life-changing, drive TODAY | Huge, Once in a lifetime, Don't miss, Instantly, Overnight |
 
 ---
 
 ## Weekly Schedule
 
-| Day | Theme | Goal |
-|---|---|---|
-| **Monday** | New Arrival Spotlight | Drive traffic to latest inventory |
-| **Tuesday** | Customer Story / Testimonial / Delivery Photo | Build trust and social proof |
-| **Wednesday** | Tip / Educational | Position dealer as helpful expert |
-| **Thursday** | Inventory Highlight (Carousel) | Showcase multiple vehicles |
-| **Friday** | Weekend Sale / Event Promo ("Fresh Start Friday") | Generate weekend foot traffic |
-| **Saturday** | Behind-the-Scenes / Fun | Humanize the brand |
-| **Sunday** | Coming Soon / Weekly Preview | Build anticipation for next week |
+| Day | Theme | Goal | NESB Focus |
+|---|---|---|---|
+| **Monday** | New Arrival Spotlight | Drive traffic to latest inventory | **N** (NEW) |
+| **Tuesday** | Customer Story / Testimonial / Delivery Photo | Build trust and social proof | **S** (SAFE) |
+| **Wednesday** | Tip / Educational | Position dealer as helpful expert | **E** (EASY) + **S** (SAFE) |
+| **Thursday** | Inventory Highlight (Carousel) | Showcase multiple vehicles | **B** (BIG) |
+| **Friday** | Weekend Sale / Event Promo ("Fresh Start Friday") | Generate weekend foot traffic | **N** (NEW) + **B** (BIG) |
+| **Saturday** | Behind-the-Scenes / Fun | Humanize the brand | **S** (SAFE) |
+| **Sunday** | Coming Soon / Weekly Preview | Build anticipation for next week | **N** (NEW) + **B** (BIG) |
 
 **Best Posting Times for Ottawa Market:**
 - Facebook: 11:00 AM - 1:00 PM ET (lunch break) or 7:00 - 9:00 PM ET
@@ -32,20 +46,19 @@
 
 ---
 
-#### Day 1 — Monday: New Arrival Spotlight
+#### Day 1 — Monday: New Arrival Spotlight [NESB: N+B]
 
 **Facebook + Instagram**
-> Just landed on our lot! This {{year}} {{make}} {{model}} is {{feature_highlight}} and ready for a new home.
+> JUST ARRIVED — exclusive first look! This {{year}} {{make}} {{model}} is {{feature_highlight}} and won't last long.
 >
 > {{mileage}} km | {{color}} | {{key_feature_1}} | {{key_feature_2}}
 >
-> Starting at ${{price}}/month with approved credit.
-> Your job is your credit — apply online in 60 seconds.
+> Starting at ${{price}}/month. Your job is your credit — a breakthrough program where all you need is a pay stub. Apply in 60 seconds. Drive home today.
 >
 > {{dealership_name}} | {{phone}} | {{website_url}}
 
 **TikTok Caption:**
-> New arrival alert! {{year}} {{make}} {{model}} just hit the lot. Comment "INFO" and we'll DM you the details.
+> JUST IN — first look! {{year}} {{make}} {{model}} just hit the lot. This one won't last. Comment "INFO" and we'll DM you the details.
 
 **Image/Video:** Walk-up shot of the vehicle from a 3/4 front angle in the lot. Clean background, good lighting. Add a "JUST IN" graphic overlay.
 
@@ -57,19 +70,19 @@
 
 ---
 
-#### Day 2 — Tuesday: Customer Story / Testimonial
+#### Day 2 — Tuesday: Customer Story / Testimonial [NESB: S+B]
 
 **Facebook + Instagram**
 > Congratulations to {{customer_first_name}} on their {{year}} {{make}} {{model}}!
 >
 > "{{short_testimonial_quote}}"
 >
-> After being turned down at other dealerships, {{customer_first_name}} drove home the same day. At {{dealership_name}}, we believe everyone deserves reliable transportation.
+> {{customer_first_name}}'s story is proof: our proven system works. They drove home the same day. At {{dealership_name}}, we have a track record of helping families just like yours.
 >
-> Ready for your fresh start? Let's make it happen.
+> Ready for your fresh start? You don't need perfect credit. You don't need a big down payment. Let's make it happen.
 
 **TikTok Caption:**
-> Another happy customer driving off in their new ride! From denied to APPROVED. Your turn?
+> Another proven result — happy customer driving off the same day! This is what our track record looks like. Your turn?
 
 **Image/Video:** Delivery photo — customer holding keys beside the vehicle. Get a signed photo release. Add dealership logo watermark.
 
@@ -81,22 +94,21 @@
 
 ---
 
-#### Day 3 — Wednesday: Tip / Educational
+#### Day 3 — Wednesday: Tip / Educational [NESB: S+E]
 
 **Facebook + Instagram**
-> Did you know? Financing a vehicle and making on-time payments is one of the FASTEST ways to rebuild your credit score.
+> Did you know? A proven system exists where your car payment AUTOMATICALLY rebuilds your financial future. Here's the simple step-by-step:
 >
-> Here's how it works:
-> 1. We report to Equifax and TransUnion every month
-> 2. Each on-time payment boosts your score
-> 3. After 12-18 months, many customers qualify to refinance at a lower rate
+> 1. We report to Equifax and TransUnion every month — proven, documented
+> 2. Each on-time payment boosts your score — it happens predictably
+> 3. After 12-18 months, many customers qualify to refinance at a lower rate — track record proves it
 >
-> Your car payment isn't just getting you to work — it's rebuilding your future.
+> You don't need to do anything extra. You don't need a financial advisor. Just drive and pay — the system does the rest.
 >
 > Questions? {{rep_name}} is here to help: {{phone}}
 
 **TikTok Caption:**
-> How buying a car REBUILDS your credit (most people don't know this). Save this.
+> A proven system that REBUILDS your financial future automatically (most people don't know this exists). Save this.
 
 **Image/Video:** Simple text-on-screen graphic or a talking-head video of {{rep_name}} explaining the 3 steps. Keep it under 60 seconds.
 
@@ -108,10 +120,10 @@
 
 ---
 
-#### Day 4 — Thursday: Inventory Highlight (Carousel)
+#### Day 4 — Thursday: Inventory Highlight (Carousel) [NESB: B+E]
 
 **Facebook + Instagram**
-> This week's Top 5 Picks under ${{max_price}}/month:
+> MASSIVE selection — This week's Top 5 Picks under ${{max_price}}/month:
 >
 > 1. {{year_1}} {{make_1}} {{model_1}} — ${{price_1}}/month
 > 2. {{year_2}} {{make_2}} {{model_2}} — ${{price_2}}/month
@@ -119,11 +131,11 @@
 > 4. {{year_4}} {{make_4}} {{model_4}} — ${{price_4}}/month
 > 5. {{year_5}} {{make_5}} {{model_5}} — ${{price_5}}/month
 >
-> All prices include tax. All credit situations welcome.
-> DM us the number of the one you want to see!
+> All prices include tax. Proven financing for every situation.
+> All you have to do is DM us the number — we handle the rest.
 
 **TikTok Caption:**
-> 5 cars under ${{max_price}}/month. Which one would you pick? Comment your number!
+> 5 cars under ${{max_price}}/month — huge deals. Which one would you pick? Comment your number!
 
 **Image/Video:** Carousel of 5 vehicle photos, each with price overlay and key specs. Consistent branding on each slide.
 
@@ -135,24 +147,24 @@
 
 ---
 
-#### Day 5 — Friday: Fresh Start Friday
+#### Day 5 — Friday: Fresh Start Friday [NESB: N+B+E]
 
 **Facebook + Instagram**
-> FRESH START FRIDAY!
+> FRESH START FRIDAY — A brand-new deal you haven't seen before!
 >
-> This weekend only: $0 down on select vehicles for qualified buyers.
+> This weekend only: $0 down on select vehicles. Once they're gone, they're gone.
 >
 > Spotlight: {{year}} {{make}} {{model}}
 > {{key_feature}} | {{mileage}} km | {{color}}
-> Was ${{old_price}} | NOW ${{new_price}}
+> Was ${{old_price}} | NOW ${{new_price}} — MASSIVE savings
 >
-> Your job is your credit. Employed? You're halfway there.
+> Your job is your credit. You don't need perfect credit. You don't need a huge down payment. All you need is employment.
 > Apply online tonight, drive home tomorrow.
 >
 > {{dealership_name}} — Open Saturday 9-5.
 
 **TikTok Caption:**
-> FRESH START FRIDAY. $0 down this weekend. Who needs new wheels?
+> FRESH START FRIDAY — brand new deal. $0 down this weekend. This won't last. Who needs new wheels?
 
 **Image/Video:** Quick video panning across the weekend sale inventory with upbeat music. End frame: dealership logo + "$0 DOWN THIS WEEKEND."
 
@@ -164,15 +176,15 @@
 
 ---
 
-#### Day 6 — Saturday: Behind-the-Scenes / Fun
+#### Day 6 — Saturday: Behind-the-Scenes / Fun [NESB: S]
 
 **Facebook + Instagram**
 > Saturday vibes at {{dealership_name}}!
 >
-> Meet {{rep_name}} — they've helped over {{number}} families get back on the road this year. When they're not matching customers with their perfect ride, you can find them {{fun_fact_about_rep}}.
+> Meet {{rep_name}} — they've helped over {{number}} families get back on the road this year. That's a proven track record of changing lives. When they're not matching customers with their perfect ride, you can find them {{fun_fact_about_rep}}.
 >
 > Come say hi today — we're open until {{closing_time}}.
-> Coffee's on us.
+> Coffee's on us. No pressure, just good people.
 
 **TikTok Caption:**
 > A day in the life at {{dealership_name}}. We don't just sell cars — we change lives.
@@ -187,14 +199,14 @@
 
 ---
 
-#### Day 7 — Sunday: Coming Soon / Weekly Preview
+#### Day 7 — Sunday: Coming Soon / Weekly Preview [NESB: N+B]
 
 **Facebook + Instagram**
-> Here's what's coming this week at {{dealership_name}}:
+> EXCLUSIVE preview — here's what's coming this week at {{dealership_name}}:
 >
-> Monday: New {{make}} {{model}} arrival
-> Wednesday: Credit Score 101 — how to boost your score in 90 days
-> Friday: Fresh Start Friday with our biggest deal yet
+> Monday: A brand-new {{make}} {{model}} just arrived — first look
+> Wednesday: A proven system to boost your score in 90 days (revealed)
+> Friday: Fresh Start Friday with our BIGGEST deal of the month — don't miss it
 >
 > Which day are you most excited about? Tell us below!
 >
@@ -217,20 +229,20 @@
 
 ---
 
-#### Day 8 — Monday: New Arrival Spotlight
+#### Day 8 — Monday: New Arrival Spotlight [NESB: N+B]
 
 **Facebook + Instagram**
-> The people's champion has arrived. {{year}} {{make}} {{model}} — the {{segment}} that does it all.
+> JUST REVEALED — The {{year}} {{make}} {{model}} has arrived. The {{segment}} that does it all — and this is a first look exclusive.
 >
 > {{feature_1}} | {{feature_2}} | {{feature_3}}
-> {{mileage}} km | Financing from ${{biweekly_price}} bi-weekly
+> {{mileage}} km | Simple financing from ${{biweekly_price}} bi-weekly
 >
-> This one won't last. Serious inquiries only.
+> This one won't last — vehicles like this move FAST. Serious inquiries only.
 >
 > {{dealership_name}} | DM us or call {{phone}}
 
 **TikTok Caption:**
-> POV: The {{make}} {{model}} you've been waiting for just landed. Tap the link.
+> JUST LANDED — exclusive first look. The {{make}} {{model}} you've been waiting for. This one won't last. Tap the link.
 
 **Image/Video:** 15-second walkaround reel. Start at front, pan slowly around. Highlight interior on the final shot.
 
@@ -242,19 +254,19 @@
 
 ---
 
-#### Day 9 — Tuesday: Customer Transformation Story
+#### Day 9 — Tuesday: Customer Transformation Story [NESB: S+N+B]
 
 **Facebook + Instagram**
-> FROM DENIED TO APPROVED.
+> PROVEN RESULTS: From searching to driving.
 >
-> {{customer_first_name}} came to us after being turned down {{number}} times at other dealerships. Today, they're driving a {{year}} {{make}} {{model}} — and rebuilding their credit every single month.
+> {{customer_first_name}} tried {{number}} other places. Then they discovered our breakthrough program. Today, they're driving a {{year}} {{make}} {{model}} — and their financial future is building automatically, every single month.
 >
 > "{{testimonial_quote}}"
 >
-> Your past doesn't define your future. Let's get you on the road.
+> This happens again and again — a predictable track record. Your past doesn't define your future. You don't need perfect credit. Let's get you on the road.
 
 **TikTok Caption:**
-> They said no {{number}} times. We said YES. Another family back on the road.
+> They tried {{number}} other places. Then they found us. Another proven result — family back on the road.
 
 **Image/Video:** Before/after style — "DENIED" stamp transitioning to delivery photo with big smiles. Use CapCut for the transition effect.
 
@@ -266,24 +278,24 @@
 
 ---
 
-#### Day 10 — Wednesday: Credit Rebuilding Tip
+#### Day 10 — Wednesday: Credit Rebuilding Tip [NESB: E+S]
 
 **Facebook + Instagram**
-> CREDIT SCORE MYTH vs. REALITY
+> MYTHS BUSTED — 3 things people believe that simply aren't true:
 >
-> Myth: "Checking your credit score hurts it."
-> Reality: Checking your OWN score is a soft pull — it has ZERO impact.
+> Myth: "Checking your score hurts it."
+> Reality: A soft pull has ZERO impact. Simple, safe, predictable.
 >
 > Myth: "You need perfect credit to finance a car."
-> Reality: We work with all credit situations. Bankruptcy? Consumer proposal? No credit? We've seen it all.
+> Reality: You don't. Our proven lender network works with every situation. Hundreds of families are proof.
 >
-> Myth: "Once your credit is bad, it stays bad."
-> Reality: With on-time car payments, most people see improvement in 6-12 months.
+> Myth: "Once it's bad, it stays bad."
+> Reality: With on-time payments, most people see improvement in 6-12 months. It's happened before, hundreds of times. A documented track record.
 >
-> Questions? Ask {{rep_name}} — no judgment, just answers.
+> You don't need to be a financial expert. You don't need to figure this out alone. Ask {{rep_name}} — no judgment, just answers.
 
 **TikTok Caption:**
-> 3 credit score myths that are keeping you from getting a car. Number 2 is the biggest lie.
+> 3 myths BUSTED — proven facts that change everything about getting a car. Number 2 is the biggest lie.
 
 **Image/Video:** Text-on-screen myth-busting format. Each myth appears with a big red X, then the reality in green.
 
@@ -295,21 +307,21 @@
 
 ---
 
-#### Day 11 — Thursday: Inventory Highlight (Carousel)
+#### Day 11 — Thursday: Inventory Highlight (Carousel) [NESB: B+S]
 
 **Facebook + Instagram**
-> SUV SHOWDOWN! Which one would you take home?
+> MASSIVE SUV SHOWDOWN! 4 certified SUVs — which one would you take home?
 >
 > Slide 1: {{year}} Toyota RAV4 — ${{price}}/month
 > Slide 2: {{year}} Honda CR-V — ${{price}}/month
 > Slide 3: {{year}} Hyundai Tucson — ${{price}}/month
 > Slide 4: {{year}} Nissan Rogue — ${{price}}/month
 >
-> All vehicles safety certified. All credit welcome.
-> Vote in the comments: 1, 2, 3, or 4?
+> All vehicles safety certified. Proven financing for every situation.
+> Vote in the comments: 1, 2, 3, or 4? The winner gets featured all week.
 
 **TikTok Caption:**
-> SUV showdown! Pick your fighter. Comment your choice.
+> HUGE SUV showdown! 4 certified rides. Pick your fighter. Comment your choice.
 
 **Image/Video:** Carousel with each SUV styled the same way — same angle, same graphic template, price prominent.
 
@@ -321,16 +333,16 @@
 
 ---
 
-#### Day 12 — Friday: Fresh Start Friday (Bilingual)
+#### Day 12 — Friday: Fresh Start Friday (Bilingual) [NESB: N+E+B]
 
 **Facebook + Instagram**
-> FRESH START FRIDAY / VENDREDI NOUVEAU DEPART!
+> FRESH START FRIDAY / VENDREDI NOUVEAU DEPART — A brand-new deal, this weekend only!
 >
-> This weekend: Pre-approved? Skip the line.
-> Apply online tonight, pick up your vehicle Saturday morning.
+> This weekend: Get pre-approved instantly. Skip the line. Drive home Saturday.
+> All you have to do is apply online tonight — simple, 60 seconds.
 >
-> Ce week-end: Pre-approuve? Passez en avant.
-> Faites votre demande en ligne ce soir, recuperez votre vehicule samedi matin.
+> Ce week-end: Pre-approuve instantanement. Passez en avant. Roulez samedi.
+> Tout ce que t'as a faire c'est appliquer ce soir — simple, 60 secondes.
 >
 > Featured / En vedette: {{year}} {{make}} {{model}} — ${{price}}/month
 >
@@ -350,7 +362,7 @@
 
 ---
 
-#### Day 13 — Saturday: Fun / Community
+#### Day 13 — Saturday: Fun / Community [NESB: S]
 
 **Facebook + Instagram**
 > Pop quiz! What's the most popular vehicle colour in Canada?
@@ -377,14 +389,14 @@
 
 ---
 
-#### Day 14 — Sunday: Weekly Preview
+#### Day 14 — Sunday: Weekly Preview [NESB: N+B]
 
 **Facebook + Instagram**
-> Your Week 3 Preview at {{dealership_name}}:
+> EXCLUSIVE Week 3 Preview at {{dealership_name}} — you'll want to see this:
 >
-> A truck lover's dream is arriving Monday.
-> A customer who went from a 480 credit score to 650 is sharing their story Tuesday.
-> And Friday? Our biggest Fresh Start Friday deal of the month.
+> Monday: A brand-new truck just arrived — exclusive first look
+> Tuesday: A customer's incredible transformation story — proven results
+> And Friday? Our BIGGEST Fresh Start Friday deal of the month. Once in a lifetime pricing.
 >
 > Turn on notifications. You don't want to miss this one.
 
@@ -405,10 +417,10 @@
 
 ---
 
-#### Day 15 — Monday: New Arrival Spotlight (Truck)
+#### Day 15 — Monday: New Arrival Spotlight (Truck) [NESB: N+B]
 
 **Facebook + Instagram**
-> TRUCK ALERT! {{year}} {{make}} {{model}} just rolled in.
+> JUST ARRIVED — exclusive! {{year}} {{make}} {{model}} just rolled in.
 >
 > {{engine}} | {{drivetrain}} | {{bed_size}} bed | {{towing_capacity}} lb towing
 > {{mileage}} km | Financing available from ${{biweekly_price}} bi-weekly
@@ -430,10 +442,10 @@
 
 ---
 
-#### Day 16 — Tuesday: Customer Story (First Nations Community)
+#### Day 16 — Tuesday: Customer Story (First Nations Community) [NESB: S+E]
 
 **Facebook + Instagram**
-> We're proud to serve the First Nations communities across the Ottawa Valley and beyond.
+> We're proud to serve the First Nations communities across the Ottawa Valley and beyond. A trusted partnership with a proven track record.
 >
 > {{customer_first_name}} needed reliable transportation to get to work in {{community_or_area}}. Today, they're driving a {{year}} {{make}} {{model}} with affordable payments that work for their budget.
 >
@@ -457,10 +469,10 @@
 
 ---
 
-#### Day 17 — Wednesday: Educational (Winter Maintenance)
+#### Day 17 — Wednesday: Educational (Winter Maintenance) [NESB: E+S]
 
 **Facebook + Instagram**
-> Ottawa drivers: Here are 5 things to check on your car before spring hits:
+> Ottawa drivers: A simple step-by-step checklist — 5 things to check before spring hits:
 >
 > 1. Tire swap — get those winters off before they wear out on warm pavement
 > 2. Alignment check — potholes on the Queensway did damage, guaranteed
@@ -483,10 +495,10 @@
 
 ---
 
-#### Day 18 — Thursday: Inventory Highlight (Under $250/month)
+#### Day 18 — Thursday: Inventory Highlight (Under $250/month) [NESB: B+E]
 
 **Facebook + Instagram**
-> BUDGET-FRIENDLY RIDES — All under $250/month:
+> MASSIVE SAVINGS — All under $250/month (biggest deals on the lot):
 >
 > Slide 1: {{year}} {{make_1}} {{model_1}} — ${{price_1}}/month | {{mileage_1}} km
 > Slide 2: {{year}} {{make_2}} {{model_2}} — ${{price_2}}/month | {{mileage_2}} km
@@ -509,24 +521,24 @@
 
 ---
 
-#### Day 19 — Friday: Fresh Start Friday (Your Job Is Your Credit)
+#### Day 19 — Friday: Fresh Start Friday (Your Job Is Your Credit) [NESB: N+E+S+B]
 
 **Facebook + Instagram**
-> YOUR JOB IS YOUR CREDIT.
+> ANNOUNCING: YOUR JOB IS YOUR CREDIT — A breakthrough program.
 >
-> At {{dealership_name}}, we don't care about your credit history. We care about your future.
+> At {{dealership_name}}, we built a new kind of approval system. A proven program with a simple checklist.
 >
 > If you can answer YES to these 3 questions, you're likely approved:
 > 1. Are you employed (or receiving steady income)?
 > 2. Can you provide proof of address?
 > 3. Do you have a valid driver's license?
 >
-> That's it. Apply now, drive this weekend.
+> That's it. You don't need perfect credit. You don't need a cosigner. You don't need a financial advisor. All you need is a job. Proven track record — hundreds of families approved.
 >
-> This week's Fresh Start Friday pick: {{year}} {{make}} {{model}} — ${{price}}/month
+> Apply now, drive this weekend. This week's Fresh Start Friday pick: {{year}} {{make}} {{model}} — ${{price}}/month
 
 **TikTok Caption:**
-> 3 questions. If you answer YES to all 3, you're probably approved. Watch this.
+> A breakthrough program: 3 simple questions. If you answer YES to all 3, you're approved. Watch this. Proven track record.
 
 **Image/Video:** Talking-head video of {{rep_name}} holding up 3 fingers and counting down each question. Casual, friendly energy.
 
@@ -538,10 +550,10 @@
 
 ---
 
-#### Day 20 — Saturday: Behind-the-Scenes (Detail Day)
+#### Day 20 — Saturday: Behind-the-Scenes (Detail Day) [NESB: S]
 
 **Facebook + Instagram**
-> Saturday detail day at {{dealership_name}}!
+> Saturday detail day at {{dealership_name}} — a look inside our proven process!
 >
 > Every vehicle goes through our {{number}}-point inspection before it hits the lot. Today, {{team_member_name}} is making this {{year}} {{make}} {{model}} shine.
 >
@@ -562,16 +574,16 @@
 
 ---
 
-#### Day 21 — Sunday: Weekly Preview
+#### Day 21 — Sunday: Weekly Preview [NESB: N+B]
 
 **Facebook + Instagram**
-> WEEK 4 PREVIEW — The final week of {{month}} and we're going out with a bang.
+> WEEK 4 PREVIEW — The final week of {{month}} and we're going out with the BIGGEST deals yet.
 >
-> Monday: A minivan perfect for Ottawa families
-> Tuesday: Our most inspiring customer story yet
-> Friday: End-of-month blowout — prices you won't see again
+> Monday: A brand-new minivan perfect for Ottawa families — just arrived
+> Tuesday: Our most inspiring customer transformation story yet — proven results
+> Friday: End-of-month blowout — once-in-a-lifetime prices you won't see again
 >
-> Plus: We're launching something new on Wednesday. Stay tuned.
+> Plus: We're LAUNCHING something brand new on Wednesday. Stay tuned — you don't want to miss this.
 
 **TikTok Caption:**
 > Last week of the month = best deals. Here's what's coming.
@@ -590,10 +602,10 @@
 
 ---
 
-#### Day 22 — Monday: New Arrival Spotlight (Family Vehicle)
+#### Day 22 — Monday: New Arrival Spotlight (Family Vehicle) [NESB: N+B]
 
 **Facebook + Instagram**
-> Ottawa families — this one's for you.
+> JUST ARRIVED — Ottawa families, this one's exclusively for you.
 >
 > {{year}} {{make}} {{model}}
 > {{seating}} passengers | {{cargo_space}} | {{safety_feature}}
@@ -616,17 +628,18 @@
 
 ---
 
-#### Day 23 — Tuesday: Customer Story (Credit Journey)
+#### Day 23 — Tuesday: Customer Story (Credit Journey) [NESB: S+N+B]
 
 **Facebook + Instagram**
-> 12 MONTHS AGO: Credit score {{old_score}}. Denied everywhere.
-> TODAY: Credit score {{new_score}}. Refinanced at a lower rate.
+> PROVEN TRANSFORMATION:
+> 12 MONTHS AGO: Score {{old_score}}. Searching for answers.
+> TODAY: Score {{new_score}}. Refinanced at a lower rate. Life changed.
 >
-> {{customer_first_name}} trusted us a year ago. They made every payment on time. Their credit score climbed {{points_gained}} points.
+> {{customer_first_name}} trusted our proven system a year ago. They made every payment on time. Their score climbed {{points_gained}} points — predictable, documented results.
 >
 > Now they qualify for rates they never thought possible.
 >
-> This isn't magic. It's a plan. And we'll build one for you too.
+> This isn't magic. It's a proven system with a track record. And we'll build one for you too. You don't need to figure this out alone.
 
 **TikTok Caption:**
 > From {{old_score}} to {{new_score}} credit score in 12 months. Here's exactly how.
@@ -641,19 +654,19 @@
 
 ---
 
-#### Day 24 — Wednesday: Educational (How Financing Works)
+#### Day 24 — Wednesday: Educational (How Financing Works) [NESB: E+S]
 
 **Facebook + Instagram**
-> HOW CAR FINANCING ACTUALLY WORKS (Simple Version):
+> HOW CAR FINANCING ACTUALLY WORKS — A simple, step-by-step system:
 >
-> Step 1: You apply (takes 60 seconds online)
-> Step 2: We match you with the best lender for YOUR situation
-> Step 3: You pick your vehicle from our approved inventory
-> Step 4: You sign, drive home, and start building credit
+> Step 1: You apply (60 seconds online — push-button simple)
+> Step 2: Our proven lender network of 20+ partners finds YOUR best match automatically
+> Step 3: You pick your vehicle from our certified inventory
+> Step 4: You sign, drive home, and start building your future
 >
-> We work with 15+ lenders — from prime to subprime. Even if your bank said no, our lenders often say yes.
+> You don't need to call banks yourself. You don't need to negotiate rates. You don't need to understand financing jargon. Our system does it all for you — proven results, hundreds of families helped.
 >
-> No hidden fees. No bait-and-switch. Just honest financing.
+> No hidden fees. No bait-and-switch. Just honest, proven financing.
 
 **TikTok Caption:**
 > Car financing explained in 30 seconds. It's way simpler than you think.
@@ -668,10 +681,10 @@
 
 ---
 
-#### Day 25 — Thursday: Inventory Highlight (Best Value)
+#### Day 25 — Thursday: Inventory Highlight (Best Value) [NESB: S+B]
 
 **Facebook + Instagram**
-> BEST VALUE ON THE LOT — Our team's personal picks this week:
+> BIGGEST VALUE ON THE LOT — Our team's trusted picks this week (these won't last):
 >
 > {{rep_name_1}}'s pick: "The {{year}} {{make_1}} {{model_1}} — best reliability for the price."
 > {{rep_name_2}}'s pick: "The {{year}} {{make_2}} {{model_2}} — customers keep coming back for this one."
@@ -692,18 +705,18 @@
 
 ---
 
-#### Day 26 — Friday: End-of-Month Blowout
+#### Day 26 — Friday: End-of-Month Blowout [NESB: B+N+E]
 
 **Facebook + Instagram**
-> END OF MONTH. EVERYTHING MUST MOVE.
+> ONCE-IN-A-LIFETIME PRICING. END OF MONTH. EVERYTHING MUST MOVE.
 >
-> We need to make room for next month's inventory. That means the best prices of {{month}} — this weekend only.
+> We need to make room for brand-new inventory arriving next month. That means the BIGGEST markdowns of {{month}} — this weekend only. Once they're gone, they're gone forever.
 >
-> {{number}} vehicles marked down
-> Financing from ${{lowest_biweekly}} bi-weekly
+> {{number}} vehicles marked down — massive savings
+> Simple financing from ${{lowest_biweekly}} bi-weekly
 > $0 down available OAC
 >
-> Your job is your credit. If you've been waiting for the right time — THIS IS IT.
+> Your job is your credit. You don't need perfect credit. You don't need a huge down payment. If you've been waiting for the right time — THIS IS IT. Don't miss it.
 >
 > {{dealership_name}} | Open Sat 9-5, Sun by appointment
 > {{phone}} | {{website_url}}
@@ -721,10 +734,10 @@
 
 ---
 
-#### Day 27 — Saturday: Behind-the-Scenes (Community Event)
+#### Day 27 — Saturday: Behind-the-Scenes (Community Event) [NESB: S]
 
 **Facebook + Instagram**
-> Giving back to the community that gives us everything.
+> Giving back to the community that has trusted us for years.
 >
 > This weekend, {{dealership_name}} is {{community_activity}} — because we're not just a dealership, we're your neighbours.
 >
@@ -745,19 +758,19 @@
 
 ---
 
-#### Day 28 — Sunday: Monthly Wrap-Up
+#### Day 28 — Sunday: Monthly Wrap-Up [NESB: S+B]
 
 **Facebook + Instagram**
-> {{month}} by the numbers at {{dealership_name}}:
+> {{month}} — THE PROVEN RESULTS at {{dealership_name}}:
 >
-> {{families_helped}} families helped
-> {{vehicles_delivered}} vehicles delivered
-> Average credit score improvement: +{{avg_credit_improvement}} points
-> Customer satisfaction: {{satisfaction_percent}}%
+> {{families_helped}} families helped — a massive month
+> {{vehicles_delivered}} vehicles delivered — our biggest yet
+> Average financial improvement: +{{avg_credit_improvement}} points — documented, predictable
+> Customer satisfaction: {{satisfaction_percent}}% — a track record that speaks for itself
 >
-> Thank you for an incredible month. Next month, we're coming back even stronger.
+> Thank you for an incredible month. These numbers aren't a fluke — they happen month after month. Next month, we're coming back even stronger.
 >
-> See you Monday with new arrivals!
+> See you Monday with brand-new arrivals!
 
 **TikTok Caption:**
 > What a month. {{families_helped}} families. {{vehicles_delivered}} cars. Let's do it again.
@@ -772,18 +785,18 @@
 
 ---
 
-#### Day 29 — Monday (Bonus): "Why Choose Us" Post
+#### Day 29 — Monday (Bonus): "Why Choose Us" Post [NESB: S+N+E]
 
 **Facebook + Instagram**
-> 5 REASONS Ottawa chooses {{dealership_name}}:
+> 5 PROVEN REASONS Ottawa trusts {{dealership_name}}:
 >
-> 1. We say YES when others say no
-> 2. We report to credit bureaus — your payments rebuild your score
-> 3. Every vehicle passes our {{number}}-point inspection
-> 4. We speak English and French
-> 5. We treat you like family, not a credit score
+> 1. A breakthrough program — we say YES when others say no
+> 2. A proven system that builds your future — automatic, documented
+> 3. Every vehicle certified through our {{number}}-point inspection
+> 4. Bilingual — English and French, automatically
+> 5. You don't need perfect credit. You don't need a cosigner. We treat you like family.
 >
-> Thousands of families. Hundreds of five-star reviews. One mission: get you driving.
+> Thousands of families. Hundreds of five-star reviews. A track record that speaks for itself. One mission: get you driving.
 
 **TikTok Caption:**
 > 5 reasons we're Ottawa's #1 for second-chance financing. Number 1 is the game changer.
@@ -798,20 +811,20 @@
 
 ---
 
-#### Day 30 — Tuesday (Bonus): Customer Appreciation
+#### Day 30 — Tuesday (Bonus): Customer Appreciation [NESB: S+B]
 
 **Facebook + Instagram**
-> To every customer who trusted us this month —
+> To every customer who trusted us this month — you are our track record.
 >
 > You trusted us with one of the biggest decisions you'll make.
 > You believed in yourself when others made you doubt.
 > You showed up, signed the paperwork, and drove into a better future.
 >
-> We don't take that lightly.
+> We don't take that lightly. These aren't just numbers — they're families, fresh starts, and proven transformations.
 >
 > {{dealership_name}} exists because of YOU. Here's to many more miles together.
 >
-> (Swipe to see some of this month's happy customers!)
+> (Swipe to see this month's proven results — real people, real cars, real fresh starts!)
 
 **TikTok Caption:**
 > This is why we do what we do. Every smile, every set of keys, every fresh start.
@@ -826,28 +839,28 @@
 
 ---
 
-## Subprime-Specific Content Ideas
+## Subprime-Specific Content Ideas (NESB-Powered)
 
-### "Your Job Is Your Credit" Campaign
-A recurring campaign theme used across posts, ads, and landing pages.
+### "Your Job Is Your Credit" Campaign [NESB: N+E+S+B]
+A recurring campaign theme using the full NESB framework. Position as a breakthrough NEW program, make it EASY with Not Statements, prove it's SAFE with track record, make it feel BIG with results.
 
-**Core Message:** If you have a job and a driver's license, you're likely approved. We don't judge your past.
+**Core Message:** A breakthrough program where your pay stub is all you need. Proven track record. Hundreds helped. You don't need perfect credit.
 
-**Post Variations:**
-1. **The Checklist Post:** "Got a job? Got a license? Got proof of address? You're 90% approved."
-2. **The Myth Buster:** "Think you need 700+ credit to buy a car? Wrong. Your employment IS your credit at {{dealership_name}}."
-3. **The Comparison:** "Bank said no? We say let's talk. We work with lenders who look at your income, not your history."
-4. **The Testimonial:** "{{customer_first_name}} was told they'd never get approved. Today they're 6 months into payments with a rising credit score."
-5. **The Simple Ad:** Image of car keys. Text: "Your Job Is Your Credit. Apply Now." CTA button to application page.
+**Post Variations (NESB-tagged):**
+1. **The Checklist Post [E+S]:** "A simple 3-step system: Got a job? Got a license? Got proof of address? You're 90% approved. Proven track record — hundreds of families."
+2. **The Myth Buster [N+E]:** "REVEALED: You don't need 700+ credit to buy a car. You don't need a cosigner. You don't need a huge down payment. A breakthrough program at {{dealership_name}} where your employment IS your credit."
+3. **The Comparison [N+S]:** "Bank said no? A different approach: we work with 20+ lenders who look at your income, not your history. A proven network with a documented track record."
+4. **The Testimonial [S+B]:** "{{customer_first_name}} was told they'd never get approved. 6 months later — proven results. Rising score. Life changed. This happens predictably, month after month."
+5. **The Simple Ad [E+B]:** Image of car keys. Text: "Your Job Is Your Credit. Simple application. Drive today. Apply Now." CTA button to application page.
 
-### Customer Transformation Stories ("From Denied to Approved")
-- Feature real customers (with permission) who were denied elsewhere
-- Show the journey: denied > applied with you > approved > driving > credit improving
-- Use before/after format for maximum impact
-- Collect video testimonials at delivery — even 15 seconds is gold
+### Customer Transformation Stories ("From Denied to Approved") [NESB: S+B+N]
+- Feature real customers (with permission) — each story is PROOF (SAFE), a life-changing result (BIG), and a different approach (NEW)
+- Show the journey: searching > discovered our program > approved > driving > financial future building
+- Use before/after format for maximum impact — makes results feel PREDICTABLE (SAFE)
+- Collect video testimonials at delivery — even 15 seconds is gold. Social proof is the strongest SAFE trigger.
 
-### Credit Rebuilding Tips Series
-Weekly educational content that builds trust and positions the dealer as a helper, not just a seller.
+### Credit Rebuilding Tips Series [NESB: E+S]
+Weekly educational content using EASY (step-by-step, simple) and SAFE (proven, documented) to build trust and position the dealer as a trusted expert.
 
 **Topics:**
 1. How car payments rebuild credit (reporting to bureaus)
@@ -859,10 +872,11 @@ Weekly educational content that builds trust and positions the dealer as a helpe
 7. How to read your credit report (Equifax/TransUnion)
 8. The truth about credit repair companies (spoiler: most are scams)
 
-### "Fresh Start Friday" Weekly Series
-- Every Friday features a special deal or vehicle
-- Consistent branding: same colors, same format, recognizable at a glance
-- Build anticipation: tease it on Thursday night in Stories
+### "Fresh Start Friday" Weekly Series [NESB: N+B]
+- Every Friday features a NEW deal or vehicle (NEW = hope, something they haven't seen)
+- Make it feel BIG: "biggest deal of the week," "once-in-a-lifetime pricing," "won't last"
+- Consistent branding: same colors, same format, recognizable at a glance — PREDICTABLE (SAFE)
+- Build anticipation: tease it on Thursday night in Stories — FOMO (BIG)
 - Track engagement over time — this becomes your best-performing recurring series
 
 ### First Nations Community Appreciation Posts (ReadyCar-Specific)
