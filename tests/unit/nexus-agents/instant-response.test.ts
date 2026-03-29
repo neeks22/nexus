@@ -211,7 +211,9 @@ describe("buildInstantResponsePrompt", () => {
     expect(prompt).toContain("Canadian English");
     expect(prompt).toContain("en-CA");
     expect(prompt).toContain("## Role");
-    expect(prompt).not.toContain("francais");
+    // The bilingual protocol section is always present (for language switching),
+    // but the Language directive section should be English-only
+    expect(prompt).not.toContain("francais canadien");
   });
 
   it("adapts to fr-CA locale", () => {
@@ -221,7 +223,9 @@ describe("buildInstantResponsePrompt", () => {
     expect(prompt).toContain("francais canadien");
     expect(prompt).toContain("fr-CA");
     expect(prompt).toContain("quebecois");
-    expect(prompt).not.toContain("Canadian English");
+    // The bilingual protocol is always present, but the Language directive
+    // section should instruct response generation in French
+    expect(prompt).toContain("## Langue");
   });
 
   it("adapts to professional tone", () => {
