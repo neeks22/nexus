@@ -1,0 +1,23 @@
+{
+  "name": "nexus-activix",
+  "version": "0.1.0",
+  "description": "Activix CRM API client for the Nexus dealership automation platform",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "npx tsup src/index.ts --format esm --dts",
+    "test": "npx vitest run"
+  },
+  "keywords": ["activix", "crm", "dealership", "automotive"],
+  "license": "MIT",
+  "dependencies": {
+    "zod": "^4.3.6"
+  }
+}

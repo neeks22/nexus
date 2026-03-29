@@ -1,0 +1,31 @@
+# Dealership AI Workflow — Build Progress
+
+Started: 2026-03-28
+PRD: PRD-dealership.md
+Design: docs/superpowers/specs/2026-03-28-dealership-n8n-workflow-design.md
+
+## Tools Available
+- n8n MCP: connected at https://nexusagents.app.n8n.cloud
+- Activix API docs: docs/research/activix-crm-integration-research.md
+- Research docs: docs/research/, docs/agency/
+- Ralph loop: scripts/ralph/ralph-dealership.sh
+
+## Build Log
+
+### 2026-03-28 21:22 — Epic 1: Activix CRM Client Library ✅ COMPLETE
+- Created packages/nexus-activix/ with package.json, tsconfig.json (extends root)
+- Implemented ActivixClient class with:
+  - Bearer token auth, configurable base URL
+  - Client-side rate limiting (200/min, 2000/hr)
+  - leads.get(id, include?) — GET /v2/leads/:id
+  - leads.list(filters?) — GET /v2/leads with pagination + division/date filters
+  - leads.search(query) — GET /v2/leads/search with auto-pagination (max 1000)
+  - leads.create(data) — POST /v2/leads with nested advisor/emails/phones/vehicles
+  - leads.update(id, data) — PUT /v2/leads/:id
+  - Static verifyWebhookSignature() — HMAC-SHA256
+  - Retry with exponential backoff (1s, 2s, 4s, 8s) + jitter
+  - Circuit breaker (3 failures → OPEN, 60s → HALF_OPEN → test)
+- Zod schemas for all lead fields, enums, nested objects
+- 28 unit tests — all passing
+- Files: src/activix-client.ts, src/schemas.ts, src/index.ts
+- Tests: tests/unit/nexus-activix/activix-client.test.ts
