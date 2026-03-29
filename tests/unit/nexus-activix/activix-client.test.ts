@@ -5,6 +5,7 @@ import {
   ActivixApiError,
   ActivixRateLimitError,
   ActivixCircuitOpenError,
+  ActivixValidationError,
 } from "../../../packages/nexus-activix/src/activix-client.js";
 import type { ActivixLead, PaginatedResponse } from "../../../packages/nexus-activix/src/schemas.js";
 import { ActivixLeadSchema, ActivixLeadCreateSchema } from "../../../packages/nexus-activix/src/schemas.js";
@@ -458,6 +459,42 @@ describe("ActivixClient", () => {
       const result = await client.leads.get(3);
       expect(result.id).toBe(1001);
       expect(client.getCircuitState()).toBe("CLOSED");
+    });
+  });
+
+  describe("response validation", () => {
+    it("rejects leads.get response with invalid schema", async () => {
+      const fetch = mockFetch(async () =>
+        jsonResponse({ data: { id: "not-a-number", type: "invalid_type" } }),
+      );
+      const client = makeClient(fetch);
+      await expect(client.leads.get(1)).rejects.toThrow(ActivixValidationError);
+    });
+
+    it("rejects leads.list response with invalid schema", async () => {
+      const fetch = mockFetch(async () =>
+        jsonResponse({ data: [{ id: "bad" }], meta: { current_page: 1, last_page: 1, per_page: 10, total: 1 } }),
+      );
+      const client = makeClient(fetch);
+      await expect(client.leads.list()).rejects.toThrow(ActivixValidationError);
+    });
+
+    it("rejects leads.create response with missing type", async () => {
+      const fetch = mockFetch(async () =>
+        jsonResponse({ data: { id: 1 } }),
+      );
+      const client = makeClient(fetch);
+      await expect(client.leads.create({ type: "email" })).rejects.toThrow(ActivixValidationError);
+    });
+
+    it("accepts valid leads.get response", async () => {
+      const fetch = mockFetch(async () =>
+        jsonResponse({ data: makeLead() }),
+      );
+      const client = makeClient(fetch);
+      const result = await client.leads.get(1001);
+      expect(result.id).toBe(1001);
+      expect(result.type).toBe("email");
     });
   });
 

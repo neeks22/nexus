@@ -13,7 +13,7 @@
 - [x] Verify compliance-preflight.ts imports from the correct files after deletion
 
 ## Epic 3: Data Integrity
-- [ ] Add Zod validation on Activix API responses in activix-client.ts — validate response body against schemas before casting
+- [x] Add Zod validation on Activix API responses in activix-client.ts — validate response body against schemas before casting
 - [ ] Replace module-level `let` ID counters with crypto.randomUUID() in: nexus-transcript/src/lead-transcript.ts, nexus-billing/src/cost-logger.ts, nexus-observability/src/trace-logger.ts
 - [ ] Add address redaction pattern to nexus-pii/src/pii-redactor.ts (street addresses like "123 Main St")
 - [ ] Add date-of-birth redaction pattern to nexus-pii/src/pii-redactor.ts (MM/DD/YYYY, YYYY-MM-DD)

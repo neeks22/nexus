@@ -34,3 +34,11 @@ PRD: PRD-security-fixes.md
 - Verified compliance-preflight.ts imports from correct files: frequency-cap.js and opt-out-checker.js
 - Verified index.ts exports from correct files: frequency-cap.js, opt-out-checker.js, templates/opt-out.js
 - All 920 tests pass after deletion
+
+### [2026-03-29 07:55] Epic 3, Item 1: Add Zod validation on Activix API responses
+- All 5 lead methods (get, list, search, create, update) now validate responses against Zod schemas
+- Added ActivixValidationError class with detailed issue reporting
+- get/create/update validate individual leads via ActivixLeadSchema
+- list/search validate paginated responses via PaginatedResponseSchema(ActivixLeadSchema)
+- Added 4 tests: invalid get, invalid list, invalid create, valid get
+- All 33 activix-client tests pass

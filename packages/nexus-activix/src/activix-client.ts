@@ -1,4 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+import {
+  ActivixLeadSchema,
+  PaginatedResponseSchema,
+} from "./schemas.js";
 import type {
   ActivixLead,
   ActivixLeadCreate,
@@ -17,6 +21,9 @@ const RETRY_DELAYS_MS = [1000, 2000, 4000, 8000];
 const MAX_RETRY_DELAY_MS = 30000;
 const CIRCUIT_BREAKER_THRESHOLD = 3;
 const CIRCUIT_BREAKER_RESET_MS = 60000;
+
+const SingleLeadResponseSchema = ActivixLeadSchema;
+const PaginatedLeadResponseSchema = PaginatedResponseSchema(ActivixLeadSchema);
 
 // --- Error classes ---
 
@@ -42,6 +49,16 @@ export class ActivixCircuitOpenError extends Error {
   constructor() {
     super("Activix API circuit breaker is OPEN — requests are blocked");
     this.name = "ActivixCircuitOpenError";
+  }
+}
+
+export class ActivixValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly issues: unknown[],
+  ) {
+    super(message);
+    this.name = "ActivixValidationError";
   }
 }
 
@@ -134,8 +151,8 @@ export class ActivixClient {
     }
     const qs = params.toString();
     const url = `/leads/${id}${qs ? `?${qs}` : ""}`;
-    const response = await this.request<{ data: ActivixLead }>("GET", url);
-    return response.data;
+    const response = await this.request<{ data: unknown }>("GET", url);
+    return this.validateLead(response.data);
   }
 
   private async listLeads(
@@ -160,7 +177,8 @@ export class ActivixClient {
     }
     const qs = params.toString();
     const url = `/leads${qs ? `?${qs}` : ""}`;
-    return this.request<PaginatedResponse<ActivixLead>>("GET", url);
+    const raw = await this.request<unknown>("GET", url);
+    return this.validatePaginatedLeads(raw);
   }
 
   private async searchLeads(query: string): Promise<ActivixLead[]> {
@@ -173,10 +191,11 @@ export class ActivixClient {
         page: String(page),
         per_page: "100",
       });
-      const response = await this.request<PaginatedResponse<ActivixLead>>(
+      const raw = await this.request<unknown>(
         "GET",
         `/leads/search?${params}`,
       );
+      const response = this.validatePaginatedLeads(raw);
       allResults.push(...response.data);
 
       if (page >= response.meta.last_page || allResults.length >= MAX_SEARCH_RESULTS) {
@@ -189,17 +208,17 @@ export class ActivixClient {
   }
 
   private async createLead(data: ActivixLeadCreate): Promise<ActivixLead> {
-    const response = await this.request<{ data: ActivixLead }>("POST", "/leads", data);
-    return response.data;
+    const response = await this.request<{ data: unknown }>("POST", "/leads", data);
+    return this.validateLead(response.data);
   }
 
   private async updateLead(id: number, data: ActivixLeadUpdate): Promise<ActivixLead> {
-    const response = await this.request<{ data: ActivixLead }>(
+    const response = await this.request<{ data: unknown }>(
       "PUT",
       `/leads/${id}`,
       data,
     );
-    return response.data;
+    return this.validateLead(response.data);
   }
 
   // --- Private: HTTP with retry, rate limiting, circuit breaker ---
@@ -295,6 +314,30 @@ export class ActivixClient {
     }
 
     throw lastError ?? new Error("Request failed after retries");
+  }
+
+  // --- Response validation ---
+
+  private validateLead(data: unknown): ActivixLead {
+    const result = SingleLeadResponseSchema.safeParse(data);
+    if (!result.success) {
+      throw new ActivixValidationError(
+        "Activix API response failed schema validation",
+        result.error.issues,
+      );
+    }
+    return result.data;
+  }
+
+  private validatePaginatedLeads(data: unknown): PaginatedResponse<ActivixLead> {
+    const result = PaginatedLeadResponseSchema.safeParse(data);
+    if (!result.success) {
+      throw new ActivixValidationError(
+        "Activix API paginated response failed schema validation",
+        result.error.issues,
+      );
+    }
+    return result.data;
   }
 
   // --- Rate limiter ---
