@@ -55,3 +55,15 @@ PRD: PRD-security-fixes.md
 - Fixed US zip code false positives: now requires context (near "zip", "postal", or after state abbreviation)
 - Added 17 new tests: 6 zip (context-aware), 5 address, 5 DOB, 1 invalid date rejection
 - All 65 PII tests pass
+
+### [2026-03-29 08:00] Epic 4, Items 1-3: Compliance hardening
+- Item 1: Wired CASL opt-out language into instant-lead-response Send SMS node
+  - Auto-appends bilingual "Reply STOP to unsubscribe. {dealer} | {phone}" to every outbound SMS
+  - Uses DEALERSHIP_NAME and DEALERSHIP_PHONE env vars, locale-aware (en-CA/fr-CA)
+- Item 2: FrequencyCapChecker now throws if touchHistory is undefined/null
+  - Runtime guard prevents silent skip when caller passes undefined from JS
+  - Added 2 tests for undefined and null cases
+- Item 3: Added ConsentTracker.registerImpliedConsent() convenience method
+  - Auto-creates implied consent record with 6-month expiry from consent date
+  - Added 5 tests: creation, retrieval, valid within window, expired after window, default date
+- All 945 tests pass

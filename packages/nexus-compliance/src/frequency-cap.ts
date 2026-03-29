@@ -38,6 +38,12 @@ export class FrequencyCapChecker {
     touchHistory: TouchRecord[],
     now?: Date,
   ): FrequencyCapResult {
+    if (touchHistory === undefined || touchHistory === null) {
+      throw new Error(
+        "FrequencyCapChecker.isWithinCap requires an explicit touchHistory array — got " +
+          String(touchHistory),
+      );
+    }
     const currentTime = now ?? new Date();
     const windowStart = new Date(
       currentTime.getTime() - this.windowDays * 24 * 60 * 60 * 1000,

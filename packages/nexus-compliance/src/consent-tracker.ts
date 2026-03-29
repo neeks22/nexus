@@ -57,6 +57,27 @@ export class ConsentTracker {
     this.records.set(validated.leadId, validated as ConsentRecord);
   }
 
+  registerImpliedConsent(
+    leadId: number,
+    source: string,
+    consentDate?: string,
+  ): ConsentRecord {
+    const now = consentDate ?? new Date().toISOString();
+    const expiry = new Date(
+      new Date(now).getTime() + IMPLIED_CONSENT_DURATION_MS,
+    ).toISOString();
+    const record: ConsentRecord = {
+      leadId,
+      consentType: "implied",
+      consentDate: now,
+      consentExpiry: expiry,
+      consentSource: source,
+      revokedAt: null,
+    };
+    this.recordConsent(record);
+    return record;
+  }
+
   revokeConsent(leadId: number, revokedAt?: string): void {
     const record = this.records.get(leadId);
     if (record) {

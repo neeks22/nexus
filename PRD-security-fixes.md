@@ -20,6 +20,6 @@
 - [x] Fix US zip code regex false positives — add context requirement (near "zip", "postal", or after state abbreviation)
 
 ## Epic 4: Compliance Hardening
-- [ ] Wire CASL opt-out language (from templates/opt-out.ts) into the instant response agent — auto-append to every outbound SMS
-- [ ] Make FrequencyCapChecker require explicit touchHistory parameter — throw if undefined instead of silently skipping
-- [ ] Add consent auto-registration on lead creation — when a new lead comes in via web form, auto-create implied consent record with 6-month expiry
+- [x] Wire CASL opt-out language (from templates/opt-out.ts) into the instant response agent — auto-append to every outbound SMS
+- [x] Make FrequencyCapChecker require explicit touchHistory parameter — throw if undefined instead of silently skipping
+- [x] Add consent auto-registration on lead creation — when a new lead comes in via web form, auto-create implied consent record with 6-month expiry

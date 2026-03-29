@@ -162,9 +162,73 @@ describe("OptOutChecker", () => {
   });
 });
 
+// ── ConsentTracker.registerImpliedConsent ──────────────
+
+describe("ConsentTracker.registerImpliedConsent", () => {
+  let tracker: ConsentTracker;
+
+  beforeEach(() => {
+    tracker = new ConsentTracker();
+  });
+
+  it("creates an implied consent record with 6-month expiry", () => {
+    const record = tracker.registerImpliedConsent(1001, "web_form", "2026-03-01T00:00:00Z");
+    expect(record.consentType).toBe("implied");
+    expect(record.consentSource).toBe("web_form");
+    expect(record.consentDate).toBe("2026-03-01T00:00:00Z");
+    expect(record.consentExpiry).toBeDefined();
+    // Expiry should be ~6 months later
+    const expiry = new Date(record.consentExpiry!);
+    expect(expiry.getTime()).toBeGreaterThan(new Date("2026-08-01T00:00:00Z").getTime());
+  });
+
+  it("auto-registers consent retrievable via getConsent", () => {
+    tracker.registerImpliedConsent(2001, "web_form");
+    const consent = tracker.getConsent(2001);
+    expect(consent).toBeDefined();
+    expect(consent!.consentType).toBe("implied");
+  });
+
+  it("validates as valid within 6-month window", () => {
+    tracker.registerImpliedConsent(3001, "web_form", "2026-03-01T00:00:00Z");
+    const result = tracker.isConsentValid(3001, new Date("2026-05-01T00:00:00Z"));
+    expect(result.valid).toBe(true);
+  });
+
+  it("validates as expired after 6-month window", () => {
+    tracker.registerImpliedConsent(4001, "web_form", "2026-01-01T00:00:00Z");
+    const result = tracker.isConsentValid(4001, new Date("2026-12-01T00:00:00Z"));
+    expect(result.valid).toBe(false);
+    expect(result.reason).toContain("expired");
+  });
+
+  it("uses current date when consentDate not provided", () => {
+    const before = Date.now();
+    const record = tracker.registerImpliedConsent(5001, "phone_call");
+    const after = Date.now();
+    const consentTime = new Date(record.consentDate).getTime();
+    expect(consentTime).toBeGreaterThanOrEqual(before);
+    expect(consentTime).toBeLessThanOrEqual(after);
+  });
+});
+
 // ── FrequencyCapChecker ──────────────────────────────
 
 describe("FrequencyCapChecker", () => {
+  it("throws when touchHistory is undefined", () => {
+    const checker = new FrequencyCapChecker();
+    expect(() =>
+      checker.isWithinCap(1, undefined as unknown as TouchRecord[]),
+    ).toThrow("requires an explicit touchHistory array");
+  });
+
+  it("throws when touchHistory is null", () => {
+    const checker = new FrequencyCapChecker();
+    expect(() =>
+      checker.isWithinCap(1, null as unknown as TouchRecord[]),
+    ).toThrow("requires an explicit touchHistory array");
+  });
+
   it("allows contact when under the limit", () => {
     const checker = new FrequencyCapChecker();
     const history: TouchRecord[] = [
