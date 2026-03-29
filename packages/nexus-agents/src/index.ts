@@ -88,6 +88,18 @@ export type { AdCopyPromptContext } from "./prompts/ad-copy.js";
 export { AdCopyAgent } from "./ad-copy-agent.js";
 export type { AdCopyInventoryServiceDep } from "./ad-copy-agent.js";
 
+// --- Funnel Agent ---
+export { FunnelAgent, validateFunnelCompliance } from "./funnel-agent.js";
+export type {
+  FunnelData,
+  FunnelLeadResult,
+  VehicleMatchQuery,
+  FunnelInventoryServiceDep,
+  FunnelCrmServiceDep,
+} from "./funnel-agent.js";
+export { buildFunnelFollowupPrompt, FUNNEL_SMS_MAX_CHARS, FUNNEL_EMAIL_MAX_WORDS } from "./prompts/funnel-followup.js";
+export type { FunnelFollowupContext } from "./prompts/funnel-followup.js";
+
 // --- Touch Scheduler ---
 export {
   TOUCH_SCHEDULE,

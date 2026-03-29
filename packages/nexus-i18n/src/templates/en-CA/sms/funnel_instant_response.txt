@@ -1,0 +1,1 @@
+Hi {{firstName}}! Your financing application has been received. Based on your preferences, we've found some great {{vehicleType}} options within your budget. {{repName}} from {{dealershipName}} will reach out within 5 minutes to discuss your options. Questions? Call us: {{dealershipPhone}}

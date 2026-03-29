@@ -1,0 +1,20 @@
+Subject: Your vehicle application is being reviewed, {{firstName}}!
+
+Hi {{firstName}},
+
+Thank you for completing your financing application with {{dealershipName}}! We appreciate you taking the time.
+
+Here is what we know so far:
+- Vehicle interest: {{vehicleType}}
+- Budget range: {{budgetRange}}
+
+Our financing team is reviewing your application right now. {{repName}} will be in touch within the next few minutes to walk you through your options and answer any questions.
+
+In the meantime, feel free to browse our inventory or call us directly at {{dealershipPhone}}.
+
+We look forward to helping you find the perfect vehicle!
+
+Best regards,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}

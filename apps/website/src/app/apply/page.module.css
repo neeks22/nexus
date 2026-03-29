@@ -1,0 +1,682 @@
+/* ============================================
+   LEAD FUNNEL — MULTI-STEP WIZARD
+   Mobile-first, dark theme, one-question-per-screen
+   ============================================ */
+
+.page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================================
+   TOP BAR
+   ============================================ */
+
+.topBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(10, 10, 10, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.topBarInner {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.logoMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  background: var(--accent-green);
+  color: #000;
+  font-weight: 900;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.trustBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-green);
+  letter-spacing: 0.01em;
+}
+
+/* ============================================
+   PROGRESS BAR
+   ============================================ */
+
+.progressContainer {
+  position: fixed;
+  top: 50px;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  padding: 8px 20px;
+  background: rgba(10, 10, 10, 0.9);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.progressBar {
+  max-width: 640px;
+  margin: 0 auto;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--accent-green);
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.progressLabel {
+  max-width: 640px;
+  margin: 6px auto 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ============================================
+   STEP CONTAINER — Full-Screen Card
+   ============================================ */
+
+.stepContainer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 20px 40px;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.step {
+  width: 100%;
+  max-width: 540px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 24px;
+}
+
+/* ── Slide Animation ────────── */
+
+.slideForward {
+  animation: slideIn 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.slideBackward {
+  animation: slideBack 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideBack {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================
+   STEP CONTENT
+   ============================================ */
+
+.stepIcon {
+  color: var(--accent-green);
+  margin-bottom: 4px;
+}
+
+.stepTitle {
+  font-size: clamp(1.5rem, 5vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.stepSubtext {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 420px;
+}
+
+/* ============================================
+   OPTION BUTTONS (tap targets)
+   ============================================ */
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.optionButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  min-height: 100px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.optionButton:hover {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+}
+
+.optionButton:active {
+  transform: translateY(0);
+}
+
+.optionSelected {
+  border-color: var(--accent-green) !important;
+  background: rgba(34, 197, 94, 0.08) !important;
+  box-shadow: 0 0 0 1px var(--accent-green), 0 4px 16px rgba(34, 197, 94, 0.15);
+}
+
+.optionWide {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  min-height: 56px;
+  padding: 16px 24px;
+}
+
+.optionIcon {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-green);
+  letter-spacing: -0.02em;
+}
+
+.optionLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+/* ============================================
+   TRUST INDICATORS
+   ============================================ */
+
+.trustIndicators {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 16px;
+}
+
+.trustItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.trustItem svg {
+  color: var(--accent-green);
+}
+
+.creditDisclaimer {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--accent-green-dim);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-green);
+}
+
+.tradeInNote {
+  font-size: 14px;
+  color: var(--accent-green);
+  font-weight: 600;
+}
+
+/* ============================================
+   BACK BUTTON
+   ============================================ */
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: color 0.15s ease;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.backButton:hover {
+  color: var(--text-secondary);
+}
+
+/* ============================================
+   CONTACT FORM (Step 6)
+   ============================================ */
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.formGroup:nth-child(3),
+.formGroup:nth-child(4) {
+  grid-column: 1 / -1;
+}
+
+.formLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
+}
+
+.formInput {
+  padding: 14px 16px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 16px;
+  transition: border-color 0.15s ease;
+  -webkit-appearance: none;
+}
+
+.formInput::placeholder {
+  color: var(--text-muted);
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+}
+
+.formHint {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* ============================================
+   CASL CONSENT
+   ============================================ */
+
+.consentLabel {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 100%;
+}
+
+.consentCheckbox {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  margin-top: 2px;
+  accent-color: var(--accent-green);
+  cursor: pointer;
+}
+
+.consentText {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* ============================================
+   SUBMIT BUTTON
+   ============================================ */
+
+.submitButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 18px 32px;
+  background: var(--accent-green);
+  color: #000;
+  font-size: 17px;
+  font-weight: 700;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: var(--accent-green-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.35);
+}
+
+.submitButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.errorMessage {
+  font-size: 14px;
+  color: var(--red);
+  font-weight: 600;
+}
+
+/* ============================================
+   CONFIRMATION (Step 7)
+   ============================================ */
+
+.confirmIcon {
+  color: var(--accent-green);
+  animation: confirmPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+}
+
+@keyframes confirmPop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.confirmTitle {
+  font-size: clamp(1.75rem, 6vw, 2.5rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  color: var(--accent-green);
+  line-height: 1.1;
+}
+
+.confirmSubtext {
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 460px;
+}
+
+/* ── Next Steps ───────────────── */
+
+.nextSteps {
+  width: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px 24px;
+  text-align: left;
+}
+
+.nextStepsTitle {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.nextStepsList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nextStepItem {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.nextStepNumber {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  background: var(--accent-green-dim);
+  color: var(--accent-green);
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 50%;
+}
+
+/* ── Vehicle Recommendations ─── */
+
+.vehicleRecs {
+  width: 100%;
+  text-align: left;
+}
+
+.vehicleRecsTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.vehicleRecGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vehicleRecCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.15s ease;
+}
+
+.vehicleRecCard:hover {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.vehicleRecBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  background: var(--accent-green-dim);
+  color: var(--accent-green);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.vehicleRecInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vehicleRecName {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vehicleRecPayment {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-green);
+}
+
+/* ── Confirm Actions ──────────── */
+
+.confirmActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.callButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 18px 32px;
+  background: var(--accent-green);
+  color: #000;
+  font-size: 17px;
+  font-weight: 700;
+  border-radius: 10px;
+  transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  text-decoration: none;
+}
+
+.callButton:hover {
+  background: var(--accent-green-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(34, 197, 94, 0.35);
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+
+@media (max-width: 600px) {
+  .optionGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .formGroup:nth-child(3),
+  .formGroup:nth-child(4) {
+    grid-column: auto;
+  }
+
+  .trustIndicators {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .stepContainer {
+    padding: 90px 16px 32px;
+    align-items: flex-start;
+    padding-top: 110px;
+  }
+}
+
+@media (max-width: 380px) {
+  .optionGrid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,20 @@
+Subject: Votre demande de vehicule est en cours de revision, {{firstName}}!
+
+Bonjour {{firstName}},
+
+Merci d'avoir rempli votre demande de financement aupres de {{dealershipName}}! Nous apprecions le temps que vous avez pris.
+
+Voici ce que nous savons:
+- Type de vehicule: {{vehicleType}}
+- Budget: {{budgetRange}}
+
+Notre equipe de financement examine votre demande en ce moment. {{repName}} vous contactera dans les prochaines minutes pour discuter de vos options et repondre a vos questions.
+
+En attendant, n'hesitez pas a parcourir notre inventaire ou a nous appeler directement au {{dealershipPhone}}.
+
+Au plaisir de vous aider a trouver le vehicule parfait!
+
+Cordialement,
+{{repName}}
+{{dealershipName}}
+{{dealershipPhone}}

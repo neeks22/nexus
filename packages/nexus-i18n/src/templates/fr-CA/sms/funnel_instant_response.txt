@@ -1,0 +1,1 @@
+Bonjour {{firstName}}! Votre demande de financement a ete recue. Selon vos preferences, nous avons trouve d'excellentes options de {{vehicleType}} dans votre budget. {{repName}} de {{dealershipName}} vous contactera dans les 5 prochaines minutes. Questions? Appelez-nous: {{dealershipPhone}}
