@@ -8,3 +8,5 @@ dist/
 ralph-output.log
 nexus-memory.json
 .env
+.env.*
+.mcp.json
