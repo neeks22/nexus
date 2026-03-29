@@ -1,0 +1,1 @@
+Bonjour {{firstName}}! Petit rappel: votre rendez-vous pour {{serviceType}} approche le {{preferredDate}}. Nous avons hate de vous voir! Questions? Appelez {{dealershipPhone}}. - {{dealershipName}} Service

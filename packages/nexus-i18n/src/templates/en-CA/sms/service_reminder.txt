@@ -1,0 +1,1 @@
+Hi {{firstName}}! Friendly reminder: your {{serviceType}} appointment is coming up on {{preferredDate}}. We look forward to seeing you! Questions? Call {{dealershipPhone}}. - {{dealershipName}} Service

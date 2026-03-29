@@ -1,0 +1,1 @@
+Hi {{firstName}}! We found {{recallCount}} open recall(s) for your vehicle. Recall repairs are always FREE. Call {{dealershipPhone}} to book your appointment. - {{dealershipName}} Service

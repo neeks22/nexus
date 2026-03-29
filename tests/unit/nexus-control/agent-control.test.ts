@@ -44,7 +44,7 @@ describe('loadRegistry', () => {
   it('loads the ReadyRide registry with all 3 agents', async () => {
     const registry = await manager.loadRegistry('readyride');
     expect(registry.tenantId).toBe('readyride');
-    expect(registry.agents).toHaveLength(3);
+    expect(registry.agents).toHaveLength(4);
     expect(registry.agents.map((a) => a.type)).toEqual(
       expect.arrayContaining(['instant_response', 'cold_warming', 'reply_handler']),
     );
@@ -53,7 +53,7 @@ describe('loadRegistry', () => {
   it('loads the ReadyCar registry with all 3 agents', async () => {
     const registry = await manager.loadRegistry('readycar');
     expect(registry.tenantId).toBe('readycar');
-    expect(registry.agents).toHaveLength(3);
+    expect(registry.agents).toHaveLength(4);
   });
 
   it('throws for non-existent tenant', async () => {
@@ -190,13 +190,13 @@ describe('updateHandoffRules', () => {
 describe('getActiveAgents', () => {
   it('returns all agents when all are enabled', async () => {
     const active = await manager.getActiveAgents('readyride');
-    expect(active).toHaveLength(3);
+    expect(active).toHaveLength(4);
   });
 
   it('excludes disabled agents', async () => {
     await manager.toggleAgent('readyride', 'readyride_cold_warming', false);
     const active = await manager.getActiveAgents('readyride');
-    expect(active).toHaveLength(2);
+    expect(active).toHaveLength(3);
     expect(active.find((a) => a.id === 'readyride_cold_warming')).toBeUndefined();
   });
 
@@ -204,6 +204,7 @@ describe('getActiveAgents', () => {
     await manager.toggleAgent('readyride', 'readyride_instant_response', false);
     await manager.toggleAgent('readyride', 'readyride_cold_warming', false);
     await manager.toggleAgent('readyride', 'readyride_reply_handler', false);
+    await manager.toggleAgent('readyride', 'readyride_service_bdc', false);
     const active = await manager.getActiveAgents('readyride');
     expect(active).toHaveLength(0);
   });
@@ -214,7 +215,7 @@ describe('getActiveAgents', () => {
 describe('getAgentStatus', () => {
   it('returns status for all agents', async () => {
     const statuses = await manager.getAgentStatus('readyride');
-    expect(statuses).toHaveLength(3);
+    expect(statuses).toHaveLength(4);
     for (const status of statuses) {
       expect(status.agentId).toBeDefined();
       expect(status.name).toBeDefined();

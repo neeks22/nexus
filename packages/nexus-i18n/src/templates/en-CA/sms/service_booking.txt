@@ -1,0 +1,1 @@
+Hi {{firstName}}! Your {{serviceType}} appointment is confirmed for {{preferredDate}}. {{serviceAdvisor}} will be ready for you. Arrive 5-10 min early. Questions? Call {{dealershipPhone}}. - {{dealershipName}} Service

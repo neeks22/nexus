@@ -8,7 +8,8 @@ export type AgentType =
   | 'instant_response'
   | 'cold_warming'
   | 'reply_handler'
-  | 'receptionist';
+  | 'receptionist'
+  | 'service_bdc';
 
 // ─── Channel ───────────────────────────────────────────────────────────────
 

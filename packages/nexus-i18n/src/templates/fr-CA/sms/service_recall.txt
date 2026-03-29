@@ -1,0 +1,1 @@
+Bonjour {{firstName}}! Nous avons trouve {{recallCount}} rappel(s) ouvert(s) pour votre vehicule. Les reparations de rappel sont toujours GRATUITES. Appelez {{dealershipPhone}} pour prendre rendez-vous. - {{dealershipName}} Service

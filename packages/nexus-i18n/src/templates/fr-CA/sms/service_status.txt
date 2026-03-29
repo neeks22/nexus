@@ -1,0 +1,1 @@
+Bonjour {{firstName}}! Mise a jour sur votre vehicule (RO #{{roNumber}}): {{status}}. {{estimatedCompletion}} Questions? Appelez {{dealershipPhone}}. - {{dealershipName}} Service

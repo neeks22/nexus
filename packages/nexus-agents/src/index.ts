@@ -9,6 +9,15 @@ export type {
   LeadData,
   PersonalizationVariables,
   VehicleMatchInfo,
+  CampaignType,
+  ComplianceFlag,
+  CtaButton,
+  MetaAdSet,
+  GoogleAdSet,
+  SocialPost,
+  AdCopyVehicle,
+  AdCopyOffer,
+  AdCopyAudience,
 } from "./types.js";
 
 // --- Instant Response Agent ---
@@ -62,6 +71,22 @@ export type {
   CallIntent,
   WarmTransferBriefing,
 } from "./voice-receptionist-agent.js";
+
+// --- Ad Copy Agent ---
+export {
+  buildAdCopyPrompt,
+  detectComplianceFlag,
+  validateCharLimit,
+  validateStyleRules,
+  META_PRIMARY_TEXT_MAX_CHARS,
+  META_HEADLINE_MAX_CHARS,
+  META_DESCRIPTION_MAX_CHARS,
+  GOOGLE_HEADLINE_MAX_CHARS,
+  GOOGLE_DESCRIPTION_MAX_CHARS,
+} from "./prompts/ad-copy.js";
+export type { AdCopyPromptContext } from "./prompts/ad-copy.js";
+export { AdCopyAgent } from "./ad-copy-agent.js";
+export type { AdCopyInventoryServiceDep } from "./ad-copy-agent.js";
 
 // --- Touch Scheduler ---
 export {

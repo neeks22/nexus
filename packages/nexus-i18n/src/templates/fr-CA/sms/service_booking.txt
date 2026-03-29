@@ -1,0 +1,1 @@
+Bonjour {{firstName}}! Votre rendez-vous pour {{serviceType}} est confirme pour le {{preferredDate}}. {{serviceAdvisor}} vous attendra. Arrivez 5-10 min a l'avance. Questions? Appelez {{dealershipPhone}}. - {{dealershipName}} Service

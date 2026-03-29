@@ -1,0 +1,1 @@
+Hi {{firstName}}! Update on your vehicle (RO #{{roNumber}}): {{status}}. {{estimatedCompletion}} Questions? Call {{dealershipPhone}}. - {{dealershipName}} Service
