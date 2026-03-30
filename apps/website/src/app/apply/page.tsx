@@ -536,13 +536,26 @@ export default function ApplyPage(): JSX.Element {
     }
   }, []);
 
-  // Auto-save progress
+  // Auto-save progress — strip PII fields to avoid storing sensitive data in localStorage
   useEffect(() => {
     if (currentStep < TOTAL_STEPS) {
       try {
+        // Only save non-PII funnel selections (vehicle, budget, etc.)
+        // Never persist names, phone, email, income, or job details client-side
+        const safeData = {
+          vehicleType: formData.vehicleType,
+          budget: formData.budget,
+          creditSituation: formData.creditSituation,
+          tradeIn: formData.tradeIn,
+          tradeInYear: formData.tradeInYear,
+          employment: formData.employment,
+          utmSource: formData.utmSource,
+          utmMedium: formData.utmMedium,
+          utmCampaign: formData.utmCampaign,
+        };
         localStorage.setItem(
           STORAGE_KEY,
-          JSON.stringify({ step: currentStep, data: formData })
+          JSON.stringify({ step: currentStep, data: safeData })
         );
       } catch {
         // Ignore storage errors
