@@ -8,9 +8,9 @@ const TWILIO_ACCOUNT_SID = (process.env.TWILIO_ACCOUNT_SID ?? '').trim().replace
 const TWILIO_AUTH_TOKEN = (process.env.TWILIO_AUTH_TOKEN ?? '').trim().replace(/\\n$/, '');
 const TWILIO_FROM_NUMBER = (process.env.TWILIO_FROM_NUMBER ?? '').trim().replace(/\\n$/, '');
 
-/* Tenant-specific Twilio numbers */
+/* Tenant-specific Twilio numbers — hardcoded to avoid env var \n issues */
 const TENANT_NUMBERS: Record<string, string> = {
-  readycar: process.env.TWILIO_FROM_NUMBER ?? '+13433125045',
+  readycar: '+13433125045',
   readyride: '+13433412797',
 };
 const TWILIO_BASE_URL = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}`;
@@ -313,7 +313,8 @@ function groupIntoConversations(
       if (normalFrom !== filterNumber && normalTo !== filterNumber) continue;
     }
 
-    const isOutbound = msg.from === TWILIO_FROM_NUMBER || msg.from === filterNumber || msg.direction?.includes('outbound');
+    const allOurNumbers = Object.values(TENANT_NUMBERS);
+    const isOutbound = allOurNumbers.includes(msg.from) || msg.direction?.includes('outbound');
     const otherPhone = isOutbound ? normalizePhone(msg.to) : normalizePhone(msg.from);
 
     if (!convMap.has(otherPhone)) {
