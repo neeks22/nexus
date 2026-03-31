@@ -152,6 +152,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       aiReply = `Thanks for getting back to me — I appreciate you taking the time.\n\nI'd love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I'm here whenever you're ready.\n\nNicolas\nGeneral Sales Manager\nReadyCar | 613-363-4494`;
     }
 
+    // Send reply directly via Gmail SMTP
+    try {
+      const nodemailer = await import('nodemailer');
+      const transport = nodemailer.default.createTransport({
+        service: 'gmail',
+        auth: { user: 'nicolas@readycar.ca', pass: 'puzj etam ttei khqg' },
+      });
+      await transport.sendMail({
+        from: '"Nicolas Sayah | ReadyCar" <nicolas@readycar.ca>',
+        to: senderEmail,
+        subject: `Re: ${emailSubject || 'Your Vehicle Inquiry'}`,
+        text: aiReply,
+      });
+    } catch (sendErr) {
+      console.error('[email-agent] SMTP send error:', sendErr);
+    }
+
     // Log outbound
     supaPost('lead_transcripts', {
       tenant_id: tenant, lead_id: senderEmail, entry_type: 'message',
@@ -159,15 +176,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     // Slack
-    slackNotify(`EMAIL REPLY GENERATED (${tenant})\nFrom: ${senderEmail}\nName: ${senderName}\nIntent: ${intent}\nHandoff: ${shouldHandoff}`);
+    slackNotify(`EMAIL REPLY SENT (${tenant})\nTo: ${senderEmail}\nName: ${senderName}\nIntent: ${intent}\nHandoff: ${shouldHandoff}`);
 
-    // Return the reply data — n8n IMAP workflow will use this to send via SMTP
     return NextResponse.json({
-      action: 'reply',
+      action: 'sent',
       replyTo: senderEmail,
-      replySubject: `Re: ${emailSubject || 'Your Vehicle Inquiry'}`,
-      replyBody: aiReply,
-      senderName,
       intent,
       shouldHandoff,
     });
