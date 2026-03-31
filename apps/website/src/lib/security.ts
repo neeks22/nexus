@@ -9,6 +9,7 @@ import crypto from 'crypto';
 
 export const SUPABASE_URL = (process.env.SUPABASE_URL ?? '').trim().replace(/\\n$/, '');
 export const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY ?? '').trim().replace(/\\n$/, '');
+export const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim().replace(/\\n$/, '');
 export const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '').trim();
 export const TWILIO_SID = (process.env.TWILIO_ACCOUNT_SID ?? '').trim();
 export const TWILIO_TOKEN = (process.env.TWILIO_AUTH_TOKEN ?? '').trim();
@@ -29,8 +30,27 @@ export const VALID_TENANTS = ['readycar', 'readyride'];
 
 /* ---------- Supabase Helpers ---------- */
 
-export function supaHeaders(): Record<string, string> {
-  return { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
+export function supaHeaders(tenant?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    apikey: SUPABASE_KEY,
+    Authorization: `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+  };
+  // Pass tenant header for RLS enforcement (defense in depth)
+  if (tenant) headers['x-tenant-id'] = tenant;
+  return headers;
+}
+
+// Use anon key for read-only operations (respects RLS)
+export function supaAnonHeaders(tenant?: string): Record<string, string> {
+  const key = SUPABASE_ANON_KEY || SUPABASE_KEY;
+  const headers: Record<string, string> = {
+    apikey: key,
+    Authorization: `Bearer ${key}`,
+    'Content-Type': 'application/json',
+  };
+  if (tenant) headers['x-tenant-id'] = tenant;
+  return headers;
 }
 
 export async function supaGet(path: string): Promise<unknown[]> {
