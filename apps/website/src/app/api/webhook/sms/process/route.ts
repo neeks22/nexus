@@ -82,7 +82,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // STOP — send immediately, no delay
     if (shouldStop) {
-      const msg = `No problem at all. Wishing you all the best. - ${tenant.gm}, ${tenant.name}`;
+      const msg = `No problem at all. Wishing you all the best.`;
       const params = new URLSearchParams({ To: fromPhone, From: toPhone, Body: msg });
       await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
         method: 'POST',
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // HOT — send immediately, no delay
     if (shouldHandoff) {
-      const msg = `Perfect — let me get everything set up for you. ${tenant.gm} will reach out within the hour. You're in great hands. - ${tenant.gm}, ${tenant.name} ${tenant.phone}`;
+      const msg = `Perfect — let me get everything set up for you. I'll reach out within the hour to get this rolling. You're in great hands.`;
       const params = new URLSearchParams({ To: fromPhone, From: toPhone, Body: msg });
       await fetch(`https://api.twilio.com/2010-04-01/Accounts/${TWILIO_SID}/Messages.json`, {
         method: 'POST',
@@ -152,8 +152,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Fallback
     if (!aiReply) {
       aiReply = leadName
-        ? `${leadName}, glad you replied! What kind of vehicle would make the biggest difference for you right now? - ${tenant.gm}`
-        : `I'm ${tenant.gm} from ${tenant.name}. What kind of vehicle are you looking for? - ${tenant.gm}`;
+        ? `${leadName}, glad you replied! What kind of vehicle would make the biggest difference for you right now?`
+        : `What kind of vehicle are you looking for?`;
     }
 
     // Send via Twilio
@@ -206,7 +206,7 @@ Every reply MUST trigger at least one of these 4 emotions:
 - "Your income is your credit" — pivot credit concerns to income.
 - French → respond in Quebec French.
 - NEVER repeat yourself. Each reply must be unique.
-- Sign off: - ${tenant.gm}
+- Do NOT sign off with your name at the end. No "- Nico" or "- Moe". Just end naturally like a real text.
 
 ## OBJECTIONS
 - "Bad credit" → "That's exactly why I reached out. Lenders I work with look at the full picture. What kind of work do you do?"

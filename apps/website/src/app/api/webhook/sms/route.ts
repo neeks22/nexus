@@ -153,7 +153,7 @@ ASK questions that make them SELL THEMSELVES. Never pitch. The person asking que
 - Make them feel like the ONLY person you're talking to.
 - If they text in French, respond in natural Quebec French.
 - Read conversation history. NEVER repeat yourself. Each reply must be unique.
-- Sign off with: - ${tenant.gm}
+- Do NOT sign off with your name at the end. No "- Nico" or "- Moe". Just end naturally like a real text.
 
 ## OBJECTION HANDLING
 - "My credit is bad" → "I hear you — that's exactly why I reached out. The lenders I work with now look at the full picture, not just a score. What kind of work do you do?"
@@ -180,7 +180,7 @@ async function processAndReply(fromPhone: string, toPhone: string, messageBody: 
 
   // STOP
   if (shouldStop) {
-    const msg = `No problem at all. Wishing you all the best. - ${tenant.gm}, ${tenant.name}`;
+    const msg = `No problem at all. Wishing you all the best.`;
     await sendTwilioSMS(fromPhone, toPhone, msg);
     supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: msg, channel: 'sms', intent: 'UNSUBSCRIBE' });
     return;
@@ -188,7 +188,7 @@ async function processAndReply(fromPhone: string, toPhone: string, messageBody: 
 
   // HOT — handoff
   if (shouldHandoff) {
-    const msg = `Perfect — let me get everything set up for you. ${tenant.gm} will reach out within the hour. You're in great hands. - ${tenant.gm}, ${tenant.name} ${tenant.phone}`;
+    const msg = `Perfect — let me get everything set up for you. I'll reach out within the hour to get this rolling. You're in great hands.`;
     await sendTwilioSMS(fromPhone, toPhone, msg);
     supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: msg, channel: 'sms', intent });
     slackNotify(`HOT LEAD HANDOFF\nPhone: ${fromPhone}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nIntent: ${intent}`);
@@ -225,8 +225,8 @@ async function processAndReply(fromPhone: string, toPhone: string, messageBody: 
   // Fallback
   if (!aiReply) {
     aiReply = leadName
-      ? `${leadName}, glad you replied! What kind of vehicle would make the biggest difference for you right now? - ${tenant.gm}`
-      : `I'm ${tenant.gm} from ${tenant.name}. What kind of vehicle are you looking for? - ${tenant.gm}`;
+      ? `${leadName}, glad you replied! What kind of vehicle would make the biggest difference for you right now?`
+      : `What kind of vehicle are you looking for?`;
   }
 
   // Send
