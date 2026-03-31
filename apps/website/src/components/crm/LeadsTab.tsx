@@ -35,6 +35,9 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
+  const [showCreate, setShowCreate] = useState(false);
+  const [newLead, setNewLead] = useState({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
+  const [creating, setCreating] = useState(false);
 
   const fetchLeads = useCallback(async (): Promise<void> => {
     try {
@@ -57,9 +60,88 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
     fetchLeads();
   }, [fetchLeads]);
 
+  const createLead = async (): Promise<void> => {
+    if (!newLead.first_name || !newLead.phone) return;
+    setCreating(true);
+    try {
+      const res = await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant, type: 'create_lead', content: JSON.stringify(newLead), phone: newLead.phone }),
+      });
+      if (res.ok) {
+        setShowCreate(false);
+        setNewLead({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
+        fetchLeads();
+      } else {
+        alert('Failed to create lead');
+      }
+    } catch { alert('Failed to create lead'); }
+    finally { setCreating(false); }
+  };
+
   return (
     <div style={{ padding: '24px', overflowY: 'auto', height: '100vh' }}>
-      <h1 style={{ color: '#f0f0f5', fontSize: '22px', fontWeight: 700, margin: '0 0 16px' }}>Leads</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h1 style={{ color: '#f0f0f5', fontSize: '22px', fontWeight: 700, margin: 0 }}>Leads</h1>
+        <button onClick={() => setShowCreate(true)} style={{
+          padding: '8px 18px', borderRadius: '8px', border: 'none',
+          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff',
+          fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+        }}>+ New Lead</button>
+      </div>
+
+      {/* Create Lead Modal */}
+      {showCreate && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={() => setShowCreate(false)}>
+          <div style={{ background: '#1a1a2e', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '480px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ color: '#f0f0f5', margin: '0 0 20px', fontSize: '18px' }}>Create New Lead</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ color: '#8888a0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>First Name *</label>
+                <input value={newLead.first_name} onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })} placeholder="John" autoFocus style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ color: '#8888a0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Last Name</label>
+                <input value={newLead.last_name} onChange={(e) => setNewLead({ ...newLead, last_name: e.target.value })} placeholder="Smith" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ color: '#8888a0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Phone *</label>
+                <input value={newLead.phone} onChange={(e) => setNewLead({ ...newLead, phone: e.target.value })} placeholder="6131234567" type="tel" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ color: '#8888a0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Email</label>
+                <input value={newLead.email} onChange={(e) => setNewLead({ ...newLead, email: e.target.value })} placeholder="john@email.com" type="email" style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ color: '#8888a0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Vehicle Interest</label>
+                <input value={newLead.vehicle_type} onChange={(e) => setNewLead({ ...newLead, vehicle_type: e.target.value })} placeholder="SUV, Sedan, Truck..." style={inputStyle} />
+              </div>
+              <div>
+                <label style={{ color: '#8888a0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>Credit Situation</label>
+                <select value={newLead.credit_situation} onChange={(e) => setNewLead({ ...newLead, credit_situation: e.target.value })} style={inputStyle}>
+                  <option value="">Select...</option>
+                  <option value="excellent">Excellent (750+)</option>
+                  <option value="good">Good (700-749)</option>
+                  <option value="fair">Fair (600-699)</option>
+                  <option value="poor">Poor (500-599)</option>
+                  <option value="very_poor">Very Poor (&lt;500)</option>
+                  <option value="unknown">Unknown</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button onClick={() => setShowCreate(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#8888a0', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={createLead} disabled={!newLead.first_name || !newLead.phone || creating} style={{
+                padding: '10px 24px', borderRadius: '8px', border: 'none',
+                background: (newLead.first_name && newLead.phone) ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#333',
+                color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                opacity: (newLead.first_name && newLead.phone) ? 1 : 0.5,
+              }}>{creating ? 'Creating...' : 'Create Lead'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -193,3 +275,9 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
     </div>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '10px 12px', borderRadius: '8px',
+  border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+  color: '#f0f0f5', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const,
+};

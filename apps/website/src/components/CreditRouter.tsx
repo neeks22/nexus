@@ -266,10 +266,40 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
     fico: '', income: '', situation: 'standard', selfEmployed: false,
     downPayment: '', desiredPayment: '', vehicleYear: '', vehicleKm: '', vehiclePrice: '',
   });
+  const [customerInfo, setCustomerInfo] = useState({ first_name: '', last_name: '', phone: customerPhone || '', email: '' });
+  const [leadMatch, setLeadMatch] = useState<{ found: boolean; name?: string; phone?: string } | null>(null);
+  const [searchingLead, setSearchingLead] = useState(false);
   const [notes, setNotes] = useState('');
   const [results, setResults] = useState<ScoredResult[]>([]);
   const [aiInsight, setAiInsight] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Auto-search for existing lead when phone changes
+  const searchLead = (phone: string): void => {
+    if (!tenant || phone.replace(/\D/g, '').length < 10) {
+      setLeadMatch(null);
+      return;
+    }
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(async () => {
+      setSearchingLead(true);
+      try {
+        const res = await fetch(`/api/leads?tenant=${tenant}&search=${encodeURIComponent(phone)}&limit=1`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.leads?.length > 0) {
+            const l = data.leads[0];
+            setLeadMatch({ found: true, name: `${l.first_name || ''} ${l.last_name || ''}`.trim(), phone: l.phone });
+            if (l.first_name) setCustomerInfo(prev => ({ ...prev, first_name: prev.first_name || l.first_name, last_name: prev.last_name || l.last_name || '', email: prev.email || l.email || '' }));
+          } else {
+            setLeadMatch({ found: false });
+          }
+        }
+      } catch { /* ignore */ }
+      finally { setSearchingLead(false); }
+    }, 500);
+  };
 
   const analyzeWithAI = async (text: string): Promise<void> => {
     setAnalyzing(true);
@@ -340,10 +370,40 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
     setStep('results');
     setSaved(false);
 
-    // Auto-save to Supabase activity log
+    // Auto-create lead if not found, then save routing to activity
     if (tenant) {
+      const phone = customerInfo.phone.replace(/\D/g, '');
+      const fullPhone = phone.length === 10 ? `+1${phone}` : phone.length === 11 ? `+${phone}` : phone ? `+${phone}` : 'unknown';
+
+      // Create lead if we have customer info and no match
+      if (customerInfo.first_name && customerInfo.phone && (!leadMatch || !leadMatch.found)) {
+        fetch('/api/leads', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenant,
+            type: 'create_lead',
+            phone: fullPhone,
+            content: JSON.stringify({
+              first_name: customerInfo.first_name,
+              last_name: customerInfo.last_name,
+              phone: customerInfo.phone,
+              email: customerInfo.email,
+              credit_situation: profile.fico ? `FICO ${profile.fico}` : '',
+              vehicle_type: '',
+            }),
+          }),
+        }).then(r => r.json()).then(data => {
+          if (data.success) {
+            setLeadMatch({ found: true, name: `${customerInfo.first_name} ${customerInfo.last_name}`.trim(), phone: fullPhone });
+          }
+        }).catch(() => {});
+      }
+
+      // Save credit routing to activity
       const routingData = {
         profile: { ...profile },
+        customer: { ...customerInfo },
         topLenders: scored.slice(0, 5).map((r) => ({
           lender: r.lender,
           tier: r.tier?.tier || 'N/A',
@@ -361,7 +421,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tenant,
-          phone: customerPhone || 'unknown',
+          phone: fullPhone,
           type: 'credit_routing',
           content: JSON.stringify(routingData),
         }),
@@ -601,8 +661,35 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             </div>
           </div>
 
-          {/* RIGHT — Customer Profile */}
+          {/* RIGHT — Customer Info + Profile */}
           <div>
+            {/* Customer Info */}
+            <div className="cr-enter" style={{ ...s.card, animationDelay: '0.06s', marginBottom: 16 }}>
+              <div style={s.sectionTitle}>Customer Info</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={s.label}>First Name</label>
+                  <input value={customerInfo.first_name} onChange={(e) => setCustomerInfo({ ...customerInfo, first_name: e.target.value })} placeholder="John" className="cr-input" style={s.input} />
+                </div>
+                <div>
+                  <label style={s.label}>Last Name</label>
+                  <input value={customerInfo.last_name} onChange={(e) => setCustomerInfo({ ...customerInfo, last_name: e.target.value })} placeholder="Smith" className="cr-input" style={s.input} />
+                </div>
+                <div>
+                  <label style={s.label}>Phone</label>
+                  <input value={customerInfo.phone} onChange={(e) => { setCustomerInfo({ ...customerInfo, phone: e.target.value }); searchLead(e.target.value); }} placeholder="6131234567" className="cr-input" style={s.input} />
+                  {searchingLead && <div style={{ fontSize: 11, color: '#6366f1', marginTop: 4 }}>Searching...</div>}
+                  {leadMatch && leadMatch.found && <div style={{ fontSize: 11, color: '#10b981', marginTop: 4, fontWeight: 500 }}>Lead found: {leadMatch.name}</div>}
+                  {leadMatch && !leadMatch.found && customerInfo.phone.replace(/\D/g, '').length >= 10 && <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>New lead — will be created automatically</div>}
+                </div>
+                <div>
+                  <label style={s.label}>Email</label>
+                  <input value={customerInfo.email} onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })} placeholder="john@email.com" className="cr-input" style={s.input} />
+                </div>
+              </div>
+            </div>
+
+            {/* Financial Profile */}
             <div className="cr-enter" style={{ ...s.card, animationDelay: '0.08s' }}>
               <div style={s.sectionTitle}>Customer Profile</div>
 

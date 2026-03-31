@@ -109,6 +109,54 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'tenant and content required' }, { status: 400 });
     }
 
+    // Create a new lead in funnel_submissions
+    if (type === 'create_lead') {
+      try {
+        const leadData = JSON.parse(content);
+        const normalizedPhone = (leadData.phone || '').replace(/\D/g, '');
+        const fullPhone = normalizedPhone.length === 10 ? `+1${normalizedPhone}` : normalizedPhone.length === 11 ? `+${normalizedPhone}` : `+${normalizedPhone}`;
+
+        // Check if lead already exists
+        const checkRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&phone=eq.${encodeURIComponent(fullPhone)}&limit=1`,
+          { headers: supabaseHeaders(), signal: AbortSignal.timeout(10000) }
+        );
+        if (checkRes.ok) {
+          const existing = await checkRes.json();
+          if (existing.length > 0) {
+            return NextResponse.json({ success: true, existing: true, lead: existing[0] });
+          }
+        }
+
+        const createRes = await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions`, {
+          method: 'POST',
+          headers: { ...supabaseHeaders(), Prefer: 'return=representation' },
+          body: JSON.stringify({
+            tenant_id: tenant,
+            first_name: leadData.first_name || null,
+            last_name: leadData.last_name || null,
+            phone: fullPhone,
+            email: leadData.email || null,
+            vehicle_type: leadData.vehicle_type || null,
+            credit_situation: leadData.credit_situation || null,
+            status: 'new',
+            casl_consent: true,
+          }),
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!createRes.ok) {
+          const errText = await createRes.text();
+          console.error('[leads] Create error:', errText);
+          return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
+        }
+        const created = await createRes.json();
+        return NextResponse.json({ success: true, existing: false, lead: created[0] || created });
+      } catch (err) {
+        console.error('[leads] Create lead error:', err);
+        return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
+      }
+    }
+
     const res = await fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts`, {
       method: 'POST',
       headers: { ...supabaseHeaders(), Prefer: 'return=minimal' },
