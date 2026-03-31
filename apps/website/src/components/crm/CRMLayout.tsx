@@ -43,12 +43,21 @@ export default function CRMLayout({
     }}>
       <Sidebar activeTab={activeTab} onTabChange={setActiveTab} dealerName={dealerName} />
 
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
         {activeTab === 'dashboard' && <DashboardTab tenant={tenant} onSelectLead={handleSelectLead} />}
         {activeTab === 'pipeline' && <PipelineTab tenant={tenant} onSelectLead={handleSelectLead} />}
-        {activeTab === 'inbox' && inboxContent}
+        {activeTab === 'inbox' && (
+          <div style={{ height: '100vh', overflow: 'auto' }} className="crm-inbox-wrapper">
+            <style>{`.crm-inbox-wrapper > div { min-height: auto !important; padding-top: 0 !important; } .crm-inbox-wrapper > div > div { height: 100vh !important; max-width: 100% !important; padding: 12px !important; }`}</style>
+            {inboxContent}
+          </div>
+        )}
         {activeTab === 'leads' && <LeadsTab tenant={tenant} onSelectLead={handleSelectLead} />}
-        {activeTab === 'credit' && creditRouterContent}
+        {activeTab === 'credit' && (
+          <div style={{ padding: '24px', overflowY: 'auto', height: '100vh' }}>
+            {creditRouterContent}
+          </div>
+        )}
         {activeTab === 'reports' && <ReportsTab tenant={tenant} />}
 
         {selectedLead && (
