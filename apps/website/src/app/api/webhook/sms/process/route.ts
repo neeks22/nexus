@@ -98,9 +98,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // If latest status is AI_RESUMED, continue with auto-reply
     } catch {}
 
-    // Wait for human-like delay
-    const delayMs = (delay || 45) * 1000;
-    await new Promise(resolve => setTimeout(resolve, delayMs));
+    // Small delay for human feel (must stay under Vercel's 10s timeout on Hobby)
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Load conversation history
     let conversationHistory = '';
