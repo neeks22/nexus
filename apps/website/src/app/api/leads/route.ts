@@ -16,9 +16,28 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const status = request.nextUrl.searchParams.get('status');
   const search = request.nextUrl.searchParams.get('search');
   const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '100'), 500);
+  const activity = request.nextUrl.searchParams.get('activity');
+  const phone = request.nextUrl.searchParams.get('phone');
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return NextResponse.json({ error: 'Server config error' }, { status: 500 });
+  }
+
+  // Fetch CRM activity for a specific lead
+  if (activity === 'true' && phone) {
+    try {
+      const actRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodeURIComponent(phone)}&channel=eq.crm&select=id,created_at,role,channel,content&order=created_at.desc&limit=50`,
+        { headers: supabaseHeaders(), signal: AbortSignal.timeout(10000) }
+      );
+      if (actRes.ok) {
+        const actData = await actRes.json();
+        return NextResponse.json({ activity: actData }, { headers: { 'Cache-Control': 'no-store' } });
+      }
+      return NextResponse.json({ activity: [] }, { headers: { 'Cache-Control': 'no-store' } });
+    } catch {
+      return NextResponse.json({ activity: [] }, { headers: { 'Cache-Control': 'no-store' } });
+    }
   }
 
   try {
@@ -74,5 +93,45 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error('[leads] PATCH error:', error);
     return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    return NextResponse.json({ error: 'Server config error' }, { status: 500 });
+  }
+
+  try {
+    const body = await request.json();
+    const { tenant, phone, type, content } = body as { tenant?: string; phone?: string; type?: string; content?: string };
+
+    if (!tenant || !content) {
+      return NextResponse.json({ error: 'tenant and content required' }, { status: 400 });
+    }
+
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts`, {
+      method: 'POST',
+      headers: { ...supabaseHeaders(), Prefer: 'return=minimal' },
+      body: JSON.stringify({
+        tenant_id: tenant,
+        lead_id: phone || 'unknown',
+        entry_type: type || 'note',
+        role: 'system',
+        content,
+        channel: 'crm',
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('[leads] POST error:', errText);
+      return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('[leads] POST error:', error);
+    return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
   }
 }

@@ -230,7 +230,7 @@ export default function InboxPage(): React.ReactElement {
       tenant="readycar"
       dealerName="ReadyCar"
       inboxContent={<InboxContent />}
-      creditRouterContent={<CreditRouter />}
+      creditRouterContent={<CreditRouter tenant="readycar" />}
     />
   );
 }

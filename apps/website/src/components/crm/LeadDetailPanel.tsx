@@ -50,6 +50,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
 
   async function fetchData(): Promise<void> {
     try {
+      const SUPABASE_URL = '/api/dashboard'; // reuse to get supabase URL indirectly
       const [leadRes, timelineRes] = await Promise.all([
         fetch(`/api/leads?tenant=${tenant}&search=${encodeURIComponent(phone)}&limit=1`),
         fetch(`/api/messages?tenant=${tenant}&phone=${encodeURIComponent(phone)}`),
@@ -60,19 +61,52 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
         if (data.leads?.length > 0) setLead(data.leads[0]);
       }
 
+      // SMS messages
+      const smsEntries: TimelineEntry[] = [];
       if (timelineRes.ok) {
         const data = await timelineRes.json();
         const conv = data.conversation;
         if (conv?.messages) {
-          setTimeline(conv.messages.map((m: { sid: string; dateSent: string; direction: string; body: string }, i: number) => ({
-            id: m.sid || String(i),
-            time: new Date(m.dateSent).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
-            role: m.direction === 'inbound' ? 'customer' : 'ai',
-            channel: 'sms',
-            content: m.body,
-          })));
+          conv.messages.forEach((m: { sid: string; dateSent: string; direction: string; body: string }, i: number) => {
+            smsEntries.push({
+              id: m.sid || `sms-${i}`,
+              time: new Date(m.dateSent).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+              role: m.direction === 'inbound' ? 'customer' : 'ai',
+              channel: 'sms',
+              content: m.body,
+            });
+          });
         }
       }
+
+      // CRM activity entries (credit routing, notes, etc.) from Supabase
+      const crmEntries: TimelineEntry[] = [];
+      try {
+        const crmRes = await fetch(`/api/leads?tenant=${tenant}&phone=${encodeURIComponent(phone)}&activity=true`);
+        if (crmRes.ok) {
+          const crmData = await crmRes.json();
+          if (crmData.activity) {
+            crmData.activity.forEach((a: { id: string; created_at: string; role: string; channel: string; content: string }, i: number) => {
+              crmEntries.push({
+                id: a.id || `crm-${i}`,
+                time: new Date(a.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+                role: a.role || 'system',
+                channel: a.channel || 'crm',
+                content: a.content,
+              });
+            });
+          }
+        }
+      } catch { /* activity fetch is optional */ }
+
+      // Merge and sort by time (newest first for display, but timeline shows oldest first)
+      const allEntries = [...smsEntries, ...crmEntries].sort((a, b) => {
+        const ta = new Date(a.time).getTime() || 0;
+        const tb = new Date(b.time).getTime() || 0;
+        return ta - tb;
+      });
+
+      setTimeline(allEntries);
     } catch (err) {
       console.error('Lead detail fetch error:', err);
     } finally {
