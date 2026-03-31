@@ -1,125 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput } from '../../../../lib/security';
 
 /* =============================================================================
-   EMAIL WEBHOOK — Receives forwarded emails, generates AI reply, sends via SMTP
-   Called by n8n IMAP trigger (just forwards the email data here, no AI logic in n8n)
+   EMAIL WEBHOOK — Receives email data, generates AI reply, sends via SMTP
+   Security: API key or same-origin required + rate limiting
    ============================================================================= */
 
-const SUPABASE_URL = (process.env.SUPABASE_URL ?? '').trim().replace(/\\n$/, '');
-const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY ?? '').trim().replace(/\\n$/, '');
-const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? 'REMOVED_SECRET_ANTHROPIC_KEY').trim();
-const SLACK_WEBHOOK = 'REMOVED_SECRET_SLACK_WEBHOOK';
-
-/* ---------- Helpers ---------- */
-
-function supaHeaders(): Record<string, string> {
-  return { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
-}
-
-async function supaPost(table: string, data: Record<string, unknown>): Promise<void> {
-  try {
-    await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-      method: 'POST', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
-      body: JSON.stringify(data), signal: AbortSignal.timeout(8000),
-    });
-  } catch { /* ignore */ }
-}
-
-async function callClaude(system: string, userMsg: string): Promise<string> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_KEY,
-      'anthropic-version': '2023-06-01',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
-      system,
-      messages: [{ role: 'user', content: userMsg }],
-    }),
-    signal: AbortSignal.timeout(15000),
-  });
-
-  if (!res.ok) {
-    console.error('[email-agent] Claude API error:', res.status);
-    return '';
-  }
-
-  const data = await res.json();
-  return data.content?.[0]?.text || '';
-}
-
-async function slackNotify(text: string): Promise<void> {
-  try {
-    await fetch(SLACK_WEBHOOK, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }), signal: AbortSignal.timeout(5000),
-    });
-  } catch { /* ignore */ }
-}
-
-/* ---------- Intent Classification ---------- */
-
-function classifyEmailIntent(body: string, subject: string): { intent: string; shouldStop: boolean; shouldHandoff: boolean } {
-  const lower = body.toLowerCase();
-
-  if (/\b(unsubscribe|stop|remove me|not interested|desabonner)\b/i.test(lower)) {
-    return { intent: 'UNSUBSCRIBE', shouldStop: true, shouldHandoff: false };
-  }
-  if (/\b(trade.?in|my car|negative equity|current vehicle)\b/i.test(lower)) {
-    return { intent: 'TRADE_IN', shouldStop: false, shouldHandoff: true };
-  }
-  if (/\b(test drive|come in|visit|appointment|schedule)\b/i.test(lower)) {
-    return { intent: 'TEST_DRIVE', shouldStop: false, shouldHandoff: true };
-  }
-  if (/\b(how much|price|cost|payment|monthly|bi-weekly)\b/i.test(lower)) {
-    return { intent: 'PRICING', shouldStop: false, shouldHandoff: false };
-  }
-
-  return { intent: 'GENERAL', shouldStop: false, shouldHandoff: false };
-}
-
-/* ---------- Main Handler ---------- */
-
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const ip = getClientIp(request);
+
+  // Rate limit: 20 requests/min
+  if (rateLimit(ip, 20)) {
+    return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+  }
+
+  // Auth: require API key OR same-origin (from Gmail Apps Script or CRM)
+  const authHeader = request.headers.get('authorization');
+  const apiKey = authHeader?.replace('Bearer ', '');
+  const origin = request.headers.get('origin');
+  const referer = request.headers.get('referer');
+  const isGoogleAppsScript = request.headers.get('user-agent')?.includes('Google-Apps-Script');
+  const isSameOrigin = origin?.includes('nexusagents.ca') || referer?.includes('nexusagents.ca');
+
+  if (!isGoogleAppsScript && !isSameOrigin && apiKey !== NEXUS_API_KEY && process.env.NODE_ENV !== 'development') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
-    const {
-      from, fromEmail, subject, textBody, htmlBody, tenant: tenantId,
-    } = body as {
+    const { from, fromEmail, subject, textBody, htmlBody, tenant: tenantId } = body as {
       from?: string; fromEmail?: string; subject?: string;
       textBody?: string; htmlBody?: string; tenant?: string;
     };
 
-    const senderEmail = fromEmail || from || '';
-    const emailBody = textBody || (htmlBody || '').replace(/<[^>]*>/g, ' ').substring(0, 2000);
-    const emailSubject = subject || '';
-    const tenant = tenantId || 'readycar';
+    const senderEmail = sanitizeInput(fromEmail || from || '', 200);
+    const emailBody = sanitizeInput(textBody || (htmlBody || '').replace(/<[^>]*>/g, ' '), 2000);
+    const emailSubject = sanitizeInput(subject || '', 200);
+    const tenant = tenantId === 'readyride' ? 'readyride' : 'readycar';
 
     if (!senderEmail || !emailBody) {
       return NextResponse.json({ error: 'Missing from or body' }, { status: 400 });
     }
 
-    // Skip internal emails
-    if (senderEmail.includes('readycar.ca') || senderEmail.includes('readyride.ca') || senderEmail.includes('nexus')) {
+    // Skip internal
+    if (/readycar\.ca|readyride\.ca|nexus/i.test(senderEmail)) {
       return NextResponse.json({ skipped: true, reason: 'internal' });
     }
 
-    // Skip automated senders
-    if (/noreply|no-reply|mailer-daemon|postmaster|newsletter/i.test(senderEmail)) {
+    // Skip automated
+    if (/noreply|no-reply|mailer-daemon|postmaster|newsletter|google\.com|facebook|meta\.com/i.test(senderEmail)) {
       return NextResponse.json({ skipped: true, reason: 'automated' });
     }
 
-    // Only reply to emails that are replies to our campaigns
+    // Only reply to campaign replies
     if (!emailSubject.toLowerCase().includes('re:')) {
       return NextResponse.json({ skipped: true, reason: 'not a reply' });
     }
 
-    // Extract sender name
+    // Check if content is vehicle-related
+    const lower = emailBody.toLowerCase();
+    const vehicleKeywords = /vehicle|car|truck|suv|credit|approval|finance|trade|interested|check|yes|readycar|lender|budget|payment|income|license/i;
+    if (!vehicleKeywords.test(lower) && !emailSubject.toLowerCase().includes('readycar')) {
+      return NextResponse.json({ skipped: true, reason: 'not vehicle related' });
+    }
+
     const nameMatch = (from || '').match(/^([^<]+)</);
-    const senderName = nameMatch ? nameMatch[1].trim() : '';
+    const senderName = nameMatch ? sanitizeInput(nameMatch[1].trim(), 100) : '';
 
     // Log inbound
     supaPost('lead_transcripts', {
@@ -127,65 +73,52 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       role: 'customer', content: emailBody.substring(0, 500), channel: 'email',
     });
 
+    // Check for unsubscribe
+    if (/\b(unsubscribe|stop|remove me|not interested)\b/i.test(lower)) {
+      if (GMAIL_PASS) {
+        const nodemailer = await import('nodemailer');
+        const transport = nodemailer.default.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_PASS } });
+        await transport.sendMail({
+          from: `"Nicolas Sayah | ReadyCar" <${GMAIL_USER}>`, to: senderEmail,
+          subject: `Re: ${emailSubject}`,
+          text: 'Hi,\n\nNo problem at all — I\'ve removed you from our list. Wishing you all the best.\n\nNicolas\nGeneral Sales Manager\nReadyCar | 613-363-4494',
+        });
+      }
+      return NextResponse.json({ action: 'sent', intent: 'UNSUBSCRIBE' });
+    }
+
     // Classify
-    const { intent, shouldStop, shouldHandoff } = classifyEmailIntent(emailBody, emailSubject);
+    let intent = 'GENERAL';
+    let shouldHandoff = false;
+    if (/\b(trade.?in|my car|negative equity)\b/i.test(lower)) { intent = 'TRADE_IN'; shouldHandoff = true; }
+    else if (/\b(test drive|come in|visit|appointment)\b/i.test(lower)) { intent = 'TEST_DRIVE'; shouldHandoff = true; }
+    else if (/\b(how much|price|cost|payment|monthly)\b/i.test(lower)) { intent = 'PRICING'; }
 
-    // Handle unsubscribe
-    if (shouldStop) {
-      return NextResponse.json({
-        action: 'reply',
-        replyTo: senderEmail,
-        replySubject: `Re: ${emailSubject}`,
-        replyBody: `Hi,\n\nNo problem at all — I've removed you from our list. Wishing you all the best.\n\nNicolas\nGeneral Sales Manager\nReadyCar | 613-363-4494`,
-        intent,
-      });
-    }
+    // AI reply
+    const systemPrompt = 'You are Nicolas, General Sales Manager at ReadyCar in Ottawa. Reply to customer emails. Warm, personal, professional. 3-5 short paragraphs. NEVER discuss pricing/payments/rates. NEVER guarantee approval. Ask 1-2 follow-up questions. Do NOT start with Hey. Do NOT sign off with "- Nicolas". End naturally. Sign off as Nicolas, General Sales Manager, ReadyCar | 613-363-4494 | readycar.ca/inventory/used/';
+    const userMsg = `Customer ${senderName} (${senderEmail}) replied. Intent: ${intent}. Message:\n\n"${emailBody.substring(0, 1000)}"\n\nWrite a personalized reply. You reached out first — do NOT thank them for reaching out.`;
 
-    // Generate AI reply
-    const systemPrompt = `You are Nicolas, General Sales Manager at ReadyCar in Ottawa (6231 Hazeldean Rd, Stittsville). You are replying to a customer email. Be warm, personal, professional. 3-5 short paragraphs max. NEVER discuss specific pricing, monthly payments, or interest rates. NEVER guarantee approval. Ask 1-2 follow-up questions. If credit concerns: our lenders care about steady income not perfect scores. If trade-in: acknowledge warmly, ask specifics. If hot lead: say you will reach out personally within the hour. Do NOT start with Hey. Vary openings. Sign off as Nicolas, General Sales Manager, ReadyCar | 613-363-4494 | readycar.ca/inventory/used/`;
-
-    const userMsg = `Customer ${senderName} (${senderEmail}) replied to our dealership email. Intent: ${intent}. Handoff needed: ${shouldHandoff}. Their message:\n\n"${emailBody.substring(0, 1000)}"\n\nWrite a personalized email reply as Nicolas. Address their specific situation. You reached out to them first — do NOT thank them for reaching out.`;
-
-    let aiReply = await callClaude(systemPrompt, userMsg);
-
+    let aiReply = await callClaude(systemPrompt, userMsg, 500);
     if (!aiReply) {
-      aiReply = `Thanks for getting back to me — I appreciate you taking the time.\n\nI'd love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I'm here whenever you're ready.\n\nNicolas\nGeneral Sales Manager\nReadyCar | 613-363-4494`;
+      aiReply = 'I\'d love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I\'m here whenever you\'re ready.\n\nNicolas\nGeneral Sales Manager\nReadyCar | 613-363-4494';
     }
 
-    // Send reply directly via Gmail SMTP
-    try {
+    // Send
+    if (GMAIL_PASS) {
       const nodemailer = await import('nodemailer');
-      const transport = nodemailer.default.createTransport({
-        service: 'gmail',
-        auth: { user: 'nicolas@readycar.ca', pass: 'puzj etam ttei khqg' },
-      });
+      const transport = nodemailer.default.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_PASS } });
       await transport.sendMail({
-        from: '"Nicolas Sayah | ReadyCar" <nicolas@readycar.ca>',
-        to: senderEmail,
-        subject: `Re: ${emailSubject || 'Your Vehicle Inquiry'}`,
-        text: aiReply,
+        from: `"Nicolas Sayah | ReadyCar" <${GMAIL_USER}>`, to: senderEmail,
+        subject: `Re: ${emailSubject || 'Your Vehicle Inquiry'}`, text: aiReply,
       });
-    } catch (sendErr) {
-      console.error('[email-agent] SMTP send error:', sendErr);
     }
 
-    // Log outbound
-    supaPost('lead_transcripts', {
-      tenant_id: tenant, lead_id: senderEmail, entry_type: 'message',
-      role: 'ai', content: aiReply, channel: 'email', intent,
-    });
+    supaPost('lead_transcripts', { tenant_id: tenant, lead_id: senderEmail, entry_type: 'message', role: 'ai', content: aiReply, channel: 'email', intent });
+    slackNotify(`EMAIL REPLY SENT\nTo: ${senderEmail}\nIntent: ${intent}\nHandoff: ${shouldHandoff}`);
 
-    // Slack
-    slackNotify(`EMAIL REPLY SENT (${tenant})\nTo: ${senderEmail}\nName: ${senderName}\nIntent: ${intent}\nHandoff: ${shouldHandoff}`);
-
-    return NextResponse.json({
-      action: 'sent',
-      replyTo: senderEmail,
-      intent,
-      shouldHandoff,
-    });
+    return NextResponse.json({ action: 'sent', intent, shouldHandoff });
   } catch (error) {
     console.error('[email-agent] Error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

@@ -1,223 +1,175 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { SUPABASE_URL, SUPABASE_KEY, requireApiKey, rateLimit, getClientIp, supaHeaders, validateTenant, encodeSupabaseParam, sanitizeInput } from '../../../lib/security';
 
-const SUPABASE_URL = (process.env.SUPABASE_URL ?? '').trim().replace(/\\n$/, '');
-const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY ?? '').trim().replace(/\\n$/, '');
+/* =============================================================================
+   LEADS API — CRUD for lead management
+   Security: API key or same-origin auth + rate limiting + input sanitization
+   ============================================================================= */
 
-function supabaseHeaders(): Record<string, string> {
-  return {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    'Content-Type': 'application/json',
-  };
-}
+const VALID_STATUSES = ['new', 'contacted', 'appointment', 'showed', 'credit_app', 'approved', 'delivered', 'lost'];
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const tenant = request.nextUrl.searchParams.get('tenant') || 'readycar';
+  // Auth
+  const authError = requireApiKey(request);
+  if (authError) return authError;
+
+  const ip = getClientIp(request);
+  if (rateLimit(ip, 60)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+
+  const tenant = validateTenant(request.nextUrl.searchParams.get('tenant'));
   const status = request.nextUrl.searchParams.get('status');
   const search = request.nextUrl.searchParams.get('search');
-  const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '100'), 500);
   const activity = request.nextUrl.searchParams.get('activity');
   const phone = request.nextUrl.searchParams.get('phone');
+  const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '100'), 500);
 
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     return NextResponse.json({ error: 'Server config error' }, { status: 500 });
   }
 
-  // Fetch CRM activity for a specific lead
+  // Activity endpoint
   if (activity === 'true' && phone) {
     try {
-      const actRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodeURIComponent(phone)}&channel=eq.crm&select=id,created_at,role,channel,content&order=created_at.desc&limit=50`,
-        { headers: supabaseHeaders(), signal: AbortSignal.timeout(10000) }
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodeSupabaseParam(phone)}&channel=eq.crm&select=id,created_at,role,channel,content&order=created_at.desc&limit=50`,
+        { headers: supaHeaders(), signal: AbortSignal.timeout(10000) }
       );
-      if (actRes.ok) {
-        const actData = await actRes.json();
-        return NextResponse.json({ activity: actData }, { headers: { 'Cache-Control': 'no-store' } });
-      }
-      return NextResponse.json({ activity: [] }, { headers: { 'Cache-Control': 'no-store' } });
-    } catch {
-      return NextResponse.json({ activity: [] }, { headers: { 'Cache-Control': 'no-store' } });
-    }
+      if (res.ok) return NextResponse.json({ activity: await res.json() }, { headers: { 'Cache-Control': 'no-store' } });
+      return NextResponse.json({ activity: [] });
+    } catch { return NextResponse.json({ activity: [] }); }
   }
 
   try {
     let query = `v_funnel_submissions?tenant_id=eq.${tenant}&select=*&order=created_at.desc&limit=${limit}`;
-    if (status) query += `&status=eq.${status}`;
-    if (search) query += `&or=(first_name.ilike.*${search}*,last_name.ilike.*${search}*,phone.ilike.*${search}*,email.ilike.*${search}*)`;
+    if (status && VALID_STATUSES.includes(status)) query += `&status=eq.${status}`;
+    if (search) query += `&or=(first_name.ilike.*${encodeSupabaseParam(search)}*,last_name.ilike.*${encodeSupabaseParam(search)}*,phone.ilike.*${encodeSupabaseParam(search)}*,email.ilike.*${encodeSupabaseParam(search)}*)`;
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, {
-      headers: supabaseHeaders(),
-      signal: AbortSignal.timeout(10000),
-    });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, { headers: supaHeaders(), signal: AbortSignal.timeout(10000) });
+    if (!res.ok) return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
 
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
-    }
-
-    const leads = await res.json();
-    return NextResponse.json({ leads }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch (error) {
-    console.error('[leads] Error:', error);
+    return NextResponse.json({ leads: await res.json() }, { headers: { 'Cache-Control': 'no-store' } });
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
   }
 }
 
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return NextResponse.json({ error: 'Server config error' }, { status: 500 });
-  }
+  const authError = requireApiKey(request);
+  if (authError) return authError;
+
+  const ip = getClientIp(request);
+  if (rateLimit(ip, 30)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
 
   try {
     const body = await request.json();
-    const { phone, status, tenant } = body as { phone?: string; status?: string; tenant?: string };
+    const { phone, status, tenant: rawTenant } = body as { phone?: string; status?: string; tenant?: string };
+    const tenant = validateTenant(rawTenant || null);
 
-    if (!phone || !status) {
-      return NextResponse.json({ error: 'phone and status required' }, { status: 400 });
+    if (!phone || !status || !VALID_STATUSES.includes(status)) {
+      return NextResponse.json({ error: 'Valid phone and status required' }, { status: 400 });
     }
 
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeURIComponent(phone)}${tenant ? `&tenant_id=eq.${tenant}` : ''}`,
-      {
-        method: 'PATCH',
-        headers: { ...supabaseHeaders(), Prefer: 'return=minimal' },
-        body: JSON.stringify({ status }),
-        signal: AbortSignal.timeout(10000),
-      }
+      `${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeSupabaseParam(phone)}&tenant_id=eq.${tenant}`,
+      { method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ status }), signal: AbortSignal.timeout(10000) }
     );
-
-    if (!res.ok) {
-      return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
-    }
+    if (!res.ok) return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('[leads] PATCH error:', error);
-    return NextResponse.json({ error: 'Failed to update lead' }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return NextResponse.json({ error: 'Server config error' }, { status: 500 });
-  }
+  const authError = requireApiKey(request);
+  if (authError) return authError;
+
+  const ip = getClientIp(request);
+  if (rateLimit(ip, 20)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
 
   try {
     const body = await request.json();
-    const { tenant, phone, type, content } = body as { tenant?: string; phone?: string; type?: string; content?: string };
+    const { tenant: rawTenant, phone, type, content } = body as { tenant?: string; phone?: string; type?: string; content?: string };
+    const tenant = validateTenant(rawTenant || null);
 
-    if (!tenant || !content) {
-      return NextResponse.json({ error: 'tenant and content required' }, { status: 400 });
-    }
+    if (!content) return NextResponse.json({ error: 'content required' }, { status: 400 });
 
-    // Create a new lead in funnel_submissions
+    // Create lead
     if (type === 'create_lead') {
-      try {
-        const leadData = JSON.parse(content);
-        const normalizedPhone = (leadData.phone || '').replace(/\D/g, '');
-        const fullPhone = normalizedPhone.length === 10 ? `+1${normalizedPhone}` : normalizedPhone.length === 11 ? `+${normalizedPhone}` : `+${normalizedPhone}`;
+      const leadData = JSON.parse(content);
+      const normalizedPhone = (leadData.phone || '').replace(/\D/g, '');
+      const fullPhone = normalizedPhone.length === 10 ? `+1${normalizedPhone}` : normalizedPhone.length === 11 ? `+${normalizedPhone}` : `+${normalizedPhone}`;
 
-        // Check if lead already exists
-        const checkRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&phone=eq.${encodeURIComponent(fullPhone)}&limit=1`,
-          { headers: supabaseHeaders(), signal: AbortSignal.timeout(10000) }
-        );
-        if (checkRes.ok) {
-          const existing = await checkRes.json();
-          if (existing.length > 0) {
-            return NextResponse.json({ success: true, existing: true, lead: existing[0] });
-          }
-        }
-
-        const createRes = await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions`, {
-          method: 'POST',
-          headers: { ...supabaseHeaders(), Prefer: 'return=representation' },
-          body: JSON.stringify({
-            tenant_id: tenant,
-            first_name: leadData.first_name || null,
-            last_name: leadData.last_name || null,
-            phone: fullPhone,
-            email: leadData.email || null,
-            vehicle_type: leadData.vehicle_type || null,
-            credit_situation: leadData.credit_situation || null,
-            status: 'new',
-            casl_consent: true,
-          }),
-          signal: AbortSignal.timeout(10000),
-        });
-        if (!createRes.ok) {
-          const errText = await createRes.text();
-          console.error('[leads] Create error:', errText);
-          return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
-        }
-        const created = await createRes.json();
-        return NextResponse.json({ success: true, existing: false, lead: created[0] || created });
-      } catch (err) {
-        console.error('[leads] Create lead error:', err);
-        return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
+      // Check duplicate
+      const checkRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&phone=eq.${encodeSupabaseParam(fullPhone)}&limit=1`,
+        { headers: supaHeaders(), signal: AbortSignal.timeout(10000) }
+      );
+      if (checkRes.ok) {
+        const existing = await checkRes.json();
+        if (existing.length > 0) return NextResponse.json({ success: true, existing: true, lead: existing[0] });
       }
+
+      const createRes = await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions`, {
+        method: 'POST', headers: { ...supaHeaders(), Prefer: 'return=representation' },
+        body: JSON.stringify({
+          tenant_id: tenant,
+          first_name: sanitizeInput(leadData.first_name || '', 100),
+          last_name: sanitizeInput(leadData.last_name || '', 100),
+          phone: fullPhone,
+          email: sanitizeInput(leadData.email || '', 200),
+          vehicle_type: sanitizeInput(leadData.vehicle_type || '', 100),
+          credit_situation: sanitizeInput(leadData.credit_situation || '', 100),
+          status: 'new',
+          casl_consent: false, // Must be explicitly consented, not auto-true
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!createRes.ok) return NextResponse.json({ error: 'Failed to create lead' }, { status: 500 });
+      const created = await createRes.json();
+      return NextResponse.json({ success: true, existing: false, lead: created[0] || created });
     }
 
+    // Save activity note
     const res = await fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts`, {
-      method: 'POST',
-      headers: { ...supabaseHeaders(), Prefer: 'return=minimal' },
+      method: 'POST', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
       body: JSON.stringify({
-        tenant_id: tenant,
-        lead_id: phone || 'unknown',
-        entry_type: type || 'note',
-        role: 'system',
-        content,
-        channel: 'crm',
+        tenant_id: tenant, lead_id: sanitizeInput(phone || 'unknown', 50),
+        entry_type: type || 'note', role: 'system',
+        content: sanitizeInput(content, 5000), channel: 'crm',
       }),
       signal: AbortSignal.timeout(10000),
     });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.error('[leads] POST error:', errText);
-      return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
-    }
+    if (!res.ok) return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('[leads] POST error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return NextResponse.json({ error: 'Server config error' }, { status: 500 });
-  }
+  const authError = requireApiKey(request);
+  if (authError) return authError;
 
   try {
     const body = await request.json();
-    const { tenant, phone } = body as { tenant?: string; phone?: string };
+    const { tenant: rawTenant, phone } = body as { tenant?: string; phone?: string };
+    const tenant = validateTenant(rawTenant || null);
 
-    if (!tenant || !phone) {
-      return NextResponse.json({ error: 'tenant and phone required' }, { status: 400 });
-    }
+    if (!phone) return NextResponse.json({ error: 'phone required' }, { status: 400 });
 
-    // Delete all activity/transcripts for this lead
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodeURIComponent(phone)}`,
-      { method: 'DELETE', headers: { ...supabaseHeaders(), Prefer: 'return=minimal' }, signal: AbortSignal.timeout(10000) }
-    );
+    const encodedPhone = encodeSupabaseParam(phone);
 
-    // Delete the lead record
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/funnel_submissions?tenant_id=eq.${tenant}&phone=eq.${encodeURIComponent(phone)}`,
-      { method: 'DELETE', headers: { ...supabaseHeaders(), Prefer: 'return=minimal' }, signal: AbortSignal.timeout(10000) }
-    );
-
-    // Delete consent records
-    await fetch(
-      `${SUPABASE_URL}/rest/v1/consent_records?tenant_id=eq.${tenant}&lead_id=eq.${encodeURIComponent(phone)}`,
-      { method: 'DELETE', headers: { ...supabaseHeaders(), Prefer: 'return=minimal' }, signal: AbortSignal.timeout(10000) }
-    );
+    await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
+      fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?tenant_id=eq.${tenant}&phone=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
+      fetch(`${SUPABASE_URL}/rest/v1/consent_records?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
+    ]);
 
     return NextResponse.json({ success: true, message: 'All customer data deleted' });
-  } catch (error) {
-    console.error('[leads] DELETE error:', error);
+  } catch {
     return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
   }
 }
