@@ -90,7 +90,7 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
                 cx="50%"
                 cy="50%"
                 outerRadius={100}
-                label={({ name, count }: { name: string; count: number }) => `${name}: ${count}`}
+                label={((props: any) => `${props.name}: ${props.value}`) as any}
               >
                 {pipelineData.filter((d) => d.count > 0).map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />

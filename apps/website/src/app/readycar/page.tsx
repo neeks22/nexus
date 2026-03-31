@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './page.module.css';
+import CreditRouter from '../../components/CreditRouter';
+import CRMLayout from '../../components/crm/CRMLayout';
 
 /* ============================================
    PASSWORD GATE
@@ -223,7 +225,14 @@ export default function InboxPage(): React.ReactElement {
     return <PasswordGate onUnlock={() => setAuthed(true)} />;
   }
 
-  return <InboxContent />;
+  return (
+    <CRMLayout
+      tenant="readycar"
+      dealerName="ReadyCar"
+      inboxContent={<InboxContent />}
+      creditRouterContent={<CreditRouter />}
+    />
+  );
 }
 
 /* ============================================
