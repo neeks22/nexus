@@ -622,23 +622,32 @@ function InboxContent(): React.ReactElement {
                   </div>
                 </div>
               ) : (
-                filtered.map((conv) => (
+                filtered.map((conv) => {
+                  const allText = conv.messages.map((m: Message) => m.body).join(' ').toLowerCase();
+                  const hotKeywords = /\b(yes|yeah|interested|ready|come in|test drive|appointment|schedule|book|buy|approved|check|let.s do it|sign me up|i.m in|deal|trade.?in|license|permis|drivers? licen[cs]e)\b/i;
+                  const isHot = conv.messages.some((m: Message) => m.direction === 'inbound' && hotKeywords.test(m.body));
+                  const hasID = /\b(driver.?s? licen[cs]e|id|identification|permis de conduire|piece d.identit)\b/i.test(allText);
+
+                  return (
                   <div
                     key={conv.phone}
                     className={`${styles.conversationItem} ${
                       activeConversation?.phone === conv.phone ? styles.conversationItemActive : ''
                     }`}
                     onClick={() => selectConversation(conv)}
+                    style={isHot ? { borderLeft: '3px solid #ef4444', background: 'rgba(239,68,68,0.06)' } : undefined}
                   >
-                    <div className={styles.avatar}>
-                      {getInitials(conv.leadName, conv.phone)}
+                    <div className={styles.avatar} style={isHot ? { background: '#ef4444', color: '#fff' } : undefined}>
+                      {hasID ? '✓' : getInitials(conv.leadName, conv.phone)}
                     </div>
                     <div className={styles.conversationInfo}>
-                      <div className={styles.conversationName}>
-                        {conv.leadName || conv.phone}
+                      <div className={styles.conversationName} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={isHot ? { color: '#ef4444', fontWeight: 700 } : undefined}>{conv.leadName || conv.phone}</span>
+                        {isHot && <span style={{ background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontSize: '9px', fontWeight: 700 }}>HOT</span>}
+                        {hasID && <span style={{ background: '#10b981', color: '#fff', padding: '1px 6px', borderRadius: '8px', fontSize: '9px', fontWeight: 700 }}>ID</span>}
                       </div>
                       {conv.leadName && (
-                        <div className={styles.conversationPhone}>{conv.phone}</div>
+                        <div className={styles.conversationPhone} style={isHot ? { color: '#ef4444' } : undefined}>{conv.phone}</div>
                       )}
                       <div className={styles.conversationPreview}>{conv.lastMessage}</div>
                     </div>
@@ -656,7 +665,8 @@ function InboxContent(): React.ReactElement {
                       </button>
                     </div>
                   </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>
