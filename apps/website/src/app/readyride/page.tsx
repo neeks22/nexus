@@ -9,22 +9,35 @@ import CRMLayout from '../../components/crm/CRMLayout';
    PASSWORD GATE
    ============================================ */
 
-const INBOX_PASSWORD = 'Readyride2023';
 const TENANT = 'readyride';
 
 function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === INBOX_PASSWORD) {
-      sessionStorage.setItem('readyride_auth', 'true');
-      onUnlock();
-    } else {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, tenant: TENANT }),
+      });
+      const data = await res.json();
+      if (data.authenticated) {
+        sessionStorage.setItem('readyride_auth', data.token || 'true');
+        onUnlock();
+      } else {
+        setError(true);
+        setPassword('');
+      }
+    } catch {
       setError(true);
       setPassword('');
     }
+    setLoading(false);
   };
 
   return (
