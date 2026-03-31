@@ -297,7 +297,7 @@ function InboxContent(): React.ReactElement {
   /* ---- Initial load + polling ---- */
   useEffect(() => {
     fetchConversations();
-    const interval = setInterval(fetchConversations, 30000);
+    const interval = setInterval(fetchConversations, 10000);
     return () => clearInterval(interval);
   }, [fetchConversations]);
 
