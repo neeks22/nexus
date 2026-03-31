@@ -301,6 +301,22 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
     }, 500);
   };
 
+  const fillFromClientInfo = (info: Record<string, string>): void => {
+    if (!info) return;
+    setCustomerInfo(prev => ({
+      first_name: prev.first_name || info.first_name || '',
+      last_name: prev.last_name || info.last_name || '',
+      phone: prev.phone || info.phone || '',
+      email: prev.email || info.email || '',
+    }));
+    if (info.fico) setProfile(p => ({ ...p, fico: p.fico || info.fico }));
+    if (info.income) setProfile(p => ({ ...p, income: p.income || info.income }));
+    // Auto-search lead if phone was extracted
+    if (info.phone && info.phone.replace(/\D/g, '').length >= 10) {
+      searchLead(info.phone);
+    }
+  };
+
   const analyzeWithAI = async (text: string): Promise<void> => {
     setAnalyzing(true);
     try {
@@ -311,6 +327,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
       });
       const data = await res.json();
       setAiInsight(data.analysis || 'AI analysis unavailable.');
+      if (data.clientInfo) fillFromClientInfo(data.clientInfo);
     } catch {
       setAiInsight('AI analysis unavailable. Enter credit details manually below.');
     }
@@ -335,9 +352,13 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
           const data = await res.json();
           const analysis = data.analysis || '';
           setAiInsight(analysis);
-          const ficoMatch = analysis.match(/(\d{3})/);
-          if (ficoMatch) {
-            setProfile((p) => ({ ...p, fico: ficoMatch[1] }));
+          if (data.clientInfo) {
+            fillFromClientInfo(data.clientInfo);
+          } else {
+            const ficoMatch = analysis.match(/(\d{3})/);
+            if (ficoMatch) {
+              setProfile((p) => ({ ...p, fico: ficoMatch[1] }));
+            }
           }
         } catch {
           setAiInsight('Could not analyze PDF. Please enter details manually.');
