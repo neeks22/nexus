@@ -183,3 +183,41 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    return NextResponse.json({ error: 'Server config error' }, { status: 500 });
+  }
+
+  try {
+    const body = await request.json();
+    const { tenant, phone } = body as { tenant?: string; phone?: string };
+
+    if (!tenant || !phone) {
+      return NextResponse.json({ error: 'tenant and phone required' }, { status: 400 });
+    }
+
+    // Delete all activity/transcripts for this lead
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodeURIComponent(phone)}`,
+      { method: 'DELETE', headers: { ...supabaseHeaders(), Prefer: 'return=minimal' }, signal: AbortSignal.timeout(10000) }
+    );
+
+    // Delete the lead record
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/funnel_submissions?tenant_id=eq.${tenant}&phone=eq.${encodeURIComponent(phone)}`,
+      { method: 'DELETE', headers: { ...supabaseHeaders(), Prefer: 'return=minimal' }, signal: AbortSignal.timeout(10000) }
+    );
+
+    // Delete consent records
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/consent_records?tenant_id=eq.${tenant}&lead_id=eq.${encodeURIComponent(phone)}`,
+      { method: 'DELETE', headers: { ...supabaseHeaders(), Prefer: 'return=minimal' }, signal: AbortSignal.timeout(10000) }
+    );
+
+    return NextResponse.json({ success: true, message: 'All customer data deleted' });
+  } catch (error) {
+    console.error('[leads] DELETE error:', error);
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
+  }
+}

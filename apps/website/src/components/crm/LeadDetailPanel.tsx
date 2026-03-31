@@ -340,6 +340,33 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
           {/* Activity Timeline */}
           <h3 style={{ color: '#f0f0f5', fontSize: '15px', fontWeight: 600, margin: '0 0 12px' }}>Activity</h3>
           <ActivityTimeline entries={timeline} />
+
+          {/* Delete All Data — PIPEDA Right to Deletion */}
+          <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <button
+              onClick={async () => {
+                if (!window.confirm(`Permanently delete ALL data for ${name} (${phone})? This includes all messages, credit routing results, and lead records. This cannot be undone.`)) return;
+                try {
+                  const res = await fetch('/api/leads', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant, phone }),
+                  });
+                  if (res.ok) {
+                    alert('All customer data has been permanently deleted.');
+                    onClose();
+                  } else {
+                    alert('Failed to delete data.');
+                  }
+                } catch { alert('Failed to delete data.'); }
+              }}
+              style={{
+                padding: '8px 14px', borderRadius: '6px', fontSize: '12px',
+                border: '1px solid rgba(239,68,68,0.3)', background: 'rgba(239,68,68,0.08)',
+                color: '#ef4444', cursor: 'pointer', width: '100%',
+              }}
+            >Delete All Customer Data (PIPEDA)</button>
+          </div>
         </div>
       )}
     </div>

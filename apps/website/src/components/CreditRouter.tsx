@@ -270,6 +270,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
   const [leadMatch, setLeadMatch] = useState<{ found: boolean; name?: string; phone?: string } | null>(null);
   const [searchingLead, setSearchingLead] = useState(false);
   const [notes, setNotes] = useState('');
+  const [bureauConsent, setBureauConsent] = useState(false);
   const [results, setResults] = useState<ScoredResult[]>([]);
   const [aiInsight, setAiInsight] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -622,15 +623,39 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             {/* UPLOAD CARD */}
             <div className="cr-enter" style={s.card}>
               <div style={s.sectionTitle}>Credit Bureau Upload</div>
+
+              {/* Consent Notice */}
+              <div style={{
+                padding: '10px 14px', borderRadius: 8, marginBottom: 14,
+                background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.15)',
+              }}>
+                <label style={{ display: 'flex', gap: 10, cursor: 'pointer', alignItems: 'flex-start' }}>
+                  <input
+                    type="checkbox"
+                    checked={bureauConsent}
+                    onChange={(e) => setBureauConsent(e.target.checked)}
+                    style={{ marginTop: 2, accentColor: '#6366f1', width: 16, height: 16, flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: 12, color: '#ccc', lineHeight: 1.5 }}>
+                    I confirm the client has provided written consent to pull and process their credit information.
+                    This data is analyzed by AI, encrypted at rest, and handled in compliance with PIPEDA.
+                    No raw bureau files are stored — only the analysis summary is retained.
+                  </span>
+                </label>
+              </div>
+
               <div
-                onClick={() => fileRef.current?.click()}
+                onClick={() => { if (bureauConsent) fileRef.current?.click(); }}
                 style={{
                   border: '2px dashed rgba(255,255,255,0.08)', borderRadius: 12,
-                  padding: '36px 24px', textAlign: 'center', cursor: 'pointer',
+                  padding: '36px 24px', textAlign: 'center',
+                  cursor: bureauConsent ? 'pointer' : 'not-allowed',
                   transition: '200ms cubic-bezier(0.4, 0, 0.2, 1)',
                   background: 'rgba(255,255,255,0.02)',
+                  opacity: bureauConsent ? 1 : 0.4,
                 }}
                 onMouseEnter={(e) => {
+                  if (!bureauConsent) return;
                   e.currentTarget.style.borderColor = 'rgba(99,102,241,0.4)';
                   e.currentTarget.style.background = 'rgba(99,102,241,0.04)';
                 }}
@@ -642,8 +667,10 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 22 }}>
                   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 </div>
-                <div style={{ fontSize: 14, color: '#8888a0', fontWeight: 500 }}>Drop credit bureau PDF or TXT here</div>
-                <div style={{ fontSize: 12, color: '#55556a', marginTop: 4 }}>AI will extract score, trades, collections &amp; route automatically</div>
+                <div style={{ fontSize: 14, color: '#8888a0', fontWeight: 500 }}>
+                  {bureauConsent ? 'Drop credit bureau PDF or TXT here' : 'Check consent box above to upload'}
+                </div>
+                <div style={{ fontSize: 12, color: '#55556a', marginTop: 4 }}>AI will extract score, trades, collections &amp; auto-fill client info</div>
               </div>
               <input ref={fileRef} type="file" accept=".pdf,.txt,.csv" onChange={handleFileUpload} style={{ display: 'none' }} />
 
