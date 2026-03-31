@@ -286,12 +286,12 @@ function InboxContent(): React.ReactElement {
       const data = await res.json();
       setConversations(data.conversations || []);
 
-      // Update active conversation if one is selected
+      // Update active conversation only if messages changed
       if (activeConversation) {
         const updated = (data.conversations || []).find(
           (c: Conversation) => c.phone === activeConversation.phone
         );
-        if (updated) {
+        if (updated && updated.messages.length !== activeConversation.messages.length) {
           setActiveConversation(updated);
         }
       }
@@ -313,9 +313,9 @@ function InboxContent(): React.ReactElement {
   /* ---- Auto-scroll to bottom ---- */
   useEffect(() => {
     if (threadEndRef.current) {
-      threadEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      threadEndRef.current.scrollIntoView({ behavior: 'auto' });
     }
-  }, [activeConversation?.messages?.length]);
+  }, [activeConversation?.phone, activeConversation?.messages?.length]);
 
   /* ---- Select conversation ---- */
   const selectConversation = (conv: Conversation): void => {

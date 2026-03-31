@@ -226,7 +226,7 @@ async function processAndReply(fromPhone: string, toPhone: string, messageBody: 
   if (!aiReply) {
     aiReply = leadName
       ? `${leadName}, glad you replied! What kind of vehicle would make the biggest difference for you right now?`
-      : `What kind of vehicle are you looking for?`;
+      : `It's ${tenant.gm}, GM over at ${tenant.name}. What kind of vehicle are you looking for?`;
   }
 
   // Send

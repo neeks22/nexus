@@ -132,7 +132,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Build NESB prompt
     const systemPrompt = buildNESBPrompt(tenant);
     const userMsg = (conversationHistory ? `Conversation so far:\n${conversationHistory}\n\n` : '') +
-      `Customer ${leadName || 'unknown'} just texted: "${messageBody}"\n\nReply as ${tenant.gm}. 2-3 sentences max. End with a question. You contacted them first — do NOT thank them for reaching out. Apply NESB principles.`;
+      `Customer ${leadName || 'unknown'} just texted: "${messageBody}"\n\nReply as ${tenant.gm}. 2-3 sentences max. End with a question. You contacted them first — do NOT thank them for reaching out. Apply NESB principles.\n\n${conversationHistory ? 'This is an ONGOING conversation — do NOT introduce yourself again. They already know who you are.' : 'This is the FIRST reply — introduce yourself briefly: "It\'s ' + tenant.gm + ', GM over at ' + tenant.name + '." Then get into it.'}`;
 
     // Call Claude
     let aiReply = '';
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!aiReply) {
       aiReply = leadName
         ? `${leadName}, glad you replied! What kind of vehicle would make the biggest difference for you right now?`
-        : `What kind of vehicle are you looking for?`;
+        : `It's ${tenant.gm}, GM over at ${tenant.name}. What kind of vehicle are you looking for?`;
     }
 
     // Send via Twilio
