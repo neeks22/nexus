@@ -43,7 +43,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   fetch(`${baseUrl}/api/webhook/sms/process`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-process-secret': processSecret },
-    body: JSON.stringify({ fromPhone, toPhone, messageBody, delay: 45 }),
+    body: JSON.stringify({ fromPhone, toPhone, messageBody, delay: 120 }),
   }).catch((err) => {
     console.error('[sms-webhook] Failed to trigger process:', err);
   });
