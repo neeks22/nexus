@@ -261,6 +261,10 @@ function InboxContent(): React.ReactElement {
   const [transferPhone, setTransferPhone] = useState('6139839834');
   const [transferring, setTransferring] = useState(false);
   const [transferSuccess, setTransferSuccess] = useState(false);
+  const [showNewMessage, setShowNewMessage] = useState(false);
+  const [newMessagePhone, setNewMessagePhone] = useState('');
+  const [newMessageText, setNewMessageText] = useState('');
+  const [sendingNew, setSendingNew] = useState(false);
 
   const threadEndRef = useRef<HTMLDivElement>(null);
   const composeRef = useRef<HTMLInputElement>(null);
@@ -430,6 +434,32 @@ function InboxContent(): React.ReactElement {
     }
   };
 
+  /* ---- Send new message to any number ---- */
+  const sendNewMessage = async (): Promise<void> => {
+    if (!newMessagePhone.trim() || !newMessageText.trim() || sendingNew) return;
+    setSendingNew(true);
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: newMessagePhone.trim(), body: newMessageText.trim(), tenant: TENANT }),
+      });
+      if (!res.ok) throw new Error('Failed to send');
+      const data = await res.json();
+      if (data.success) {
+        setNewMessagePhone('');
+        setNewMessageText('');
+        setShowNewMessage(false);
+        fetchConversations();
+      }
+    } catch (err) {
+      console.error('Failed to send new message:', err);
+      alert('Failed to send message. Check the phone number and try again.');
+    } finally {
+      setSendingNew(false);
+    }
+  };
+
   /* ---- Filter conversations ---- */
   const filtered = conversations.filter((conv) => {
     if (archivedPhones.has(conv.phone)) return false;
@@ -463,11 +493,94 @@ function InboxContent(): React.ReactElement {
             }}>R</span>
             <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '16px' }}>ReadyRide</span>
           </div>
-          <div className={styles.connectionStatus}>
-            <span className={styles.statusDot} />
-            Live
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button
+              onClick={() => setShowNewMessage(true)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: '#fff',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              + New Message
+            </button>
+            <div className={styles.connectionStatus}>
+              <span className={styles.statusDot} />
+              Live
+            </div>
           </div>
         </div>
+
+        {/* New Message Modal */}
+        {showNewMessage && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)'
+          }} onClick={() => setShowNewMessage(false)}>
+            <div style={{
+              background: '#1a1a2e', borderRadius: '16px', padding: '32px',
+              width: '100%', maxWidth: '440px', border: '1px solid rgba(255,255,255,0.1)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+            }} onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ color: '#f0f0f5', margin: '0 0 20px', fontSize: '18px' }}>New Message</h3>
+              <input
+                type="tel"
+                placeholder="Phone number (e.g. 6131234567)"
+                value={newMessagePhone}
+                onChange={(e) => setNewMessagePhone(e.target.value)}
+                autoFocus
+                style={{
+                  width: '100%', padding: '12px 16px', borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+                  color: '#f0f0f5', fontSize: '15px', outline: 'none', marginBottom: '12px',
+                  boxSizing: 'border-box'
+                }}
+              />
+              <textarea
+                placeholder="Type your message..."
+                value={newMessageText}
+                onChange={(e) => setNewMessageText(e.target.value)}
+                rows={4}
+                style={{
+                  width: '100%', padding: '12px 16px', borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+                  color: '#f0f0f5', fontSize: '15px', outline: 'none', marginBottom: '16px',
+                  boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit'
+                }}
+              />
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowNewMessage(false)}
+                  style={{
+                    padding: '10px 20px', borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
+                    color: '#8888a0', fontSize: '14px', cursor: 'pointer'
+                  }}
+                >Cancel</button>
+                <button
+                  onClick={sendNewMessage}
+                  disabled={!newMessagePhone.trim() || !newMessageText.trim() || sendingNew}
+                  style={{
+                    padding: '10px 24px', borderRadius: '8px', border: 'none',
+                    background: (!newMessagePhone.trim() || !newMessageText.trim()) ? '#333' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                    opacity: (!newMessagePhone.trim() || !newMessageText.trim()) ? 0.5 : 1
+                  }}
+                >{sendingNew ? 'Sending...' : 'Send'}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Split Layout */}
         <div className={styles.splitLayout}>
