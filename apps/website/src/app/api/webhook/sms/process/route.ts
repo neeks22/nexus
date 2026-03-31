@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TENANT_MAP, supaGet, supaPost, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp } from '../../../../../lib/security';
+import { TENANT_MAP, supaGet, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL } from '../../../../../lib/security';
 
 /* =============================================================================
    DELAYED SMS PROCESSOR — Called internally by the webhook
@@ -64,14 +64,37 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ sent: true, immediate: true });
     }
 
-    // HOT — immediate handoff
+    // HOT — immediate handoff, then STOP auto-replying
     if (shouldHandoff) {
       const msg = 'Perfect — let me get everything set up for you. I\'ll reach out within the hour to get this rolling. We can have everything handled and delivered right to you.';
       await sendTwilioSMS(fromPhone, toPhone, msg);
       await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: msg, channel: 'sms', intent });
-      await slackNotify(`HOT LEAD HANDOFF\nPhone: ${fromPhone}\nDealer: ${tenant.name}\nMessage: ${messageBody}`);
-      return NextResponse.json({ sent: true, immediate: true, handoff: true });
+      // Mark as hot + paused — agent stops auto-replying until manually resumed
+      await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'status', role: 'system', content: 'HOT_PAUSED', channel: 'sms' });
+      // Update lead status
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeURIComponent(fromPhone)}&tenant_id=eq.${tenant.tenant}`, {
+          method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
+          body: JSON.stringify({ status: 'appointment' }), signal: AbortSignal.timeout(5000),
+        });
+      } catch {}
+      await slackNotify(`HOT LEAD HANDOFF — AI PAUSED\nPhone: ${fromPhone}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nAI will NOT auto-reply until manually resumed in CRM.`);
+      return NextResponse.json({ sent: true, immediate: true, handoff: true, paused: true });
     }
+
+    // Check if this lead is paused (was marked HOT previously) — don't auto-reply
+    try {
+      const statusEntries = await supaGet(
+        `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&entry_type=eq.status&select=content,created_at&order=created_at.desc&limit=1`
+      ) as { content: string; created_at: string }[];
+
+      if (statusEntries.length > 0 && statusEntries[0].content === 'HOT_PAUSED') {
+        // Lead is paused — log the inbound but don't reply
+        await slackNotify(`HOT LEAD MESSAGE (AI PAUSED)\nPhone: ${fromPhone}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nResume AI in CRM to auto-reply.`);
+        return NextResponse.json({ sent: false, paused: true, reason: 'Lead is HOT — AI paused until manually resumed' });
+      }
+      // If latest status is AI_RESUMED, continue with auto-reply
+    } catch {}
 
     // Wait for human-like delay
     const delayMs = (delay || 45) * 1000;

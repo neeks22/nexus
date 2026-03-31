@@ -850,6 +850,48 @@ function InboxContent(): React.ReactElement {
                   <div ref={threadEndRef} />
                 </div>
 
+                {/* HOT Lead Pause Banner */}
+                {(() => {
+                  const allText = activeConversation.messages.map((m: Message) => m.body).join(' ');
+                  const hotKeywords = /\b(yes|yeah|interested|ready|come in|test drive|appointment|schedule|book|buy|approved|check|let.s do it|sign me up|i.m in|deal)\b/i;
+                  const isConvHot = activeConversation.messages.some((m: Message) => m.direction === 'inbound' && hotKeywords.test(m.body));
+
+                  if (isConvHot) {
+                    return (
+                      <div style={{
+                        padding: '12px 16px', background: 'rgba(239,68,68,0.1)',
+                        borderTop: '2px solid #ef4444', display: 'flex',
+                        alignItems: 'center', justifyContent: 'space-between',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ background: '#ef4444', color: '#fff', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 700 }}>HOT LEAD</span>
+                          <span style={{ color: '#ef4444', fontSize: '13px' }}>AI paused — waiting for human transfer</span>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm('Resume AI auto-replies for this lead?')) return;
+                            try {
+                              await fetch('/api/leads', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ tenant: TENANT, phone: activeConversation.phone, type: 'status', content: 'AI_RESUMED' }),
+                              });
+                              // Delete the HOT_PAUSED flag by posting a resume status
+                              alert('AI auto-replies resumed for this lead.');
+                            } catch { alert('Failed to resume.'); }
+                          }}
+                          style={{
+                            padding: '6px 14px', borderRadius: '6px', border: 'none',
+                            background: '#ef4444', color: '#fff', fontSize: '12px',
+                            fontWeight: 600, cursor: 'pointer',
+                          }}
+                        >Continue AI? Yes</button>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
                 {/* Compose */}
                 <div className={styles.composeBar}>
                   <input
