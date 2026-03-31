@@ -2,11 +2,20 @@
 
 import { useState, Component, ErrorInfo, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import Sidebar, { CRMTab } from './Sidebar';
 
-// Error boundary to catch crashes in any tab
-class TabErrorBoundary extends Component<{ children: ReactNode; fallback?: string }, { hasError: boolean; error: string }> {
-  constructor(props: { children: ReactNode; fallback?: string }) {
+export type CRMTab = 'dashboard' | 'pipeline' | 'inbox' | 'leads' | 'credit' | 'reports';
+
+const TABS: { id: CRMTab; label: string }[] = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'pipeline', label: 'Pipeline' },
+  { id: 'inbox', label: 'Inbox' },
+  { id: 'leads', label: 'Leads' },
+  { id: 'credit', label: 'Credit Router' },
+  { id: 'reports', label: 'Reports' },
+];
+
+class TabErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean; error: string }> {
+  constructor(props: { children: ReactNode }) {
     super(props);
     this.state = { hasError: false, error: '' };
   }
@@ -33,7 +42,6 @@ class TabErrorBoundary extends Component<{ children: ReactNode; fallback?: strin
   }
 }
 
-// Dynamic imports — prevents one broken component from killing everything
 const DashboardTab = dynamic(() => import('./DashboardTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading dashboard...</div> });
 const PipelineTab = dynamic(() => import('./PipelineTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading pipeline...</div> });
 const LeadsTab = dynamic(() => import('./LeadsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading leads...</div> });
@@ -56,36 +64,88 @@ export default function CRMLayout({
   const [activeTab, setActiveTab] = useState<CRMTab>('dashboard');
   const [selectedLead, setSelectedLead] = useState<string | null>(null);
 
-  const handleSelectLead = (phone: string): void => {
-    setSelectedLead(phone);
-  };
-
-  const handleCloseLead = (): void => {
-    setSelectedLead(null);
-  };
-
   return (
-    <div style={{
-      display: 'flex',
-      minHeight: '100vh',
-      background: '#0a0a0f',
-      fontFamily: 'Inter, system-ui, sans-serif',
-    }}>
-      <Sidebar activeTab={activeTab} onTabChange={setActiveTab} dealerName={dealerName} />
+    <div style={{ minHeight: '100vh', background: '#0a0a0f', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      {/* TOP NAV BAR — always visible */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0,
+        background: '#0d0d14',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        padding: '0 16px',
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+      }}>
+        {/* Dealer Name */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '12px 16px 12px 0',
+          borderRight: '1px solid rgba(255,255,255,0.08)',
+          marginRight: '4px',
+        }}>
+          <span style={{
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            color: '#fff',
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontWeight: 800,
+            fontSize: '13px',
+          }}>{dealerName[0]}</span>
+          <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '15px' }}>{dealerName}</span>
+        </div>
 
-      <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
+        {/* Tab Buttons */}
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: '14px 20px',
+              background: 'transparent',
+              border: 'none',
+              borderBottom: activeTab === tab.id ? '2px solid #6366f1' : '2px solid transparent',
+              color: activeTab === tab.id ? '#f0f0f5' : '#8888a0',
+              fontSize: '14px',
+              fontWeight: activeTab === tab.id ? 600 : 400,
+              cursor: 'pointer',
+              fontFamily: 'Inter, system-ui, sans-serif',
+              transition: 'all 0.15s',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {tab.label}
+          </button>
+        ))}
+
+        {/* Status indicator */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', padding: '0 8px' }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+          <span style={{ color: '#666', fontSize: '12px' }}>Live</span>
+        </div>
+      </div>
+
+      {/* CONTENT AREA */}
+      <div style={{ position: 'relative' }}>
         <TabErrorBoundary key={activeTab}>
-          {activeTab === 'dashboard' && <DashboardTab tenant={tenant} onSelectLead={handleSelectLead} />}
-          {activeTab === 'pipeline' && <PipelineTab tenant={tenant} onSelectLead={handleSelectLead} />}
+          {activeTab === 'dashboard' && <DashboardTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
+          {activeTab === 'pipeline' && <PipelineTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
           {activeTab === 'inbox' && (
-            <div style={{ height: '100vh', overflow: 'auto' }} className="crm-inbox-wrapper">
-              <style>{`.crm-inbox-wrapper > div { min-height: auto !important; padding-top: 0 !important; } .crm-inbox-wrapper > div > div { height: 100vh !important; max-width: 100% !important; padding: 12px !important; }`}</style>
+            <div style={{ height: 'calc(100vh - 52px)', overflow: 'auto' }} className="crm-inbox-wrapper">
+              <style>{`.crm-inbox-wrapper > div { min-height: auto !important; padding-top: 0 !important; } .crm-inbox-wrapper > div > div { height: calc(100vh - 52px) !important; max-width: 100% !important; padding: 12px !important; }`}</style>
               {inboxContent}
             </div>
           )}
-          {activeTab === 'leads' && <LeadsTab tenant={tenant} onSelectLead={handleSelectLead} />}
+          {activeTab === 'leads' && <LeadsTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
           {activeTab === 'credit' && (
-            <div style={{ padding: '24px', overflowY: 'auto', height: '100vh' }}>
+            <div style={{ padding: '24px', overflowY: 'auto', height: 'calc(100vh - 52px)' }}>
               {creditRouterContent}
             </div>
           )}
@@ -96,7 +156,7 @@ export default function CRMLayout({
           <LeadDetailPanel
             tenant={tenant}
             phone={selectedLead}
-            onClose={handleCloseLead}
+            onClose={() => setSelectedLead(null)}
           />
         )}
       </div>
