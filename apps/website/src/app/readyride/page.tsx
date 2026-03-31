@@ -7,8 +7,8 @@ import styles from './page.module.css';
    PASSWORD GATE
    ============================================ */
 
-const INBOX_PASSWORD = 'Nexus33!33';
-const TENANT = 'readycar';
+const INBOX_PASSWORD = 'Readyride2023';
+const TENANT = 'readyride';
 
 function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   const [password, setPassword] = useState('');
@@ -17,7 +17,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === INBOX_PASSWORD) {
-      sessionStorage.setItem('inbox_auth', 'true');
+      sessionStorage.setItem('readyride_auth', 'true');
       onUnlock();
     } else {
       setError(true);
@@ -45,7 +45,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
         textAlign: 'center'
       }}>
         <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
-        <h2 style={{ color: '#f0f0f5', margin: '0 0 8px', fontSize: '20px' }}>Nexus Inbox</h2>
+        <h2 style={{ color: '#f0f0f5', margin: '0 0 8px', fontSize: '20px' }}>ReadyRide Inbox</h2>
         <p style={{ color: '#8888a0', margin: '0 0 24px', fontSize: '14px' }}>Enter password to access conversations</p>
         <input
           type="password"
@@ -214,7 +214,7 @@ export default function InboxPage(): React.ReactElement {
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem('inbox_auth') === 'true') {
+    if (sessionStorage.getItem('readyride_auth') === 'true') {
       setAuthed(true);
     }
   }, []);
@@ -258,7 +258,7 @@ function InboxContent(): React.ReactElement {
   const [sending, setSending] = useState(false);
   const [mobileThreadOpen, setMobileThreadOpen] = useState(false);
   const [showTransferForm, setShowTransferForm] = useState(false);
-  const [transferPhone, setTransferPhone] = useState('6133634494');
+  const [transferPhone, setTransferPhone] = useState('6139839834');
   const [transferring, setTransferring] = useState(false);
   const [transferSuccess, setTransferSuccess] = useState(false);
 
@@ -460,8 +460,8 @@ function InboxContent(): React.ReactElement {
               justifyContent: 'center',
               fontWeight: 800,
               fontSize: '16px'
-            }}>N</span>
-            <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '16px' }}>Nexus AI</span>
+            }}>R</span>
+            <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '16px' }}>ReadyRide</span>
           </div>
           <div className={styles.connectionStatus}>
             <span className={styles.statusDot} />

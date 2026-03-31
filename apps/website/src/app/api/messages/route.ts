@@ -7,6 +7,12 @@ import { NextRequest, NextResponse } from 'next/server';
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID ?? '';
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN ?? '';
 const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER ?? '';
+
+/* Tenant-specific Twilio numbers */
+const TENANT_NUMBERS: Record<string, string> = {
+  readycar: process.env.TWILIO_FROM_NUMBER ?? '+13433125045',
+  readyride: '+13433412797',
+};
 const TWILIO_BASE_URL = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}`;
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? '';
@@ -294,12 +300,20 @@ async function fetchLeads(): Promise<Map<string, SupabaseLead>> {
 
 function groupIntoConversations(
   messages: TwilioMessage[],
-  leads: Map<string, SupabaseLead>
+  leads: Map<string, SupabaseLead>,
+  filterNumber?: string
 ): Conversation[] {
   const convMap = new Map<string, ConversationMessage[]>();
 
   for (const msg of messages) {
-    const isOutbound = msg.from === TWILIO_FROM_NUMBER || msg.direction?.includes('outbound');
+    // If filtering by tenant number, only include messages involving that number
+    if (filterNumber) {
+      const normalFrom = normalizePhone(msg.from);
+      const normalTo = normalizePhone(msg.to);
+      if (normalFrom !== filterNumber && normalTo !== filterNumber) continue;
+    }
+
+    const isOutbound = msg.from === TWILIO_FROM_NUMBER || msg.from === filterNumber || msg.direction?.includes('outbound');
     const otherPhone = isOutbound ? normalizePhone(msg.to) : normalizePhone(msg.from);
 
     if (!convMap.has(otherPhone)) {
@@ -397,6 +411,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   try {
     const phone = request.nextUrl.searchParams.get('phone');
+    const tenant = request.nextUrl.searchParams.get('tenant');
+    const fromNumber = tenant ? (TENANT_NUMBERS[tenant] || TWILIO_FROM_NUMBER) : TWILIO_FROM_NUMBER;
 
     if (phone) {
       // Validate phone parameter
@@ -413,7 +429,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         fetchLeads(),
       ]);
 
-      const conversations = groupIntoConversations(messages, leads);
+      const conversations = groupIntoConversations(messages, leads, fromNumber);
       const conversation = conversations.find((c) => c.phone === normalized);
 
       return NextResponse.json(
@@ -423,7 +439,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     const [messages, leads] = await Promise.all([fetchAllMessages(), fetchLeads()]);
-    const conversations = groupIntoConversations(messages, leads);
+    const conversations = groupIntoConversations(messages, leads, fromNumber);
 
     return NextResponse.json(
       { conversations },
@@ -472,7 +488,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const body = (await request.json()) as { to?: unknown; body?: unknown };
+    const body = (await request.json()) as { to?: unknown; body?: unknown; tenant?: unknown };
 
     // Validate required fields exist and are strings
     if (typeof body.to !== 'string' || typeof body.body !== 'string') {
@@ -500,9 +516,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    const sendFromNumber = typeof body.tenant === 'string' && TENANT_NUMBERS[body.tenant]
+      ? TENANT_NUMBERS[body.tenant]
+      : TWILIO_FROM_NUMBER;
+
     const params = new URLSearchParams({
       To: toPhone,
-      From: TWILIO_FROM_NUMBER,
+      From: sendFromNumber,
       Body: messageBody,
     });
 

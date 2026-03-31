@@ -17,7 +17,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (password === INBOX_PASSWORD) {
-      sessionStorage.setItem('inbox_auth', 'true');
+      sessionStorage.setItem('readycar_auth', 'true');
       onUnlock();
     } else {
       setError(true);
@@ -45,7 +45,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
         textAlign: 'center'
       }}>
         <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
-        <h2 style={{ color: '#f0f0f5', margin: '0 0 8px', fontSize: '20px' }}>Nexus Inbox</h2>
+        <h2 style={{ color: '#f0f0f5', margin: '0 0 8px', fontSize: '20px' }}>ReadyCar Inbox</h2>
         <p style={{ color: '#8888a0', margin: '0 0 24px', fontSize: '14px' }}>Enter password to access conversations</p>
         <input
           type="password"
@@ -214,7 +214,7 @@ export default function InboxPage(): React.ReactElement {
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem('inbox_auth') === 'true') {
+    if (sessionStorage.getItem('readycar_auth') === 'true') {
       setAuthed(true);
     }
   }, []);
@@ -460,8 +460,8 @@ function InboxContent(): React.ReactElement {
               justifyContent: 'center',
               fontWeight: 800,
               fontSize: '16px'
-            }}>N</span>
-            <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '16px' }}>Nexus AI</span>
+            }}>R</span>
+            <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '16px' }}>ReadyCar</span>
           </div>
           <div className={styles.connectionStatus}>
             <span className={styles.statusDot} />
