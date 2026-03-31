@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 /* =============================================================================
    SMS WEBHOOK — Receives inbound SMS from Twilio, generates AI reply, sends it
    No n8n. No middleware. Direct: Twilio → Next.js → Claude → Twilio.
+
+   Flow: Twilio POSTs here → we respond with empty TwiML immediately →
+   then process the AI reply and send via Twilio API.
    ============================================================================= */
 
 const SUPABASE_URL = (process.env.SUPABASE_URL ?? '').trim().replace(/\\n$/, '');
@@ -84,8 +87,7 @@ async function callClaude(system: string, userMsg: string): Promise<string> {
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    console.error('[sms-agent] Claude API error:', res.status, err);
+    console.error('[sms-agent] Claude API error:', res.status);
     return '';
   }
 
@@ -101,106 +103,108 @@ function classifyIntent(message: string): { intent: string; shouldStop: boolean;
   if (['stop', 'unsubscribe', 'remove', 'cancel', 'arret', 'arrêt'].includes(lower)) {
     return { intent: 'UNSUBSCRIBE', shouldStop: true, shouldHandoff: false };
   }
-
   if (/\b(test drive|come in|visit|appointment|schedule|book|ready to buy|come see|essai)\b/i.test(lower)) {
     return { intent: 'HOT', shouldStop: false, shouldHandoff: true };
   }
-
   if (/\b(how much|price|cost|payment|monthly|bi-weekly|financing|combien|prix)\b/i.test(lower)) {
     return { intent: 'PRICING', shouldStop: false, shouldHandoff: false };
   }
-
   if (/\b(trade.?in|my car|current vehicle|negative equity|mon auto)\b/i.test(lower)) {
     return { intent: 'TRADE_IN', shouldStop: false, shouldHandoff: false };
   }
-
   return { intent: 'GENERAL', shouldStop: false, shouldHandoff: false };
 }
 
-/* ---------- Build System Prompt ---------- */
+/* ---------- NESB System Prompt (Kyle Milligan "Take Their Money") ---------- */
 
 function buildSystemPrompt(tenant: { name: string; location: string; phone: string; gm: string }): string {
-  return `You are ${tenant.gm}, General Sales Manager at ${tenant.name} in Ottawa. You are texting a potential car buyer via SMS.
+  return `You are ${tenant.gm}, General Sales Manager at ${tenant.name} in Ottawa. You are the greatest vehicle sales communicator alive — a fusion of Kyle Milligan's NESB copywriting, Jeremy Miner's NEPQ questioning, Tony Robbins' emotional intelligence, and Elon Musk's directness.
 
-CRITICAL RULES:
-- 2-3 sentences MAX. This is SMS, keep it short.
-- Sound like a real person texting. NOT a company bot.
-- NEVER say "thanks for reaching out" or "thanks for getting back to me" or "thanks for your interest" — YOU contacted THEM first via outreach campaign. They are replying to YOUR message.
-- NEVER start with "Hey" every time. Vary your openings naturally.
-- NEVER discuss pricing, monthly payments, interest rates, or financing terms.
-- NEVER guarantee approval. Say things like "I've seen people in similar situations get approved."
-- End with ONE question to keep the conversation going.
-- If they mention credit concerns: "Our lenders care more about steady income than a perfect score."
-- If they ask about specific vehicles: mention you will check inventory and ask what features matter most.
+## NESB FRAMEWORK (Kyle Milligan — "Take Their Money")
+Every reply MUST trigger at least one of these 4 emotions:
+
+**NEW** — "Categorization is DEATH." If the customer can say "I've heard this before" you are DEAD. Make every reply feel fresh and novel. New = hope. Something new means maybe THIS time it will work for them.
+- Alter ego: ONLY — "You can only get this through us." Exclusivity amplifies new.
+
+**EASY** — Nobody likes work. Make everything sound push-button simple. The customer is insecure — they've been rejected before. Use "not statements" to knock down objections before they raise them.
+- Alter ego: ANYBODY — "You don't need perfect credit. You don't need a big down payment. You just need a job."
+
+**SAFE** — Bold promises create skepticism. Fight it with safety and track record. "I've helped a lot of people in your exact situation." When people feel safe, they perceive MORE value.
+- Alter ego: PREDICTABLE — "The last time we had someone in your spot, they drove away in a week."
+
+**BIG** — The opportunity must feel massive. This isn't just a car — it's freedom, independence, a fresh start. Create FOMO naturally. BIG + FAST = unstoppable.
+- Alter ego: FAST — "This could happen for you this week, not months from now."
+
+## NEPQ QUESTIONING (Jeremy Miner)
+ASK questions that make them SELL THEMSELVES. Never pitch. The person asking questions controls the conversation.
+- "What kind of vehicle would make the biggest difference for you right now?"
+- "What's more important to you — keeping payments low or getting into something newer?"
+
+## RULES
+- 2-3 sentences MAX. This is SMS — short, punchy, human.
+- You are a PERSON, not a bot. Text like a friend. No corporate speak.
+- NEVER say "thanks for reaching out" — YOU contacted THEM first.
+- NEVER start with "Hey" every time. Vary openings naturally.
+- NEVER discuss specific pricing, monthly payments, interest rates, or financing terms.
+- NEVER guarantee approval. Say "I've seen people in similar situations get approved."
+- NEVER be pushy. Infinite patience.
+- Every response MUST end with ONE question.
+- "Your income is your credit" — when credit comes up, pivot to income.
+- Make them feel like the ONLY person you're talking to.
 - If they text in French, respond in natural Quebec French.
-- Read the conversation history carefully and DO NOT repeat yourself. Each reply must be unique and advance the conversation.
+- Read conversation history. NEVER repeat yourself. Each reply must be unique.
 - Sign off with: - ${tenant.gm}
 
+## OBJECTION HANDLING
+- "My credit is bad" → "I hear you — that's exactly why I reached out. The lenders I work with now look at the full picture, not just a score. What kind of work do you do?"
+- "Can't afford down payment" → "A lot of our customers start with little to nothing down. What would a comfortable payment look like for you?"
+- "Not interested" / "STOP" → "No problem at all — I respect that. Wishing you all the best."
+- "Is this a bot?" → "Ha — fair question. It's ${tenant.gm}, I'm the GM here at ${tenant.name}. What's on your mind?"
+
+## CONTEXT
 Dealership: ${tenant.name}, ${tenant.location}. Phone: ${tenant.phone}.
-These leads came from our outreach campaign. Their income is what matters to our lenders.`;
+These leads applied within the last 6 months. Steady income is what matters to our lenders. 98% approval rate. Free delivery in Ontario & Quebec.`;
 }
 
-/* ---------- Main Handler ---------- */
+/* ---------- Process and Reply (called after delay) ---------- */
 
-export async function POST(request: NextRequest): Promise<NextResponse> {
-  // Respond to Twilio immediately with empty TwiML (prevents timeout)
-  const twimlResponse = new NextResponse(
-    '<?xml version="1.0" encoding="UTF-8"?><Response></Response>',
-    { status: 200, headers: { 'Content-Type': 'text/xml' } }
-  );
-
-  // Process in the background after responding
-  const formData = await request.formData();
-  const fromPhone = (formData.get('From') as string) || '';
-  const toPhone = (formData.get('To') as string) || '';
-  const messageBody = (formData.get('Body') as string) || '';
-
-  if (!fromPhone || !messageBody) return twimlResponse;
-
-  // Detect tenant from the Twilio number that received the SMS
+async function processAndReply(fromPhone: string, toPhone: string, messageBody: string): Promise<void> {
   const tenant = TENANT_MAP[toPhone] || TENANT_MAP['+13433125045'];
-
-  // Log inbound message to Supabase
-  supaPost('lead_transcripts', {
-    tenant_id: tenant.tenant,
-    lead_id: fromPhone,
-    entry_type: 'message',
-    role: 'customer',
-    content: messageBody,
-    channel: 'sms',
-  });
-
-  // Classify intent
   const { intent, shouldStop, shouldHandoff } = classifyIntent(messageBody);
 
-  // Handle STOP
+  // Log inbound
+  supaPost('lead_transcripts', {
+    tenant_id: tenant.tenant, lead_id: fromPhone,
+    entry_type: 'message', role: 'customer', content: messageBody, channel: 'sms',
+  });
+
+  // STOP
   if (shouldStop) {
-    const stopMsg = `No problem at all. Wishing you all the best. - ${tenant.gm}, ${tenant.name}`;
-    await sendTwilioSMS(fromPhone, toPhone, stopMsg);
-    supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: stopMsg, channel: 'sms', intent: 'UNSUBSCRIBE' });
-    return twimlResponse;
+    const msg = `No problem at all. Wishing you all the best. - ${tenant.gm}, ${tenant.name}`;
+    await sendTwilioSMS(fromPhone, toPhone, msg);
+    supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: msg, channel: 'sms', intent: 'UNSUBSCRIBE' });
+    return;
   }
 
-  // Handle HOT lead — handoff to human
+  // HOT — handoff
   if (shouldHandoff) {
-    const handoffMsg = `Perfect — let me get everything set up for you. ${tenant.gm} will reach out within the hour. You're in great hands. - ${tenant.gm}, ${tenant.name} ${tenant.phone}`;
-    await sendTwilioSMS(fromPhone, toPhone, handoffMsg);
-    supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: handoffMsg, channel: 'sms', intent });
+    const msg = `Perfect — let me get everything set up for you. ${tenant.gm} will reach out within the hour. You're in great hands. - ${tenant.gm}, ${tenant.name} ${tenant.phone}`;
+    await sendTwilioSMS(fromPhone, toPhone, msg);
+    supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: msg, channel: 'sms', intent });
     slackNotify(`HOT LEAD HANDOFF\nPhone: ${fromPhone}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nIntent: ${intent}`);
-    return twimlResponse;
+    return;
   }
 
-  // Load conversation history from Supabase
+  // Load conversation history
   let conversationHistory = '';
   try {
     const history = await supaGet(
       `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&channel=eq.sms&select=role,content&order=created_at.desc&limit=10`
     ) as { role: string; content: string }[];
-
     if (history.length > 0) {
       conversationHistory = history.reverse().map(m => `${m.role}: ${m.content}`).join('\n');
     }
-  } catch { /* no history, that's fine */ }
+  } catch { /* no history */ }
 
   // Lookup lead name
   let leadName = '';
@@ -208,46 +212,59 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const leads = await supaGet(
       `v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=first_name,last_name&limit=1`
     ) as { first_name?: string; last_name?: string }[];
-    if (leads.length > 0) {
-      leadName = [leads[0].first_name, leads[0].last_name].filter(Boolean).join(' ');
-    }
-  } catch { /* no lead found */ }
+    if (leads.length > 0) leadName = [leads[0].first_name, leads[0].last_name].filter(Boolean).join(' ');
+  } catch { /* no lead */ }
 
-  // 2-second delay to feel human (not instant bot response)
-  await new Promise(resolve => setTimeout(resolve, 2000));
-
-  // Call Claude API
+  // Call Claude
   const systemPrompt = buildSystemPrompt(tenant);
   const userMsg = (conversationHistory ? `Conversation so far:\n${conversationHistory}\n\n` : '') +
-    `Customer ${leadName || 'unknown'} just texted: "${messageBody}"\n\nReply as ${tenant.gm}. 2-3 sentences max. End with a question. You contacted them first — do NOT thank them for reaching out.`;
+    `Customer ${leadName || 'unknown'} just texted: "${messageBody}"\n\nReply as ${tenant.gm}. 2-3 sentences max. End with a question. You contacted them first — do NOT thank them for reaching out. Use NESB principles.`;
 
   let aiReply = await callClaude(systemPrompt, userMsg);
 
-  // Fallback if Claude fails
+  // Fallback
   if (!aiReply) {
-    if (leadName) {
-      aiReply = `${leadName}, glad you replied! What kind of vehicle would make the biggest difference for you right now? - ${tenant.gm}`;
-    } else {
-      aiReply = `I'm ${tenant.gm} from ${tenant.name}. What kind of vehicle are you looking for? - ${tenant.gm}`;
-    }
+    aiReply = leadName
+      ? `${leadName}, glad you replied! What kind of vehicle would make the biggest difference for you right now? - ${tenant.gm}`
+      : `I'm ${tenant.gm} from ${tenant.name}. What kind of vehicle are you looking for? - ${tenant.gm}`;
   }
 
-  // Send the reply
+  // Send
   await sendTwilioSMS(fromPhone, toPhone, aiReply);
 
-  // Log outbound message
-  supaPost('lead_transcripts', {
-    tenant_id: tenant.tenant,
-    lead_id: fromPhone,
-    entry_type: 'message',
-    role: 'ai',
-    content: aiReply,
-    channel: 'sms',
-    intent,
+  // Log + notify
+  supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: aiReply, channel: 'sms', intent });
+  slackNotify(`SMS REPLY (${tenant.name})\nTo: ${fromPhone}\nReply: ${aiReply.substring(0, 100)}...`);
+}
+
+/* ---------- Main Webhook Handler ---------- */
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const formData = await request.formData();
+  const fromPhone = (formData.get('From') as string) || '';
+  const toPhone = (formData.get('To') as string) || '';
+  const messageBody = (formData.get('Body') as string) || '';
+
+  if (!fromPhone || !messageBody) {
+    return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+      status: 200, headers: { 'Content-Type': 'text/xml' },
+    });
+  }
+
+  // Trigger delayed processing via our own endpoint
+  // This gives us a 45-second human-feeling delay
+  const baseUrl = request.nextUrl.origin || 'https://nexusagents.ca';
+  fetch(`${baseUrl}/api/webhook/sms/process`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fromPhone, toPhone, messageBody, delay: 45 }),
+  }).catch(() => {
+    // If delayed endpoint fails, process immediately as fallback
+    processAndReply(fromPhone, toPhone, messageBody).catch(console.error);
   });
 
-  // Slack notification
-  slackNotify(`SMS REPLY SENT (${tenant.name})\nTo: ${fromPhone}\nIntent: ${intent}\nReply: ${aiReply.substring(0, 100)}...`);
-
-  return twimlResponse;
+  // Respond to Twilio immediately
+  return new NextResponse('<?xml version="1.0" encoding="UTF-8"?><Response></Response>', {
+    status: 200, headers: { 'Content-Type': 'text/xml' },
+  });
 }
