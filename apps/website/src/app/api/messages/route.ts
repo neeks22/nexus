@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
    ENVIRONMENT VARIABLES — never hardcode credentials
    ============================================================================= */
 
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID ?? '';
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN ?? '';
-const TWILIO_FROM_NUMBER = process.env.TWILIO_FROM_NUMBER ?? '';
+const TWILIO_ACCOUNT_SID = (process.env.TWILIO_ACCOUNT_SID ?? '').trim().replace(/\\n$/, '');
+const TWILIO_AUTH_TOKEN = (process.env.TWILIO_AUTH_TOKEN ?? '').trim().replace(/\\n$/, '');
+const TWILIO_FROM_NUMBER = (process.env.TWILIO_FROM_NUMBER ?? '').trim().replace(/\\n$/, '');
 
 /* Tenant-specific Twilio numbers */
 const TENANT_NUMBERS: Record<string, string> = {
@@ -15,10 +15,10 @@ const TENANT_NUMBERS: Record<string, string> = {
 };
 const TWILIO_BASE_URL = `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}`;
 
-const SUPABASE_URL = process.env.SUPABASE_URL ?? '';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY ?? '';
+const SUPABASE_URL = (process.env.SUPABASE_URL ?? '').trim().replace(/\\n$/, '');
+const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY ?? '').trim().replace(/\\n$/, '');
 
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca';
+const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
 
 /* =============================================================================
    RATE LIMITING — in-memory sliding window (per-IP, 60 req/min)

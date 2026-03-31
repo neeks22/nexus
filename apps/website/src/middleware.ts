@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
  * 3. Block non-browser automated probing on sensitive routes
  */
 
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca';
+const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
 
 export function middleware(request: NextRequest): NextResponse {
   const response = NextResponse.next();
