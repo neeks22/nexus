@@ -48,7 +48,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (['stop', 'unsubscribe', 'remove', 'cancel', 'arret'].includes(lower)) {
       intent = 'UNSUBSCRIBE'; shouldStop = true;
-    } else if (/\b(test drive|come in|visit|appointment|schedule|book|ready to buy|essai)\b/i.test(lower)) {
+    } else if (/\b(speak.*(rep|person|someone|human|manager|agent)|talk.*(rep|person|someone|human|manager)|call me|give me a call|can (you|someone) call|ready to (go|move|start|proceed|do this|sign|buy)|let.s do (it|this)|sign me up|i.m (in|ready|interested)|set.*(up|it up)|appointment|schedule|book|ready to buy|want to (buy|get|proceed|start)|i.ll take it|where do i sign)\b/i.test(lower)) {
+      intent = 'HOT'; shouldHandoff = true;
+    } else if (/\b(test drive|come in|visit|essai)\b/i.test(lower)) {
       intent = 'HOT'; shouldHandoff = true;
     } else if (/\b(how much|price|cost|payment|monthly|bi-weekly|financing)\b/i.test(lower)) {
       intent = 'PRICING';
@@ -66,7 +68,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // HOT — immediate handoff, then STOP auto-replying
     if (shouldHandoff) {
-      const msg = 'Perfect — let me get everything set up for you. I\'ll reach out within the hour to get this rolling. We can have everything handled and delivered right to you.';
+      const msg = 'Perfect — I\'m setting up a call for you with our team right now. Someone will call you within the hour to go over everything and get the ball rolling. We handle everything from approval to delivery right to your door.';
       await sendTwilioSMS(fromPhone, toPhone, msg);
       await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: msg, channel: 'sms', intent });
       // Mark as hot + paused — agent stops auto-replying until manually resumed
@@ -182,6 +184,13 @@ Every reply MUST trigger at least one of these 4 emotions:
 - NEVER invite them to "come in", "visit", "stop by", or "come to the dealership". This is a DELIVERY business — 90% of vehicles are delivered directly to the customer's door. Instead say things like "We deliver right to your door" or "I can have it brought to you."
 - When discussing next steps, frame it as: "I can get everything set up and have it delivered to you" — NOT "come in for a test drive."
 - If a customer asks to come in, that's fine — but never suggest it yourself.
+
+## HANDOFF TRIGGERS — When ANY of these happen, your ONLY job is to set up the call:
+- Customer says they want to speak to someone, talk to a rep, get a call
+- Customer says they're ready, they want to proceed, let's do it, sign me up, I'm in
+- Customer asks to book, schedule, set up an appointment
+- Your response MUST be: set up a call within the hour + stop the conversation
+- After the handoff message, you STOP. Do NOT continue texting. Wait for the human rep.
 
 ## OBJECTIONS
 - "Can I come see it?" → "Absolutely! But just so you know, most of our customers love that we deliver right to their door. Whatever works best for you."
