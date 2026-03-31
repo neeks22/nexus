@@ -169,7 +169,10 @@ export function validateTenant(tenant: string | null): string {
 }
 
 export function encodeSupabaseParam(value: string): string {
-  return encodeURIComponent(value).replace(/[(),.]/g, c => `%${c.charCodeAt(0).toString(16)}`);
+  // Encode special chars but preserve + (needed for phone numbers like +16471234567)
+  return encodeURIComponent(value)
+    .replace(/%2B/g, '+')
+    .replace(/[(),.]/g, c => `%${c.charCodeAt(0).toString(16)}`);
 }
 
 /* ---------- Slack ---------- */

@@ -265,20 +265,20 @@ async function fetchMessagesForPhone(phone: string): Promise<TwilioMessage[]> {
   return messages;
 }
 
-async function fetchLeads(): Promise<Map<string, SupabaseLead>> {
+async function fetchLeads(tenant?: string): Promise<Map<string, SupabaseLead>> {
   const leadMap = new Map<string, SupabaseLead>();
 
   try {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/v_funnel_submissions?select=first_name,last_name,phone,status,vehicle_type,budget,credit_situation`,
-      {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
-        signal: AbortSignal.timeout(10000),
-      }
-    );
+    let query = `${SUPABASE_URL}/rest/v1/v_funnel_submissions?select=first_name,last_name,phone,status,vehicle_type,budget,credit_situation`;
+    if (tenant) query += `&tenant_id=eq.${tenant}`;
+
+    const res = await fetch(query, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+      signal: AbortSignal.timeout(10000),
+    });
 
     if (res.ok) {
       const leads = (await res.json()) as SupabaseLead[];
@@ -286,6 +286,8 @@ async function fetchLeads(): Promise<Map<string, SupabaseLead>> {
         if (lead.phone) {
           const normalized = normalizePhone(lead.phone);
           leadMap.set(normalized, lead);
+          // Also store with raw phone in case formats differ
+          leadMap.set(lead.phone, lead);
         }
       }
     } else {
@@ -427,7 +429,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
       const [messages, leads] = await Promise.all([
         fetchMessagesForPhone(normalized),
-        fetchLeads(),
+        fetchLeads(tenant || undefined),
       ]);
 
       const conversations = groupIntoConversations(messages, leads, fromNumber);
@@ -439,7 +441,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const [messages, leads] = await Promise.all([fetchAllMessages(), fetchLeads()]);
+    const [messages, leads] = await Promise.all([fetchAllMessages(), fetchLeads(tenant || undefined)]);
     const conversations = groupIntoConversations(messages, leads, fromNumber);
 
     return NextResponse.json(

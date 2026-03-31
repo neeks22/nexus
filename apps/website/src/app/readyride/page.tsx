@@ -272,7 +272,12 @@ function TransferIcon(): React.ReactElement {
 
 function InboxContent(): React.ReactElement {
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [archivedPhones, setArchivedPhones] = useState<Set<string>>(new Set());
+  const [archivedPhones, setArchivedPhones] = useState<Set<string>>(() => {
+    try {
+      const saved = sessionStorage.getItem('archived_readyride');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch { return new Set(); }
+  });
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [composeText, setComposeText] = useState('');
@@ -405,11 +410,15 @@ function InboxContent(): React.ReactElement {
     }
   };
 
-  /* ---- Archive (delete from view) ---- */
+  /* ---- Archive (delete from view) — persists to sessionStorage ---- */
   const archiveConversation = (phone: string, e: React.MouseEvent): void => {
     e.stopPropagation();
     if (!window.confirm('Remove this conversation?')) return;
-    setArchivedPhones((prev) => new Set(prev).add(phone));
+    setArchivedPhones((prev) => {
+      const next = new Set(prev).add(phone);
+      try { sessionStorage.setItem('archived_readyride', JSON.stringify(Array.from(next))); } catch {}
+      return next;
+    });
     if (activeConversation?.phone === phone) {
       setActiveConversation(null);
       setMobileThreadOpen(false);
