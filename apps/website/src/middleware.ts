@@ -31,7 +31,7 @@ export function middleware(request: NextRequest): NextResponse {
 
       // Exempt webhook and cron endpoints from CSRF (they have their own auth: Twilio signature, API keys, secrets)
       const path = request.nextUrl.pathname;
-      const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/');
+      const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/') || path === '/api/auth';
 
       // Reject mutating requests with no origin AND no referer (CSRF protection)
       // But allow webhooks/crons since external services (Twilio, Gmail) don't send origin headers
