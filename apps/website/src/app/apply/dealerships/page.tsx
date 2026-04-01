@@ -8,17 +8,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface FunnelData {
   vehicleType: string;
-  budget: string;
-  downPayment: string;
-  creditSituation: string;
-  employmentType: string;
-  jobDuration: string;
+  employmentStatus: string;
   monthlyIncome: string;
-  tradeIn: string;
-  tradeInYear: string;
-  tradeInMake: string;
-  tradeInModel: string;
-  tradeInKm: string;
+  jobDuration: string;
+  creditSituation: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -33,17 +26,10 @@ interface FunnelData {
 
 const INITIAL_DATA: FunnelData = {
   vehicleType: '',
-  budget: '',
-  downPayment: '',
-  creditSituation: '',
-  employmentType: '',
-  jobDuration: '',
+  employmentStatus: '',
   monthlyIncome: '',
-  tradeIn: '',
-  tradeInYear: '',
-  tradeInMake: '',
-  tradeInModel: '',
-  tradeInKm: '',
+  jobDuration: '',
+  creditSituation: '',
   firstName: '',
   lastName: '',
   phone: '',
@@ -78,40 +64,87 @@ function isValidPhone(phone: string): boolean {
 }
 
 /* ============================================
-   ANIMATED CHECKMARK
+   ANIMATED CHECKMARK (green)
    ============================================ */
 
-function AnimatedCheckmark() {
+function AnimatedCheckmark(): React.ReactElement {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }}>
-      <svg width="96" height="96" viewBox="0 0 96 96">
+      <svg width="120" height="120" viewBox="0 0 120 120">
         <circle
-          cx="48" cy="48" r="44"
-          fill="none" stroke="#FBBF24" strokeWidth="4"
-          strokeDasharray="276.46"
-          strokeDashoffset="276.46"
-          style={{
-            animation: 'circleIn 0.6s ease-out 0.2s forwards',
-          }}
+          cx="60" cy="60" r="54"
+          fill="none" stroke="#22C55E" strokeWidth="5"
+          strokeDasharray="339.29"
+          strokeDashoffset="339.29"
+          style={{ animation: 'circleIn 0.6s ease-out 0.2s forwards' }}
+        />
+        <circle
+          cx="60" cy="60" r="54"
+          fill="#F0FDF4"
+          opacity="0"
+          style={{ animation: 'fillIn 0.3s ease-out 0.7s forwards' }}
         />
         <path
-          d="M28 50 L42 64 L68 34"
-          fill="none" stroke="#FBBF24" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"
-          strokeDasharray="60"
-          strokeDashoffset="60"
-          style={{
-            animation: 'checkIn 0.4s ease-out 0.7s forwards',
-          }}
+          d="M36 62 L52 78 L84 42"
+          fill="none" stroke="#22C55E" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round"
+          strokeDasharray="72"
+          strokeDashoffset="72"
+          style={{ animation: 'checkIn 0.4s ease-out 0.9s forwards' }}
         />
       </svg>
       <style>{`
-        @keyframes circleIn {
-          to { stroke-dashoffset: 0; }
-        }
-        @keyframes checkIn {
-          to { stroke-dashoffset: 0; }
-        }
+        @keyframes circleIn { to { stroke-dashoffset: 0; } }
+        @keyframes checkIn { to { stroke-dashoffset: 0; } }
+        @keyframes fillIn { to { opacity: 1; } }
       `}</style>
+    </div>
+  );
+}
+
+/* ============================================
+   LENDER LOGOS
+   ============================================ */
+
+function LenderLogos(): React.ReactElement {
+  const lenders = [
+    { name: 'CIBC', bg: '#016642', color: '#FFFFFF' },
+    { name: 'TD', bg: '#008A4C', color: '#FFFFFF' },
+    { name: 'iA Financial', bg: '#003DA5', color: '#FFFFFF' },
+  ];
+  return (
+    <div style={{ marginTop: 32, textAlign: 'center' as const }}>
+      <p style={{
+        fontSize: 12,
+        fontWeight: 600,
+        color: '#9CA3AF',
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.08em',
+        marginBottom: 12,
+      }}>
+        Our Top Lenders
+      </p>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: 10,
+        flexWrap: 'wrap' as const,
+      }}>
+        {lenders.map((l) => (
+          <span key={l.name} style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '6px 16px',
+            borderRadius: 20,
+            backgroundColor: l.bg,
+            color: l.color,
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: '0.02em',
+          }}>
+            {l.name}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -120,33 +153,49 @@ function AnimatedCheckmark() {
    TRUST BADGES
    ============================================ */
 
-function TrustBadges() {
+function TrustBadges(): React.ReactElement {
+  const badges = [
+    { icon: '\u{1F6E1}', label: 'No Credit Impact' },
+    { icon: '\u{23F1}', label: 'Takes 2 Minutes' },
+    { icon: '\u{1F512}', label: '100% Secure' },
+    { icon: '\u2705', label: '94% Approval Rate' },
+  ];
   return (
     <div style={{
       display: 'flex',
       justifyContent: 'center',
-      gap: 24,
-      marginTop: 32,
-      paddingTop: 24,
-      borderTop: '1px solid #E5E7EB',
-      flexWrap: 'wrap',
+      gap: 16,
+      marginTop: 16,
+      paddingTop: 16,
+      borderTop: '1px solid #F3F4F6',
+      flexWrap: 'wrap' as const,
     }}>
-      {[
-        { icon: '🔒', label: 'Bank-Level Encryption' },
-        { icon: '✅', label: '94% Approval Rate' },
-        { icon: '⚡', label: 'Results in 60 Seconds' },
-      ].map((badge) => (
-        <div key={badge.label} style={{
+      {badges.map((b) => (
+        <div key={b.label} style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
-          fontSize: 13,
+          gap: 5,
+          fontSize: 12,
           color: '#6B7280',
+          fontWeight: 500,
         }}>
-          <span style={{ fontSize: 16 }}>{badge.icon}</span>
-          {badge.label}
+          <span style={{ fontSize: 14 }}>{b.icon}</span>
+          {b.label}
         </div>
       ))}
+    </div>
+  );
+}
+
+/* ============================================
+   FOOTER (Lenders + Trust — shown on every step)
+   ============================================ */
+
+function StepFooter(): React.ReactElement {
+  return (
+    <div style={{ marginTop: 32 }}>
+      <LenderLogos />
+      <TrustBadges />
     </div>
   );
 }
@@ -155,10 +204,10 @@ function TrustBadges() {
    MAIN COMPONENT
    ============================================ */
 
-export default function DealershipFunnelPage() {
+export default function DealershipFunnelPage(): React.ReactElement {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<FunnelData>(INITIAL_DATA);
-  const [direction, setDirection] = useState<'left' | 'right'>('left');
+  const [direction, setDirection] = useState<'forward' | 'back'>('forward');
   const [isAnimating, setIsAnimating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -179,29 +228,29 @@ export default function DealershipFunnelPage() {
     setData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
-  const goNext = useCallback(() => {
+  const goTo = useCallback((target: number, dir: 'forward' | 'back') => {
     if (isAnimating) return;
-    setDirection('left');
+    setDirection(dir);
     setIsAnimating(true);
     setTimeout(() => {
-      setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+      setStep(target);
       setIsAnimating(false);
-    }, 250);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 200);
   }, [isAnimating]);
 
+  const goNext = useCallback(() => {
+    goTo(Math.min(step + 1, TOTAL_STEPS), 'forward');
+  }, [step, goTo]);
+
   const goBack = useCallback(() => {
-    if (isAnimating || step <= 1) return;
-    setDirection('right');
-    setIsAnimating(true);
-    setTimeout(() => {
-      setStep((s) => Math.max(s - 1, 1));
-      setIsAnimating(false);
-    }, 250);
-  }, [isAnimating, step]);
+    if (step <= 1) return;
+    goTo(step - 1, 'back');
+  }, [step, goTo]);
 
   const selectAndAdvance = useCallback((field: keyof FunnelData, value: string) => {
     update(field, value);
-    setTimeout(() => goNext(), 200);
+    setTimeout(() => goNext(), 180);
   }, [update, goNext]);
 
   const handleSubmit = useCallback(async () => {
@@ -230,59 +279,67 @@ export default function DealershipFunnelPage() {
   const cardStyle = (selected: boolean): React.CSSProperties => ({
     display: 'flex',
     alignItems: 'center',
-    gap: 14,
-    padding: '18px 22px',
-    borderRadius: 14,
-    border: selected ? '2px solid #FBBF24' : '2px solid #E5E7EB',
+    justifyContent: 'center',
+    gap: 12,
+    padding: '20px 24px',
+    borderRadius: 16,
+    border: selected ? '2px solid #FBBF24' : '2px solid #F3F4F6',
     backgroundColor: selected ? '#FFFBEB' : '#FFFFFF',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    fontSize: 17,
-    fontWeight: 500,
+    transition: 'all 0.15s ease',
+    fontSize: 16,
+    fontWeight: 600,
     color: '#111827',
     userSelect: 'none' as const,
     WebkitTapHighlightColor: 'transparent',
+    boxShadow: selected
+      ? '0 0 0 3px rgba(251,191,36,0.15)'
+      : '0 1px 3px rgba(0,0,0,0.04)',
   });
 
   const headingStyle: React.CSSProperties = {
-    fontSize: 26,
-    fontWeight: 700,
+    fontSize: 28,
+    fontWeight: 800,
     color: '#111827',
     marginBottom: 8,
-    lineHeight: 1.3,
+    lineHeight: 1.25,
+    textAlign: 'center' as const,
+    letterSpacing: '-0.02em',
   };
 
   const subStyle: React.CSSProperties = {
     fontSize: 15,
     color: '#6B7280',
-    marginBottom: 28,
-    lineHeight: 1.5,
+    marginBottom: 32,
+    lineHeight: 1.6,
+    textAlign: 'center' as const,
   };
 
   const ctaButtonStyle = (enabled: boolean): React.CSSProperties => ({
     width: '100%',
-    padding: '16px 0',
-    borderRadius: 12,
+    padding: '18px 0',
+    borderRadius: 14,
     border: 'none',
     backgroundColor: enabled ? '#FBBF24' : '#E5E7EB',
     color: enabled ? '#111827' : '#9CA3AF',
     fontSize: 17,
-    fontWeight: 700,
+    fontWeight: 800,
     cursor: enabled ? 'pointer' : 'not-allowed',
     transition: 'all 0.2s ease',
-    marginTop: 20,
+    marginTop: 24,
+    letterSpacing: '-0.01em',
   });
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    padding: '14px 16px',
-    borderRadius: 10,
-    border: '2px solid #E5E7EB',
+    padding: '16px 18px',
+    borderRadius: 12,
+    border: '2px solid #F3F4F6',
     fontSize: 16,
     color: '#111827',
     backgroundColor: '#FFFFFF',
     outline: 'none',
-    transition: 'border-color 0.2s',
+    transition: 'border-color 0.2s, box-shadow 0.2s',
     boxSizing: 'border-box' as const,
   };
 
@@ -294,42 +351,40 @@ export default function DealershipFunnelPage() {
     marginBottom: 6,
   };
 
-  const sectionLabelStyle: React.CSSProperties = {
-    fontSize: 15,
-    fontWeight: 600,
-    color: '#374151',
-    marginBottom: 12,
-    marginTop: 24,
-  };
-
   /* ---------- step content ---------- */
 
-  function renderStep() {
+  function renderStep(): React.ReactElement | null {
     switch (step) {
       /* ===== STEP 1: VEHICLE TYPE ===== */
       case 1: {
         const options = [
-          { value: 'sedan', icon: '🚗', label: 'Car / Sedan' },
-          { value: 'suv', icon: '🚙', label: 'SUV / Crossover' },
-          { value: 'truck', icon: '🛻', label: 'Truck' },
-          { value: 'van', icon: '🚐', label: 'Van / Minivan' },
-          { value: 'not_sure', icon: '🤔', label: "Not sure yet" },
+          { value: 'car', label: 'Car' },
+          { value: 'truck', label: 'Truck' },
+          { value: 'suv', label: 'SUV' },
+          { value: 'van', label: 'Van' },
         ];
         return (
           <>
             <h1 style={headingStyle}>What type of vehicle are you looking for?</h1>
-            <p style={subStyle}>Pick the one that fits your lifestyle. You can always change your mind later.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <p style={subStyle}>Pick the one that fits your lifestyle.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {options.map((o) => (
                 <div
                   key={o.value}
                   onClick={() => selectAndAdvance('vehicleType', o.value)}
-                  style={cardStyle(data.vehicleType === o.value)}
+                  style={{
+                    ...cardStyle(data.vehicleType === o.value),
+                    flexDirection: 'column',
+                    padding: '28px 16px',
+                    fontSize: 17,
+                  }}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && selectAndAdvance('vehicleType', o.value)}
                 >
-                  <span style={{ fontSize: 28 }}>{o.icon}</span>
+                  <span style={{ fontSize: 36, marginBottom: 8, display: 'block' }}>
+                    {o.value === 'car' ? '\u{1F697}' : o.value === 'truck' ? '\u{1F6FB}' : o.value === 'suv' ? '\u{1F699}' : '\u{1F690}'}
+                  </span>
                   <span>{o.label}</span>
                 </div>
               ))}
@@ -338,103 +393,145 @@ export default function DealershipFunnelPage() {
         );
       }
 
-      /* ===== STEP 2: BUDGET ===== */
+      /* ===== STEP 2: EMPLOYMENT STATUS ===== */
       case 2: {
-        const budgets = [
-          { value: 'under_250', label: 'Under $250/mo' },
-          { value: '250_350', label: '$250 – $350/mo' },
-          { value: '350_450', label: '$350 – $450/mo' },
-          { value: '450_550', label: '$450 – $550/mo' },
-          { value: '550_plus', label: '$550+/mo' },
-          { value: 'flexible', label: "I'm flexible" },
+        const options = [
+          { value: 'employed', label: 'Employed' },
+          { value: 'self_employed', label: 'Self Employed' },
+          { value: 'retired', label: 'Retired / Pension' },
+          { value: 'disability', label: 'Disability / Other' },
         ];
-        const downs = [
-          { value: '0', label: '$0' },
-          { value: '500_1000', label: '$500 – $1,000' },
-          { value: '1000_3000', label: '$1,000 – $3,000' },
-          { value: '3000_5000', label: '$3,000 – $5,000' },
-          { value: '5000_plus', label: '$5,000+' },
-        ];
-        const canProceed = data.budget && data.downPayment;
         return (
           <>
-            <h1 style={headingStyle}>What monthly payment works for your budget?</h1>
-            <p style={subStyle}>No commitment — just helps us find the right match.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {budgets.map((o) => (
+            <h1 style={headingStyle}>What is your employment status?</h1>
+            <p style={subStyle}>This helps us match you with the right lender.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {options.map((o) => (
                 <div
                   key={o.value}
-                  onClick={() => update('budget', o.value)}
-                  style={cardStyle(data.budget === o.value)}
+                  onClick={() => selectAndAdvance('employmentStatus', o.value)}
+                  style={cardStyle(data.employmentStatus === o.value)}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && update('budget', o.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && selectAndAdvance('employmentStatus', o.value)}
                 >
                   <span>{o.label}</span>
                 </div>
               ))}
             </div>
-            <p style={sectionLabelStyle}>How much can you put down?</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {downs.map((o) => (
-                <div
-                  key={o.value}
-                  onClick={() => update('downPayment', o.value)}
-                  style={{
-                    ...cardStyle(data.downPayment === o.value),
-                    flex: '1 1 calc(50% - 5px)',
-                    justifyContent: 'center',
-                    padding: '14px 12px',
-                    fontSize: 15,
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && update('downPayment', o.value)}
-                >
-                  {o.label}
-                </div>
-              ))}
+            <div style={{
+              marginTop: 20,
+              padding: '12px 16px',
+              borderRadius: 10,
+              backgroundColor: '#FEF3C7',
+              fontSize: 13,
+              color: '#92400E',
+              textAlign: 'center' as const,
+              fontWeight: 500,
+            }}>
+              Minimum income of $2,000/month required
             </div>
-            <button
-              onClick={goNext}
-              disabled={!canProceed}
-              style={ctaButtonStyle(!!canProceed)}
-            >
-              Continue
-            </button>
           </>
         );
       }
 
-      /* ===== STEP 3: CREDIT ===== */
+      /* ===== STEP 3: MONTHLY INCOME ===== */
       case 3: {
         const options = [
-          { value: 'excellent', icon: '🌟', label: 'Excellent', sub: '750+' },
-          { value: 'good', icon: '👍', label: 'Good', sub: '650–749' },
-          { value: 'building', icon: '📈', label: 'Building', sub: '550–649' },
-          { value: 'rebuilding', icon: '🔧', label: 'Rebuilding', sub: 'Under 550' },
-          { value: 'bankruptcy', icon: '📋', label: 'Bankruptcy / Proposal', sub: '' },
-          { value: 'new_to_canada', icon: '🇨🇦', label: 'New to Canada', sub: '' },
-          { value: 'dont_know', icon: '❓', label: "Don't know", sub: '' },
+          { value: '2000_2500', label: '$2,000 - $2,500' },
+          { value: '2500_3000', label: '$2,500 - $3,000' },
+          { value: '3000_3500', label: '$3,000 - $3,500' },
+          { value: '3500_4500', label: '$3,500 - $4,500' },
+          { value: '4500_plus', label: '$4,500+' },
+        ];
+        return (
+          <>
+            <h1 style={headingStyle}>What is your monthly income?</h1>
+            <p style={subStyle}>Before taxes. This determines your financing options.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {options.map((o) => (
+                <div
+                  key={o.value}
+                  onClick={() => selectAndAdvance('monthlyIncome', o.value)}
+                  style={cardStyle(data.monthlyIncome === o.value)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && selectAndAdvance('monthlyIncome', o.value)}
+                >
+                  <span>{o.label}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      }
+
+      /* ===== STEP 4: EMPLOYMENT DURATION ===== */
+      case 4: {
+        const options = [
+          { value: 'less_3_months', label: 'Less than 3 months' },
+          { value: '3_12_months', label: '3 - 12 months' },
+          { value: '1_2_years', label: '1 - 2 years' },
+          { value: '2_plus_years', label: '2+ years' },
+        ];
+        return (
+          <>
+            <h1 style={headingStyle}>How long have you been at your current job?</h1>
+            <p style={subStyle}>Lenders look at job stability as part of the approval.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {options.map((o) => (
+                <div
+                  key={o.value}
+                  onClick={() => selectAndAdvance('jobDuration', o.value)}
+                  style={cardStyle(data.jobDuration === o.value)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && selectAndAdvance('jobDuration', o.value)}
+                >
+                  <span>{o.label}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      }
+
+      /* ===== STEP 5: CREDIT SITUATION ===== */
+      case 5: {
+        const options = [
+          { value: 'excellent', label: 'Excellent', sub: '750+' },
+          { value: 'good', label: 'Good', sub: '650 - 749' },
+          { value: 'fair', label: 'Fair', sub: '550 - 649' },
+          { value: 'rebuilding', label: 'Rebuilding', sub: 'Under 550' },
+          { value: 'bankruptcy', label: 'Bankruptcy / Proposal', sub: '' },
+          { value: 'new_to_canada', label: 'New to Canada', sub: '' },
+          { value: 'dont_know', label: "I don't know", sub: '' },
         ];
         return (
           <>
             <h1 style={headingStyle}>What best describes your credit?</h1>
-            <p style={subStyle}>No judgment here — just helps us match you with the right lenders.</p>
+            <p style={subStyle}>No judgment. Every situation is different.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {options.map((o) => (
                 <div
                   key={o.value}
                   onClick={() => selectAndAdvance('creditSituation', o.value)}
-                  style={cardStyle(data.creditSituation === o.value)}
+                  style={{
+                    ...cardStyle(data.creditSituation === o.value),
+                    justifyContent: 'flex-start',
+                    padding: '18px 22px',
+                  }}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && selectAndAdvance('creditSituation', o.value)}
                 >
-                  <span style={{ fontSize: 24 }}>{o.icon}</span>
-                  <div>
+                  <div style={{ textAlign: 'left' as const }}>
                     <div>{o.label}</div>
-                    {o.sub && <div style={{ fontSize: 13, color: '#9CA3AF', marginTop: 2 }}>{o.sub}</div>}
+                    {o.sub && (
+                      <div style={{ fontSize: 13, color: '#9CA3AF', marginTop: 2, fontWeight: 400 }}>
+                        {o.sub}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -447,253 +544,38 @@ export default function DealershipFunnelPage() {
               border: '1px solid #BBF7D0',
               fontSize: 14,
               color: '#166534',
-              textAlign: 'center',
+              textAlign: 'center' as const,
+              fontWeight: 500,
             }}>
-              ✅ We approve all credit situations. <strong>94% approval rate.</strong>
+              We approve all credit situations. <strong>94% of applicants get approved.</strong>
             </div>
           </>
         );
       }
 
-      /* ===== STEP 4: EMPLOYMENT ===== */
-      case 4: {
-        const types = [
-          { value: 'full_time', label: 'Full-Time' },
-          { value: 'part_time', label: 'Part-Time' },
-          { value: 'self_employed', label: 'Self-Employed' },
-          { value: 'disability_pension', label: 'Disability / Pension' },
-          { value: 'other', label: 'Other' },
-        ];
-        const durations = [
-          { value: 'less_6', label: '< 6 months' },
-          { value: '6_12', label: '6–12 months' },
-          { value: '1_2_years', label: '1–2 years' },
-          { value: '2_plus', label: '2+ years' },
-        ];
-        const canProceed = data.employmentType && data.jobDuration && data.monthlyIncome;
-        return (
-          <>
-            <h1 style={headingStyle}>Tell us about your income</h1>
-            <p style={subStyle}>This helps lenders determine what you qualify for.</p>
-
-            <p style={sectionLabelStyle}>Employment type</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {types.map((o) => (
-                <div
-                  key={o.value}
-                  onClick={() => update('employmentType', o.value)}
-                  style={{
-                    ...cardStyle(data.employmentType === o.value),
-                    flex: '1 1 calc(50% - 5px)',
-                    justifyContent: 'center',
-                    padding: '14px 12px',
-                    fontSize: 15,
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && update('employmentType', o.value)}
-                >
-                  {o.label}
-                </div>
-              ))}
-            </div>
-
-            <p style={sectionLabelStyle}>How long at current job?</p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              {durations.map((o) => (
-                <div
-                  key={o.value}
-                  onClick={() => update('jobDuration', o.value)}
-                  style={{
-                    ...cardStyle(data.jobDuration === o.value),
-                    flex: '1 1 calc(50% - 5px)',
-                    justifyContent: 'center',
-                    padding: '14px 12px',
-                    fontSize: 15,
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && update('jobDuration', o.value)}
-                >
-                  {o.label}
-                </div>
-              ))}
-            </div>
-
-            <p style={sectionLabelStyle}>Monthly income (before taxes)</p>
-            <div style={{ position: 'relative' }}>
-              <span style={{
-                position: 'absolute',
-                left: 16,
-                top: '50%',
-                transform: 'translateY(-50%)',
-                fontSize: 18,
-                fontWeight: 600,
-                color: '#6B7280',
-              }}>$</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                placeholder="3,500"
-                value={data.monthlyIncome}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/[^0-9]/g, '');
-                  const formatted = raw ? Number(raw).toLocaleString() : '';
-                  update('monthlyIncome', formatted);
-                }}
-                style={{
-                  ...inputStyle,
-                  paddingLeft: 36,
-                  fontSize: 22,
-                  fontWeight: 600,
-                }}
-              />
-            </div>
-
-            <button
-              onClick={goNext}
-              disabled={!canProceed}
-              style={ctaButtonStyle(!!canProceed)}
-            >
-              Continue
-            </button>
-          </>
-        );
-      }
-
-      /* ===== STEP 5: TRADE-IN ===== */
-      case 5: {
-        const options = [
-          { value: 'yes', icon: '✅', label: 'Yes' },
-          { value: 'no', icon: '❌', label: 'No' },
-          { value: 'not_sure', icon: '🤷', label: 'Not sure' },
-        ];
-        const showFields = data.tradeIn === 'yes';
-        const canProceed = data.tradeIn === 'no' || data.tradeIn === 'not_sure' ||
-          (showFields && data.tradeInYear && data.tradeInMake && data.tradeInModel);
-        return (
-          <>
-            <h1 style={headingStyle}>Do you have a vehicle to trade in?</h1>
-            <p style={subStyle}>A trade-in can reduce your payments or eliminate a down payment.</p>
-            <div style={{ display: 'flex', gap: 12 }}>
-              {options.map((o) => (
-                <div
-                  key={o.value}
-                  onClick={() => {
-                    update('tradeIn', o.value);
-                    if (o.value !== 'yes') setTimeout(() => goNext(), 300);
-                  }}
-                  style={{
-                    ...cardStyle(data.tradeIn === o.value),
-                    flex: 1,
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    padding: '20px 12px',
-                  }}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      update('tradeIn', o.value);
-                      if (o.value !== 'yes') setTimeout(() => goNext(), 300);
-                    }
-                  }}
-                >
-                  <span style={{ fontSize: 28, marginBottom: 6, display: 'block' }}>{o.icon}</span>
-                  <span>{o.label}</span>
-                </div>
-              ))}
-            </div>
-
-            {showFields && (
-              <div style={{
-                marginTop: 24,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 14,
-                animation: 'fadeIn 0.3s ease',
-              }}>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>Year</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="2019"
-                      value={data.tradeInYear}
-                      onChange={(e) => update('tradeInYear', e.target.value.replace(/\D/g, '').slice(0, 4))}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div style={{ flex: 2 }}>
-                    <label style={labelStyle}>Make</label>
-                    <input
-                      type="text"
-                      placeholder="Toyota"
-                      value={data.tradeInMake}
-                      onChange={(e) => update('tradeInMake', e.target.value)}
-                      style={inputStyle}
-                    />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ flex: 2 }}>
-                    <label style={labelStyle}>Model</label>
-                    <input
-                      type="text"
-                      placeholder="Corolla"
-                      value={data.tradeInModel}
-                      onChange={(e) => update('tradeInModel', e.target.value)}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <label style={labelStyle}>Kilometers</label>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      placeholder="85,000"
-                      value={data.tradeInKm}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/[^0-9]/g, '');
-                        update('tradeInKm', raw ? Number(raw).toLocaleString() : '');
-                      }}
-                      style={inputStyle}
-                    />
-                  </div>
-                </div>
-                <button
-                  onClick={goNext}
-                  disabled={!canProceed}
-                  style={ctaButtonStyle(!!canProceed)}
-                >
-                  Continue
-                </button>
-              </div>
-            )}
-          </>
-        );
-      }
-
-      /* ===== STEP 6: CONTACT ===== */
+      /* ===== STEP 6: CONTACT INFO ===== */
       case 6: {
         const contactOptions = [
-          { value: 'text', icon: '💬', label: 'Text' },
-          { value: 'email', icon: '📧', label: 'Email' },
-          { value: 'phone', icon: '📞', label: 'Phone Call' },
+          { value: 'text', label: 'Text' },
+          { value: 'email', label: 'Email' },
+          { value: 'call', label: 'Call' },
         ];
-        const canSubmit = data.firstName && data.lastName && isValidPhone(data.phone) &&
-          isValidEmail(data.email) && data.preferredContact && data.caslConsent;
+        const canSubmit =
+          data.firstName.trim() &&
+          data.lastName.trim() &&
+          isValidPhone(data.phone) &&
+          isValidEmail(data.email) &&
+          data.preferredContact &&
+          data.caslConsent;
         return (
           <>
-            <h1 style={headingStyle}>Where should we send your result?</h1>
-            <p style={subStyle}>We'll have your pre-qualification ready in about 60 seconds.</p>
+            <h1 style={headingStyle}>Last step! Where should we send your result?</h1>
+            <p style={subStyle}>Your pre-qualification is almost ready.</p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div style={{ display: 'flex', gap: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>First name</label>
+                  <label style={labelStyle}>First Name</label>
                   <input
                     type="text"
                     placeholder="John"
@@ -704,7 +586,7 @@ export default function DealershipFunnelPage() {
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={labelStyle}>Last name</label>
+                  <label style={labelStyle}>Last Name</label>
                   <input
                     type="text"
                     placeholder="Smith"
@@ -717,7 +599,7 @@ export default function DealershipFunnelPage() {
               </div>
 
               <div>
-                <label style={labelStyle}>Phone number</label>
+                <label style={labelStyle}>Phone</label>
                 <input
                   type="tel"
                   placeholder="(613) 555-1234"
@@ -729,7 +611,7 @@ export default function DealershipFunnelPage() {
               </div>
 
               <div>
-                <label style={labelStyle}>Email address</label>
+                <label style={labelStyle}>Email</label>
                 <input
                   type="email"
                   placeholder="john@example.com"
@@ -741,7 +623,15 @@ export default function DealershipFunnelPage() {
               </div>
             </div>
 
-            <p style={sectionLabelStyle}>Preferred way to reach you</p>
+            <p style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#374151',
+              marginBottom: 12,
+              marginTop: 28,
+            }}>
+              Preferred way to reach you
+            </p>
             <div style={{ display: 'flex', gap: 10 }}>
               {contactOptions.map((o) => (
                 <div
@@ -750,17 +640,13 @@ export default function DealershipFunnelPage() {
                   style={{
                     ...cardStyle(data.preferredContact === o.value),
                     flex: 1,
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    padding: '14px 8px',
-                    fontSize: 14,
+                    padding: '16px 8px',
+                    fontSize: 15,
                   }}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && update('preferredContact', o.value)}
                 >
-                  <span style={{ fontSize: 24, marginBottom: 4, display: 'block' }}>{o.icon}</span>
                   {o.label}
                 </div>
               ))}
@@ -770,23 +656,24 @@ export default function DealershipFunnelPage() {
             <label style={{
               display: 'flex',
               alignItems: 'flex-start',
-              gap: 10,
-              marginTop: 24,
+              gap: 12,
+              marginTop: 28,
               cursor: 'pointer',
               fontSize: 13,
               color: '#6B7280',
-              lineHeight: 1.5,
+              lineHeight: 1.6,
             }}>
               <input
                 type="checkbox"
                 checked={data.caslConsent}
                 onChange={(e) => update('caslConsent', e.target.checked)}
                 style={{
-                  width: 20,
-                  height: 20,
+                  width: 22,
+                  height: 22,
                   marginTop: 2,
                   accentColor: '#FBBF24',
                   flexShrink: 0,
+                  cursor: 'pointer',
                 }}
               />
               <span>
@@ -799,9 +686,9 @@ export default function DealershipFunnelPage() {
 
             {submitError && (
               <div style={{
-                marginTop: 12,
-                padding: '12px 16px',
-                borderRadius: 10,
+                marginTop: 14,
+                padding: '14px 18px',
+                borderRadius: 12,
                 backgroundColor: '#FEF2F2',
                 border: '1px solid #FECACA',
                 color: '#991B1B',
@@ -816,51 +703,82 @@ export default function DealershipFunnelPage() {
               disabled={!canSubmit || isSubmitting}
               style={ctaButtonStyle(!!(canSubmit && !isSubmitting))}
             >
-              {isSubmitting ? 'Submitting...' : 'Get My Pre-Qualification →'}
+              {isSubmitting ? 'Submitting...' : 'Get My Pre-Qualification \u2192'}
             </button>
           </>
         );
       }
 
       /* ===== STEP 7: SUCCESS ===== */
-      case 7:
+      case 7: {
+        const summaryLabel = (val: string): string =>
+          val.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
         return (
-          <div style={{ textAlign: 'center', paddingTop: 20 }}>
+          <div style={{ textAlign: 'center' as const, paddingTop: 8 }}>
             <AnimatedCheckmark />
-            <h1 style={{ ...headingStyle, fontSize: 30, marginBottom: 12 }}>
+            <h1 style={{
+              fontSize: 32,
+              fontWeight: 800,
+              color: '#111827',
+              marginBottom: 8,
+              letterSpacing: '-0.02em',
+            }}>
               You're Pre-Qualified!
             </h1>
-            <p style={{ fontSize: 17, color: '#6B7280', lineHeight: 1.6, marginBottom: 28 }}>
-              Great news, {data.firstName}! Based on your information, you qualify for financing options.
+            <p style={{
+              fontSize: 17,
+              color: '#6B7280',
+              lineHeight: 1.6,
+              marginBottom: 32,
+              maxWidth: 400,
+              marginLeft: 'auto',
+              marginRight: 'auto',
+            }}>
+              Based on your profile, we're confident we can get you approved.
             </p>
 
-            {/* Summary */}
+            {/* Summary Card */}
             <div style={{
               backgroundColor: '#F9FAFB',
               borderRadius: 16,
-              padding: '24px 20px',
-              textAlign: 'left',
+              padding: '24px 24px',
+              textAlign: 'left' as const,
               marginBottom: 28,
             }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 16 }}>
-                Your Application Summary
+              <h3 style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#111827',
+                marginBottom: 16,
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.05em',
+              }}>
+                Your Summary
               </h3>
               {[
-                { label: 'Vehicle', value: data.vehicleType.replace(/_/g, ' ') },
-                { label: 'Budget', value: data.budget.replace(/_/g, ' ') },
-                { label: 'Credit', value: data.creditSituation.replace(/_/g, ' ') },
-                { label: 'Employment', value: data.employmentType.replace(/_/g, ' ') },
-                { label: 'Trade-in', value: data.tradeIn === 'yes' ? `${data.tradeInYear} ${data.tradeInMake} ${data.tradeInModel}` : 'None' },
+                { label: 'Vehicle', value: summaryLabel(data.vehicleType) },
+                { label: 'Employment', value: summaryLabel(data.employmentStatus) },
+                { label: 'Income', value: summaryLabel(data.monthlyIncome) },
+                { label: 'Job Duration', value: summaryLabel(data.jobDuration) },
+                { label: 'Credit', value: summaryLabel(data.creditSituation) },
+                { label: 'Contact', value: `${data.firstName} ${data.lastName}` },
               ].map((row) => (
                 <div key={row.label} style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  padding: '8px 0',
+                  padding: '10px 0',
                   borderBottom: '1px solid #E5E7EB',
                   fontSize: 14,
                 }}>
                   <span style={{ color: '#6B7280' }}>{row.label}</span>
-                  <span style={{ color: '#111827', fontWeight: 600, textTransform: 'capitalize' }}>{row.value}</span>
+                  <span style={{
+                    color: '#111827',
+                    fontWeight: 600,
+                    textTransform: 'capitalize' as const,
+                  }}>
+                    {row.value}
+                  </span>
                 </div>
               ))}
             </div>
@@ -869,37 +787,84 @@ export default function DealershipFunnelPage() {
             <div style={{
               backgroundColor: '#FFFBEB',
               borderRadius: 16,
-              padding: '20px',
-              textAlign: 'left',
+              padding: '24px',
+              textAlign: 'left' as const,
+              marginBottom: 28,
             }}>
-              <h3 style={{ fontSize: 15, fontWeight: 700, color: '#111827', marginBottom: 14 }}>
-                What happens next?
+              <h3 style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: '#111827',
+                marginBottom: 18,
+                textTransform: 'uppercase' as const,
+                letterSpacing: '0.05em',
+              }}>
+                What Happens Next
               </h3>
               {[
-                { num: '1', text: 'A financing specialist will review your application' },
-                { num: '2', text: `We'll reach out via ${data.preferredContact || 'your preferred method'} within 1 hour` },
-                { num: '3', text: "You'll receive personalized vehicle options that fit your budget" },
+                { num: '1', text: 'A specialist will contact you within 15 minutes' },
+                { num: '2', text: "We'll match you with our best lending partner" },
+                { num: '3', text: "You'll receive 2-3 vehicle options" },
+                { num: '4', text: 'Free delivery anywhere in Ontario & Quebec' },
               ].map((s) => (
-                <div key={s.num} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
+                <div key={s.num} style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 14,
+                  marginBottom: 14,
+                }}>
                   <span style={{
-                    width: 28,
-                    height: 28,
+                    width: 30,
+                    height: 30,
                     borderRadius: '50%',
                     backgroundColor: '#FBBF24',
                     color: '#111827',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontWeight: 700,
+                    fontWeight: 800,
                     fontSize: 14,
                     flexShrink: 0,
-                  }}>{s.num}</span>
-                  <span style={{ fontSize: 14, color: '#374151', lineHeight: 1.5, paddingTop: 4 }}>{s.text}</span>
+                  }}>
+                    {s.num}
+                  </span>
+                  <span style={{
+                    fontSize: 15,
+                    color: '#374151',
+                    lineHeight: 1.5,
+                    paddingTop: 5,
+                  }}>
+                    {s.text}
+                  </span>
                 </div>
               ))}
             </div>
+
+            <a
+              href="https://readycar.ca/inventory/used/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '18px 0',
+                borderRadius: 14,
+                border: 'none',
+                backgroundColor: '#FBBF24',
+                color: '#111827',
+                fontSize: 17,
+                fontWeight: 800,
+                textAlign: 'center' as const,
+                textDecoration: 'none',
+                letterSpacing: '-0.01em',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              Browse Inventory While You Wait {'\u2192'}
+            </a>
           </div>
         );
+      }
 
       default:
         return null;
@@ -913,86 +878,164 @@ export default function DealershipFunnelPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      backgroundColor: '#F9FAFB',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", "DM Sans", sans-serif',
+      backgroundColor: '#FFFFFF',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
     }}>
       {/* Global animation keyframes */}
       <style>{`
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideInLeft { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
-        @keyframes slideInRight { from { opacity: 0; transform: translateX(-40px); } to { opacity: 1; transform: translateX(0); } }
-        input:focus { border-color: #FBBF24 !important; box-shadow: 0 0 0 3px rgba(251,191,36,0.15) !important; }
-        div[role="button"]:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); transform: translateY(-1px); }
-        div[role="button"]:active { transform: scale(0.98); }
-        button:hover:not(:disabled) { filter: brightness(1.05); transform: translateY(-1px); }
+        @keyframes slideInForward {
+          from { opacity: 0; transform: translateX(30px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideInBack {
+          from { opacity: 0; transform: translateX(-30px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        input:focus {
+          border-color: #FBBF24 !important;
+          box-shadow: 0 0 0 3px rgba(251,191,36,0.15) !important;
+        }
+        div[role="button"]:hover {
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+          transform: translateY(-1px);
+        }
+        div[role="button"]:active {
+          transform: scale(0.98);
+        }
+        button:hover:not(:disabled) {
+          filter: brightness(1.05);
+          transform: translateY(-1px);
+        }
+        a:hover {
+          filter: brightness(1.05);
+          transform: translateY(-1px);
+        }
       `}</style>
 
-      {/* Progress Bar */}
-      {step < 7 && (
+      {/* Sticky Header */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        backgroundColor: 'rgba(255,255,255,0.97)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid #F3F4F6',
+      }}>
         <div style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          backgroundColor: 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(8px)',
-          borderBottom: '1px solid #F3F4F6',
-          padding: '12px 24px 12px',
+          maxWidth: 640,
+          margin: '0 auto',
+          padding: '14px 24px 14px',
         }}>
+          {/* Logo */}
           <div style={{
-            maxWidth: 640,
-            margin: '0 auto',
+            display: 'flex',
+            justifyContent: 'center',
+            marginBottom: 10,
           }}>
-            {/* Nexus Auto Branding */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
-              <span style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
-                <span style={{ color: '#FBBF24' }}>N</span>exus Auto
-              </span>
-            </div>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 8,
+            <span style={{
+              fontSize: 20,
+              fontWeight: 800,
+              color: '#111827',
+              letterSpacing: '-0.03em',
             }}>
-              {step > 1 ? (
-                <button
-                  onClick={goBack}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: 14,
-                    color: '#6B7280',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    padding: 0,
-                  }}
-                >
-                  ← Back
-                </button>
-              ) : (
-                <span />
-              )}
-              <span style={{ fontSize: 13, color: '#9CA3AF', fontWeight: 500 }}>
-                Step {step} of 6
-              </span>
-            </div>
-            <div style={{
-              height: 4,
-              backgroundColor: '#E5E7EB',
-              borderRadius: 4,
-              overflow: 'hidden',
-            }}>
-              <div style={{
-                height: '100%',
-                width: `${progressPercent}%`,
-                backgroundColor: '#FBBF24',
-                borderRadius: 4,
-                transition: 'width 0.4s ease',
-              }} />
-            </div>
+              <span style={{ color: '#FBBF24' }}>N</span>exus Auto
+            </span>
           </div>
+
+          {step < 7 && (
+            <>
+              {/* Back + Step Counter */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 10,
+              }}>
+                {step > 1 ? (
+                  <button
+                    onClick={goBack}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 14,
+                      color: '#6B7280',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: 0,
+                      fontWeight: 500,
+                    }}
+                  >
+                    {'\u2190'} Back
+                  </button>
+                ) : (
+                  <span />
+                )}
+                <span style={{
+                  fontSize: 13,
+                  color: '#9CA3AF',
+                  fontWeight: 600,
+                }}>
+                  Step {step} / 7
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div style={{
+                height: 5,
+                backgroundColor: '#F3F4F6',
+                borderRadius: 5,
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  height: '100%',
+                  width: `${progressPercent}%`,
+                  backgroundColor: '#FBBF24',
+                  borderRadius: 5,
+                  transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+                }} />
+              </div>
+            </>
+          )}
+
+          {step === 7 && (
+            <div style={{
+              height: 5,
+              backgroundColor: '#FBBF24',
+              borderRadius: 5,
+            }} />
+          )}
+        </div>
+      </div>
+
+      {/* Headline (only on step 1, above the card) */}
+      {step === 1 && (
+        <div style={{
+          maxWidth: 640,
+          margin: '0 auto',
+          padding: '32px 24px 0',
+          textAlign: 'center' as const,
+        }}>
+          <h1 style={{
+            fontSize: 36,
+            fontWeight: 900,
+            color: '#111827',
+            lineHeight: 1.15,
+            letterSpacing: '-0.03em',
+            marginBottom: 4,
+          }}>
+            Get a Car Loan Fast
+          </h1>
+          <p style={{
+            fontSize: 16,
+            color: '#6B7280',
+            marginBottom: 0,
+          }}>
+            Pre-qualify in 2 minutes. No impact on your credit score.
+          </p>
         </div>
       )}
 
@@ -1002,28 +1045,24 @@ export default function DealershipFunnelPage() {
         style={{
           maxWidth: 640,
           margin: '0 auto',
-          padding: step === 7 ? '40px 24px 60px' : '32px 24px 60px',
+          padding: step === 1 ? '24px 24px 40px' : '32px 24px 40px',
         }}
       >
         <div
           key={step}
           style={{
-            backgroundColor: step === 7 ? 'transparent' : '#FFFFFF',
-            borderRadius: step === 7 ? 0 : 20,
-            padding: step === 7 ? 0 : '32px 28px',
-            boxShadow: step === 7 ? 'none' : '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)',
             animation: isAnimating
               ? 'none'
-              : direction === 'left'
-                ? 'slideInLeft 0.3s ease'
-                : 'slideInRight 0.3s ease',
+              : direction === 'forward'
+                ? 'slideInForward 0.25s ease-out'
+                : 'slideInBack 0.25s ease-out',
           }}
         >
           {renderStep()}
         </div>
 
-        {/* Trust badges (steps 1–6) */}
-        {step < 7 && <TrustBadges />}
+        {/* Footer: Lenders + Trust Badges on every step */}
+        <StepFooter />
       </div>
     </div>
   );
