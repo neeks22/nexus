@@ -8,7 +8,7 @@ import { TENANT_MAP, supaGet, supaPost, supaHeaders, sendTwilioSMS, slackNotify,
 
 export const maxDuration = 60;
 
-const PROCESS_SECRET = process.env.PROCESS_SECRET || 'internal-process-key';
+const PROCESS_SECRET = process.env.PROCESS_SECRET || '';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   // Verify internal call

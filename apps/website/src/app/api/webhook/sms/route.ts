@@ -38,7 +38,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // Trigger delayed processing
   const baseUrl = request.nextUrl.origin || 'https://nexusagents.ca';
-  const processSecret = process.env.PROCESS_SECRET || 'internal-process-key';
+  const processSecret = process.env.PROCESS_SECRET || '';
 
   fetch(`${baseUrl}/api/webhook/sms/process`, {
     method: 'POST',

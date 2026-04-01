@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { GMAIL_USER, GMAIL_PASS, ANTHROPIC_KEY, SLACK_WEBHOOK, CRON_SECRET, SUPABASE_URL, SUPABASE_KEY, supaHeaders as _supaHeaders } from '../../../../lib/security';
 
 /* =============================================================================
    EMAIL CRON — Checks Gmail for new replies via SMTP/IMAP workaround
@@ -12,16 +13,8 @@ import { NextResponse } from 'next/server';
    to process any email that the webhook received.
    ============================================================================= */
 
-const GMAIL_USER = 'nicolas@readycar.ca';
-const GMAIL_PASS = 'puzj etam ttei khqg';
-const SUPABASE_URL = (process.env.SUPABASE_URL ?? '').trim().replace(/\\n$/, '');
-const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY ?? '').trim().replace(/\\n$/, '');
-const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? 'REMOVED_SECRET_ANTHROPIC_KEY').trim();
-const SLACK_WEBHOOK = 'REMOVED_SECRET_SLACK_WEBHOOK';
-const CRON_SECRET = process.env.CRON_SECRET || 'nexus-email-cron-2026';
-
 function supaHeaders(): Record<string, string> {
-  return { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' };
+  return _supaHeaders();
 }
 
 export async function GET(request: Request): Promise<NextResponse> {

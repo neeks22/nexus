@@ -7,8 +7,8 @@ import crypto from 'crypto';
    ============================================================================= */
 
 const PASSWORDS: Record<string, string> = {
-  readycar: process.env.CRM_PASSWORD_READYCAR || 'Nexus33!33',
-  readyride: process.env.CRM_PASSWORD_READYRIDE || 'Readyride2023',
+  readycar: process.env.CRM_PASSWORD_READYCAR || '',
+  readyride: process.env.CRM_PASSWORD_READYRIDE || '',
 };
 
 export async function POST(request: NextRequest): Promise<NextResponse> {

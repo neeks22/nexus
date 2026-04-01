@@ -13,7 +13,7 @@ export const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '
 export const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '').trim();
 export const TWILIO_SID = (process.env.TWILIO_ACCOUNT_SID ?? '').trim();
 export const TWILIO_TOKEN = (process.env.TWILIO_AUTH_TOKEN ?? '').trim();
-export const GMAIL_USER = process.env.GMAIL_USER ?? 'nicolas@readycar.ca';
+export const GMAIL_USER = process.env.GMAIL_USER ?? '';
 export const GMAIL_PASS = (process.env.GMAIL_PASS ?? '').trim();
 export const SLACK_WEBHOOK = (process.env.SLACK_WEBHOOK_URL ?? '').trim();
 export const NEXUS_API_KEY = (process.env.NEXUS_API_KEY ?? '').trim();
@@ -43,7 +43,7 @@ export function supaHeaders(tenant?: string): Record<string, string> {
 
 // Use anon key for read-only operations (respects RLS)
 export function supaAnonHeaders(tenant?: string): Record<string, string> {
-  const key = SUPABASE_ANON_KEY || SUPABASE_KEY;
+  const key = SUPABASE_ANON_KEY || '';
   const headers: Record<string, string> = {
     apikey: key,
     Authorization: `Bearer ${key}`,
@@ -94,10 +94,26 @@ export function validateTwilioSignature(request: NextRequest, params: Record<str
     .update(data)
     .digest('base64');
 
-  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(computed));
+  try {
+    const sigBuf = Buffer.from(signature);
+    const compBuf = Buffer.from(computed);
+    if (sigBuf.length !== compBuf.length) return false;
+    return crypto.timingSafeEqual(sigBuf, compBuf);
+  } catch {
+    return false;
+  }
 }
 
 /* ---------- API Key Authentication ---------- */
+
+function isValidOrigin(o: string): boolean {
+  try {
+    const hostname = new URL(o).hostname;
+    return hostname === 'nexusagents.ca' || hostname.endsWith('.nexusagents.ca');
+  } catch {
+    return false;
+  }
+}
 
 export function requireApiKey(request: NextRequest): NextResponse | null {
   const authHeader = request.headers.get('authorization');
@@ -107,7 +123,7 @@ export function requireApiKey(request: NextRequest): NextResponse | null {
     // If no API key is configured, allow requests from same origin only
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
-    if (origin?.includes('nexusagents.ca') || referer?.includes('nexusagents.ca')) return null;
+    if ((origin && isValidOrigin(origin)) || (referer && isValidOrigin(referer))) return null;
     if (process.env.NODE_ENV === 'development') return null;
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
@@ -116,7 +132,7 @@ export function requireApiKey(request: NextRequest): NextResponse | null {
     // Also allow same-origin requests (from the CRM pages)
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
-    if (origin?.includes('nexusagents.ca') || referer?.includes('nexusagents.ca')) return null;
+    if ((origin && isValidOrigin(origin)) || (referer && isValidOrigin(referer))) return null;
     if (process.env.NODE_ENV === 'development') return null;
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
