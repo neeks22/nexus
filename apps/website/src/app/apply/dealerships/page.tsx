@@ -362,35 +362,45 @@ export default function DealershipFunnelPage(): React.ReactElement {
     switch (step) {
       /* ===== STEP 1: VEHICLE TYPE ===== */
       case 1: {
-        const options = [
-          { value: 'car', label: 'Car' },
-          { value: 'truck', label: 'Truck' },
-          { value: 'suv', label: 'SUV' },
-          { value: 'van', label: 'Van' },
+        const vehicles = [
+          { value: 'car', label: 'Sedan', img: 'https://www.pngall.com/wp-content/uploads/2/Sedan-Car-PNG-Image-HD.png' },
+          { value: 'suv', label: 'SUV', img: 'https://www.pngall.com/wp-content/uploads/8/SUV-PNG-Image-File.png' },
+          { value: 'truck', label: 'Truck', img: 'https://www.pngall.com/wp-content/uploads/5/Pickup-Truck-PNG-Image-HD.png' },
+          { value: 'van', label: 'Van', img: 'https://www.pngall.com/wp-content/uploads/15/Van-No-Background.png' },
         ];
         return (
           <>
             <h1 style={headingStyle}>What type of vehicle are you looking for?</h1>
             <p style={subStyle}>Pick the one that fits your lifestyle.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              {options.map((o) => (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {vehicles.map((v) => (
                 <div
-                  key={o.value}
-                  onClick={() => selectAndAdvance('vehicleType', o.value)}
+                  key={v.value}
+                  onClick={() => selectAndAdvance('vehicleType', v.value)}
                   style={{
-                    ...cardStyle(data.vehicleType === o.value),
+                    ...cardStyle(data.vehicleType === v.value),
                     flexDirection: 'column',
-                    padding: '28px 16px',
-                    fontSize: 17,
+                    padding: '20px 12px 16px',
+                    fontSize: 16,
+                    fontWeight: 600,
+                    gap: 0,
                   }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && selectAndAdvance('vehicleType', o.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && selectAndAdvance('vehicleType', v.value)}
                 >
-                  <span style={{ fontSize: 36, marginBottom: 8, display: 'block' }}>
-                    {o.value === 'car' ? '\u{1F697}' : o.value === 'truck' ? '\u{1F6FB}' : o.value === 'suv' ? '\u{1F699}' : '\u{1F690}'}
-                  </span>
-                  <span>{o.label}</span>
+                  <img
+                    src={v.img}
+                    alt={v.label}
+                    style={{
+                      width: '100%',
+                      height: 80,
+                      objectFit: 'contain',
+                      marginBottom: 8,
+                      pointerEvents: 'none',
+                    }}
+                  />
+                  <span>{v.label}</span>
                 </div>
               ))}
             </div>
