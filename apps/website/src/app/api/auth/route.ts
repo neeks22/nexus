@@ -8,8 +8,8 @@ import { rateLimit, getClientIp } from '@/lib/security';
    ============================================================================= */
 
 const PASSWORDS: Record<string, string> = {
-  readycar: (process.env.CRM_PASSWORD_READYCAR || '').trim().replace(/\\n$/, ''),
-  readyride: (process.env.CRM_PASSWORD_READYRIDE || '').trim().replace(/\\n$/, ''),
+  readycar: (process.env.CRM_PASSWORD_READYCAR || '').trim().replace(/[\n\r\\n]+$/, ''),
+  readyride: (process.env.CRM_PASSWORD_READYRIDE || '').trim().replace(/[\n\r\\n]+$/, ''),
 };
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
