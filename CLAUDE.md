@@ -72,6 +72,13 @@ Output quality errors (reprompt/reflect): empty_response, malformed_response, of
 - Create preventive rules to avoid repeating mistakes.
 - Review lessons at the start of each project.
 
+## Self-Healing Rules
+- Always plan before coding
+- If build fails: read error, fix it, rebuild. After 2 fails, ask me.
+- If test fails: check if test is wrong or code is wrong. Fix root cause.
+- Never exceed 85% context — suggest /compact when approaching
+- Save session context on stop for recovery
+
 ## Non-Negotiable Rules
 1. Every API call MUST go through the self-healing pipeline. No raw API calls.
 2. Every error MUST be classified by the error taxonomy. No generic handling.
