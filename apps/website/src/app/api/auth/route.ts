@@ -62,7 +62,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     return NextResponse.json({ authenticated: false }, { status: 401 });
-  } catch (err) {
-    return NextResponse.json({ error: 'Auth failed', debug: String(err) }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'Auth failed' }, { status: 500 });
   }
 }
