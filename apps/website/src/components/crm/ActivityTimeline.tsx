@@ -30,6 +30,52 @@ function tryParseCreditRouting(content: string): { profile: Record<string, strin
   return null;
 }
 
+function tryParseCompletedForm(content: string): Record<string, string> | null {
+  try {
+    const data = JSON.parse(content);
+    if (data.completedAt && (data.monthly_income || data.vehicle_type)) return data;
+  } catch { /* not JSON */ }
+  return null;
+}
+
+function CompletedFormCard({ data }: { data: Record<string, string> }): React.ReactElement {
+  const [expanded, setExpanded] = useState(true);
+  return (
+    <div style={{
+      background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)',
+      borderRadius: '8px', padding: '12px', marginTop: '4px',
+    }}>
+      <div onClick={() => setExpanded(!expanded)} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ color: '#10b981', fontSize: '13px', fontWeight: 600 }}>Qualified Lead Form</span>
+        <span style={{ color: '#666', fontSize: '11px' }}>{expanded ? 'Hide' : 'View'}</span>
+      </div>
+      {expanded && (
+        <div style={{ marginTop: '10px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+          {data.leadName && <FormField label="Name" value={data.leadName} />}
+          {data.phone && <FormField label="Phone" value={data.phone} />}
+          {data.vehicle_type && <FormField label="Vehicle" value={data.vehicle_type} />}
+          {data.monthly_income && <FormField label="Monthly Income" value={'$' + data.monthly_income} />}
+          {data.employment_status && <FormField label="Employment" value={data.employment_status} />}
+          {data.employment_length && <FormField label="Length" value={data.employment_length} />}
+          {data.company_name && <FormField label="Company" value={data.company_name} />}
+          {data.job_title && <FormField label="Job Title" value={data.job_title} />}
+          {data.postal_code && <FormField label="Postal Code" value={data.postal_code} />}
+          {data.date_of_birth && <FormField label="DOB" value={data.date_of_birth} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FormField({ label, value }: { label: string; value: string }): React.ReactElement {
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '4px', padding: '4px 8px' }}>
+      <div style={{ color: '#666', fontSize: '10px', textTransform: 'uppercase' }}>{label}</div>
+      <div style={{ color: '#f0f0f5', fontSize: '13px' }}>{value}</div>
+    </div>
+  );
+}
+
 function CreditRoutingCard({ data }: { data: { profile: Record<string, string>; topLenders: { lender: string; tier: string; rate: string; score: number }[]; routedAt: string } }): React.ReactElement {
   const [expanded, setExpanded] = useState(false);
 
@@ -109,6 +155,7 @@ export default function ActivityTimeline({ entries }: ActivityTimelineProps): Re
       ) : (
         entries.map((entry) => {
           const creditData = entry.channel === 'crm' ? tryParseCreditRouting(entry.content) : null;
+          const formData = entry.channel === 'crm' ? tryParseCompletedForm(entry.content) : null;
           const style = CHANNEL_STYLES[entry.channel] || CHANNEL_STYLES.system;
 
           return (
@@ -134,7 +181,9 @@ export default function ActivityTimeline({ entries }: ActivityTimelineProps): Re
                 {style.label}
               </span>
               <div style={{ flex: 1 }}>
-                {creditData ? (
+                {formData ? (
+                  <CompletedFormCard data={formData} />
+                ) : creditData ? (
                   <CreditRoutingCard data={creditData} />
                 ) : (
                   <div style={{ color: '#ccc', fontSize: '13px', lineHeight: 1.5 }}>

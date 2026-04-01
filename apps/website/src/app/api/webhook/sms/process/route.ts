@@ -143,6 +143,97 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: aiReply, channel: 'sms', intent });
     slackNotify(`SMS REPLY (${tenant.name})\nTo: ${fromPhone}\nReply: ${aiReply.substring(0, 100)}...`);
 
+    // --- FORM EXTRACTION: Check if we can extract qualification data from conversation ---
+    try {
+      const fullConvo = conversationHistory + '\ncustomer: ' + messageBody + '\nai: ' + aiReply;
+      const extractPrompt = `Extract customer qualification data from this car dealership SMS conversation. Return ONLY a JSON object with these fields (use null if not mentioned):
+{"postal_code":null,"date_of_birth":null,"monthly_income":null,"employment_length":null,"company_name":null,"job_title":null,"vehicle_type":null,"employment_status":null}
+
+Rules:
+- postal_code: Canadian format like K1A 0B1
+- date_of_birth: YYYY-MM-DD format
+- monthly_income: number or range like "3500" or "3500-4500"
+- employment_length: like "6 months" or "2 years"
+- company_name: employer name
+- job_title: their job
+- vehicle_type: SUV, truck, sedan, etc.
+- employment_status: employed/self-employed/unemployed
+
+Conversation:
+${fullConvo}
+
+Return ONLY the JSON, nothing else.`;
+
+      const extractResult = await callClaude('You extract structured data from conversations. Return only valid JSON.', extractPrompt, 300);
+
+      if (extractResult) {
+        try {
+          const formData = JSON.parse(extractResult);
+          const nonNullFields = Object.entries(formData).filter(([, v]) => v !== null && v !== '' && v !== 'null');
+
+          if (nonNullFields.length > 0) {
+            // Save extracted form data to lead record
+            await supaPost('lead_transcripts', {
+              tenant_id: tenant.tenant, lead_id: fromPhone,
+              entry_type: 'form_data', role: 'system',
+              content: JSON.stringify(formData), channel: 'crm',
+            });
+
+            // Check if form is complete (need at least 5 of 7 fields)
+            const requiredFields = ['postal_code', 'date_of_birth', 'monthly_income', 'employment_length', 'company_name', 'vehicle_type'];
+            const filledRequired = requiredFields.filter(f => formData[f] !== null && formData[f] !== '' && formData[f] !== 'null');
+
+            if (filledRequired.length >= 5) {
+              // FORM IS COMPLETE — generate lead card and send to rep
+              const leadCard = `NEW QUALIFIED LEAD — ${tenant.name}
+
+Name: ${leadName || 'Unknown'}
+Phone: ${fromPhone}
+Email: ${(await supaGet(`v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=email&limit=1`) as {email?: string}[])[0]?.email || 'N/A'}
+Postal Code: ${formData.postal_code || 'N/A'}
+Date of Birth: ${formData.date_of_birth || 'N/A'}
+Employment: ${formData.employment_status || 'Employed'}
+Monthly Income: $${formData.monthly_income || 'N/A'}
+Employment Length: ${formData.employment_length || 'N/A'}
+Company: ${formData.company_name || 'N/A'}
+Job Title: ${formData.job_title || 'N/A'}
+Vehicle: ${formData.vehicle_type || 'N/A'}
+
+Conversation Summary:
+${fullConvo.split('\n').slice(-10).join('\n')}`;
+
+              // Save form to lead activity
+              await supaPost('lead_transcripts', {
+                tenant_id: tenant.tenant, lead_id: fromPhone,
+                entry_type: 'completed_form', role: 'system',
+                content: JSON.stringify({ ...formData, leadName, phone: fromPhone, completedAt: new Date().toISOString() }),
+                channel: 'crm',
+              });
+
+              // Send to Slack
+              await slackNotify(`QUALIFIED LEAD FORM COMPLETE\n${leadCard}`);
+
+              // Send handoff SMS
+              const handoffMsg = 'I\'m setting up a call for you with our team right now. Someone will call you within the hour to go over everything and get the ball rolling. We handle everything from approval to delivery right to your door.';
+              await sendTwilioSMS(fromPhone, toPhone, handoffMsg);
+              await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: handoffMsg, channel: 'sms' });
+
+              // Pause AI
+              await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'status', role: 'system', content: 'HOT_PAUSED', channel: 'sms' });
+
+              // Update lead status
+              try {
+                await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeURIComponent(fromPhone)}&tenant_id=eq.${tenant.tenant}`, {
+                  method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
+                  body: JSON.stringify({ status: 'credit_app' }), signal: AbortSignal.timeout(5000),
+                });
+              } catch {}
+            }
+          }
+        } catch { /* JSON parse failed, skip */ }
+      }
+    } catch { /* extraction failed, continue */ }
+
     return NextResponse.json({ sent: true, delayed: true });
   } catch (error) {
     console.error('[sms-process] Error:', error);
@@ -183,6 +274,17 @@ Every reply MUST trigger at least one of these 4 emotions:
 - NEVER invite them to "come in", "visit", "stop by", or "come to the dealership". This is a DELIVERY business — 90% of vehicles are delivered directly to the customer's door. Instead say things like "We deliver right to your door" or "I can have it brought to you."
 - When discussing next steps, frame it as: "I can get everything set up and have it delivered to you" — NOT "come in for a test drive."
 - If a customer asks to come in, that's fine — but never suggest it yourself.
+
+## QUALIFICATION — Naturally collect these through conversation (NOT as a form, weave them in):
+Your goal is to learn these details naturally over the conversation. Don't ask them all at once — ask ONE per message, woven into natural conversation:
+1. What kind of vehicle they want (SUV, truck, sedan, etc.)
+2. Are they working? What do they do? (job title + company name)
+3. How long have they been there? (employment length)
+4. What's their monthly take-home? (monthly income)
+5. What's their postal code? (for delivery area + lender matching)
+6. Date of birth (for credit application — ask casually: "Just need your DOB for the lender paperwork")
+
+Once you have most of these, the system will automatically generate a qualified lead form and transfer to the rep. You don't need to announce the transfer — just keep the conversation going naturally until the data is collected.
 
 ## HANDOFF TRIGGERS — When ANY of these happen, your ONLY job is to set up the call:
 - Customer says they want to speak to someone, talk to a rep, get a call
