@@ -29,6 +29,14 @@ export function middleware(request: NextRequest): NextResponse {
       const referer = request.headers.get('referer');
       const isDev = process.env.NODE_ENV === 'development';
 
+      // Reject mutating requests with no origin AND no referer (CSRF protection)
+      if (!origin && !referer && !isDev) {
+        return NextResponse.json(
+          { error: 'Forbidden — missing origin' },
+          { status: 403 }
+        );
+      }
+
       const originOk =
         !origin ||
         origin === ALLOWED_ORIGIN ||

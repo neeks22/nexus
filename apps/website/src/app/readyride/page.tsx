@@ -229,9 +229,8 @@ export default function InboxPage(): React.ReactElement {
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem('readyride_auth') === 'true') {
-      setAuthed(true);
-    }
+    const token = sessionStorage.getItem('readyride_auth');
+    if (token && token.length > 10) setAuthed(true);
   }, []);
 
   if (!authed) {
@@ -364,7 +363,7 @@ function InboxContent(): React.ReactElement {
       if (!res.ok) throw new Error('Failed to send');
 
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.message) {
         // Optimistically add message to thread
         const newMsg: Message = {
           sid: data.message.sid,

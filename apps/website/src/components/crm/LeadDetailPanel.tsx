@@ -24,6 +24,7 @@ interface LeadData {
 interface TimelineEntry {
   id: string;
   time: string;
+  rawTime: string;
   role: string;
   channel: string;
   content: string;
@@ -71,6 +72,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
             smsEntries.push({
               id: m.sid || `sms-${i}`,
               time: new Date(m.dateSent).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+              rawTime: m.dateSent,
               role: m.direction === 'inbound' ? 'customer' : 'ai',
               channel: 'sms',
               content: m.body,
@@ -90,6 +92,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
               crmEntries.push({
                 id: a.id || `crm-${i}`,
                 time: new Date(a.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+                rawTime: a.created_at,
                 role: a.role || 'system',
                 channel: a.channel || 'crm',
                 content: a.content,
@@ -101,8 +104,8 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
 
       // Merge and sort by time (newest first for display, but timeline shows oldest first)
       const allEntries = [...smsEntries, ...crmEntries].sort((a, b) => {
-        const ta = new Date(a.time).getTime() || 0;
-        const tb = new Date(b.time).getTime() || 0;
+        const ta = new Date(a.rawTime).getTime() || 0;
+        const tb = new Date(b.rawTime).getTime() || 0;
         return ta - tb;
       });
 

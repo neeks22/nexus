@@ -45,11 +45,12 @@ export default function PipelineTab({ tenant, onSelectLead }: PipelineTabProps):
 
     // Persist
     try {
-      await fetch('/api/leads', {
+      const res = await fetch('/api/leads', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, status: newStatus, tenant }),
       });
+      if (!res.ok) throw new Error('Failed to update lead status');
     } catch (err) {
       console.error('Failed to update lead status:', err);
       fetchLeads(); // Revert on failure

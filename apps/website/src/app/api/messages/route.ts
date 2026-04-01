@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireApiKey } from '../../../lib/security';
 
 /* =============================================================================
    ENVIRONMENT VARIABLES — never hardcode credentials
@@ -393,6 +394,9 @@ export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
    ============================================================================= */
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  const authError = requireApiKey(request);
+  if (authError) return authError;
+
   const ip = getClientIp(request);
   const origin = request.headers.get('origin');
 

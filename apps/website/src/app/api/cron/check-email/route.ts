@@ -128,6 +128,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ sent: true, intent, shouldHandoff });
   } catch (error) {
     console.error('[check-email] Error:', error);
-    return NextResponse.json({ error: 'Failed', details: String(error) }, { status: 500 });
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

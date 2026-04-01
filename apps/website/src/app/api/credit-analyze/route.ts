@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireApiKey, rateLimit, getClientIp } from '@/lib/security';
 
 const ANTHROPIC_API_KEY = (process.env.ANTHROPIC_API_KEY ?? '').trim();
 
@@ -40,6 +41,16 @@ Be extremely specific with numbers. This data routes to lender matching.
 ${CLIENT_INFO_BLOCK}`;
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  // Auth check
+  const authError = requireApiKey(request);
+  if (authError) return authError;
+
+  // Rate limit: 10 per minute per IP
+  const ip = getClientIp(request);
+  if (rateLimit(ip, 10)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   if (!ANTHROPIC_API_KEY) {
     return NextResponse.json(
       { error: 'Anthropic API key not configured' },

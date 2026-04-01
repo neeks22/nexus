@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { rateLimit, getClientIp } from '@/lib/security';
 
 /* =============================================================================
    AUTH API — Server-side password verification
@@ -12,6 +13,12 @@ const PASSWORDS: Record<string, string> = {
 };
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  // Rate limit: 5 attempts per minute per IP
+  const ip = getClientIp(request);
+  if (rateLimit(ip, 5)) {
+    return NextResponse.json({ error: 'Too many attempts' }, { status: 429 });
+  }
+
   try {
     const body = await request.json();
     const { password, tenant } = body as { password?: string; tenant?: string };
