@@ -7,9 +7,19 @@ import { rateLimit, getClientIp } from '@/lib/security';
    Passwords never appear in client JS bundle
    ============================================================================= */
 
+function cleanEnv(val: string | undefined): string {
+  if (!val) return '';
+  // Vercel CLI appends literal \n to env vars — strip it
+  let clean = val.trim();
+  while (clean.endsWith('\\n') || clean.endsWith('\n')) {
+    clean = clean.slice(0, -2).trim();
+  }
+  return clean;
+}
+
 const PASSWORDS: Record<string, string> = {
-  readycar: (process.env.CRM_PASSWORD_READYCAR || '').trim().replace(/[\n\r\\n]+$/, ''),
-  readyride: (process.env.CRM_PASSWORD_READYRIDE || '').trim().replace(/[\n\r\\n]+$/, ''),
+  readycar: cleanEnv(process.env.CRM_PASSWORD_READYCAR),
+  readyride: cleanEnv(process.env.CRM_PASSWORD_READYRIDE),
 };
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
