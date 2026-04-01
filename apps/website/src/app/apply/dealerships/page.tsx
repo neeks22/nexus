@@ -107,9 +107,9 @@ function AnimatedCheckmark(): React.ReactElement {
 
 function LenderLogos(): React.ReactElement {
   const lenders = [
-    { name: 'CIBC', bg: '#016642', color: '#FFFFFF' },
-    { name: 'TD', bg: '#008A4C', color: '#FFFFFF' },
-    { name: 'iA Financial', bg: '#003DA5', color: '#FFFFFF' },
+    { name: 'CIBC', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/4/48/CIBC_logo_2021.svg/500px-CIBC_logo_2021.svg.png' },
+    { name: 'TD', logo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Toronto-Dominion_Bank_logo.svg/500px-Toronto-Dominion_Bank_logo.svg.png' },
+    { name: 'iA Financial', logo: 'https://upload.wikimedia.org/wikipedia/en/thumb/1/10/IA_Financial_Group_logo.svg/500px-IA_Financial_Group_logo.svg.png' },
   ];
   return (
     <div style={{ marginTop: 32, textAlign: 'center' as const }}>
@@ -126,23 +126,28 @@ function LenderLogos(): React.ReactElement {
       <div style={{
         display: 'flex',
         justifyContent: 'center',
-        gap: 10,
+        alignItems: 'center',
+        gap: 24,
         flexWrap: 'wrap' as const,
       }}>
         {lenders.map((l) => (
-          <span key={l.name} style={{
-            display: 'inline-flex',
+          <div key={l.name} style={{
+            display: 'flex',
             alignItems: 'center',
-            padding: '6px 16px',
-            borderRadius: 20,
-            backgroundColor: l.bg,
-            color: l.color,
-            fontSize: 13,
-            fontWeight: 700,
-            letterSpacing: '0.02em',
+            justifyContent: 'center',
+            padding: '8px 12px',
+            borderRadius: 8,
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E5E7EB',
+            height: 44,
+            minWidth: 80,
           }}>
-            {l.name}
-          </span>
+            <img
+              src={l.logo}
+              alt={l.name}
+              style={{ height: 28, maxWidth: 100, objectFit: 'contain' as const }}
+            />
+          </div>
         ))}
       </div>
     </div>
