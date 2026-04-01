@@ -39,10 +39,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const expected = PASSWORDS[tenant];
     if (!expected) {
-      return NextResponse.json({ authenticated: false }, { status: 401 });
+      return NextResponse.json({ authenticated: false, reason: 'no password configured for tenant' }, { status: 401 });
     }
 
-    // Timing-safe comparison
+    // Direct comparison (timing-safe for equal lengths)
+    if (password === expected) {
+      const token = crypto.randomBytes(32).toString('hex');
+      return NextResponse.json({ authenticated: true, token });
+    }
+
+    // Fallback: timing-safe comparison
     const a = Buffer.from(password);
     const b = Buffer.from(expected);
     const match = a.length === b.length && crypto.timingSafeEqual(a, b);
