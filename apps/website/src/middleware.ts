@@ -29,8 +29,13 @@ export function middleware(request: NextRequest): NextResponse {
       const referer = request.headers.get('referer');
       const isDev = process.env.NODE_ENV === 'development';
 
+      // Exempt webhook and cron endpoints from CSRF (they have their own auth: Twilio signature, API keys, secrets)
+      const path = request.nextUrl.pathname;
+      const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/');
+
       // Reject mutating requests with no origin AND no referer (CSRF protection)
-      if (!origin && !referer && !isDev) {
+      // But allow webhooks/crons since external services (Twilio, Gmail) don't send origin headers
+      if (!origin && !referer && !isDev && !isWebhookOrCron) {
         return NextResponse.json(
           { error: 'Forbidden — missing origin' },
           { status: 403 }
