@@ -9,12 +9,8 @@ import { rateLimit, getClientIp } from '@/lib/security';
 
 function cleanEnv(val: string | undefined): string {
   if (!val) return '';
-  // Vercel CLI appends literal \n to env vars — strip it
-  let clean = val.trim();
-  while (clean.endsWith('\\n') || clean.endsWith('\n')) {
-    clean = clean.slice(0, -2).trim();
-  }
-  return clean;
+  // Vercel CLI appends literal \n to env vars — strip all trailing whitespace, newlines, and backslash-n
+  return val.replace(/\\n$/g, '').replace(/\n$/g, '').trim();
 }
 
 const PASSWORDS: Record<string, string> = {
@@ -30,7 +26,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const body = await request.json();
+    let body;
+    try {
+      const text = await request.text();
+      body = JSON.parse(text);
+    } catch {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+    }
     const { password, tenant } = body as { password?: string; tenant?: string };
 
     if (!password || !tenant) {
