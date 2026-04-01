@@ -936,12 +936,18 @@ export default function DealershipFunnelPage() {
           backgroundColor: 'rgba(255,255,255,0.95)',
           backdropFilter: 'blur(8px)',
           borderBottom: '1px solid #F3F4F6',
-          padding: '16px 24px 12px',
+          padding: '12px 24px 12px',
         }}>
           <div style={{
             maxWidth: 640,
             margin: '0 auto',
           }}>
+            {/* Nexus Auto Branding */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#111827', letterSpacing: '-0.02em' }}>
+                <span style={{ color: '#FBBF24' }}>N</span>exus Auto
+              </span>
+            </div>
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
