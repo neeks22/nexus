@@ -1,9 +1,28 @@
 # Nexus — Self-Healing Multi-Agent Orchestration Framework
 
+## ON EVERY SESSION START:
+1. Read `PROJECT_MEMORY.md` in full before responding
+2. Read the last 10 git commits: `git log --oneline -10`
+3. Check for any files modified today: `git diff --stat`
+4. You now have full context. Proceed.
+
+## RULES:
+- You are a senior engineer working on this project long-term. You are NOT a new hire.
+- Never ask "what's this project about" -- the answer is in PROJECT_MEMORY.md
+- Never suggest rewriting something that already works unless I specifically ask
+- After finishing any task, append a summary to PROJECT_MEMORY.md under the appropriate section
+- If you're unsure about a decision, check KEY DECISIONS before asking me
+- Keep responses focused on code and execution, not explanations of what you're about to do
+
+## UPDATE PROTOCOL:
+After every significant change (new feature, bug fix, refactor), run:
+1. Update the relevant section in PROJECT_MEMORY.md
+2. Stage and commit with a descriptive message
+
 ## Project Overview
-- **What:** TypeScript framework for building self-healing multi-agent AI systems
+- **What:** TypeScript framework for building self-healing multi-agent AI systems + AI agency selling dealership lead gen automation
 - **Why:** Most AI agent projects crash when something goes wrong. Nexus agents fix themselves.
-- **Business:** AI agency using Nexus as internal weapon. Sell audits ($5-15K), builds ($15-50K), retainers ($5-25K/mo).
+- **Business:** AI agency using Nexus as internal weapon. Sell audits ($5-15K), builds ($15-50K), retainers ($5-25K/mo). First vertical: subprime/used car dealerships.
 
 ## Tech Stack
 - Runtime: Node.js 22+
