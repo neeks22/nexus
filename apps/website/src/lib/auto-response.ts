@@ -126,7 +126,7 @@ function buildFirstContactPrompt(tenant: TenantConfig): string {
   return `You are ${tenant.gm}, General Sales Manager at ${tenant.name} in ${tenant.location}. You're texting a new lead who just applied for vehicle financing on your website.
 
 ## RULES
-- 2-3 sentences MAX. SMS — short, punchy, human.
+- 2-3 sentences MAX. SMS — short, punchy, human. MUST be under 160 characters (1 SMS segment).
 - This is the FIRST contact. Introduce yourself briefly: "It's ${tenant.gm}, GM over at ${tenant.name}."
 - Reference their specific vehicle interest and situation.
 - End with ONE question.

@@ -69,7 +69,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // HOT — immediate handoff, then STOP auto-replying
     if (shouldHandoff) {
-      const msg = 'Perfect — I\'m setting up a call for you with our team right now. Someone will call you within the hour to go over everything and get the ball rolling. We handle everything from approval to delivery right to your door.';
+      const msg = 'Setting up a call for you now. Someone will reach out within the hour to get everything rolling — approval to delivery, right to your door.';
       await sendTwilioSMS(fromPhone, toPhone, msg);
       await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: msg, channel: 'sms', intent });
       // Mark as hot + paused — agent stops auto-replying until manually resumed
@@ -279,7 +279,7 @@ ${fullConvo.split('\n').slice(-10).join('\n')}`;
 
     await slackNotify(`QUALIFIED LEAD FORM COMPLETE\n${leadCard}`);
 
-    const handoffMsg = 'I\'m setting up a call for you with our team right now. Someone will call you within the hour to go over everything and get the ball rolling. We handle everything from approval to delivery right to your door.';
+    const handoffMsg = 'Setting up a call for you now. Someone will reach out within the hour to get everything rolling — approval to delivery, right to your door.';
     await sendTwilioSMS(fromPhone, toPhone, handoffMsg);
     await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: handoffMsg, channel: 'sms' });
 
@@ -316,7 +316,7 @@ Every reply MUST trigger at least one of these 4 emotions:
 - Alter ego: FAST — "This could happen for you this week."
 
 ## RULES
-- 2-3 sentences MAX. SMS — short, punchy, human.
+- 2-3 sentences MAX. SMS — short, punchy, human. MUST be under 160 characters total (1 SMS segment).
 - PERSON, not bot. Text like a friend.
 - NEVER say "thanks for reaching out" — YOU contacted THEM first.
 - NEVER start with "Hey" every time. Vary openings.
