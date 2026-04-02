@@ -50,16 +50,10 @@ function isRateLimited(ip: string): boolean {
   return false;
 }
 
-// Periodic cleanup to prevent memory leak
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of Array.from(rateLimitMap.entries())) {
-    entry.timestamps = entry.timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-    if (entry.timestamps.length === 0) {
-      rateLimitMap.delete(ip);
-    }
-  }
-}, 120_000);
+// NOTE: setInterval removed — on Vercel serverless, each invocation gets a fresh
+// instance so in-memory rate limiting is best-effort. A persistent store (e.g.
+// Upstash Redis) is needed for production-grade rate limiting. Cleanup happens
+// inline inside isRateLimited() via the timestamp filter on each call.
 
 /* =============================================================================
    INPUT VALIDATION

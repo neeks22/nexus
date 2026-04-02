@@ -81,8 +81,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const nameMatch = (from || '').match(/^([^<]+)</);
     const senderName = nameMatch ? sanitizeInput(nameMatch[1].trim(), 100) : '';
 
-    // Log inbound
-    supaPost('lead_transcripts', {
+    // Log inbound — must await on Vercel or the promise gets killed
+    await supaPost('lead_transcripts', {
       tenant_id: tenant, lead_id: senderEmail, entry_type: 'message',
       role: 'customer', content: emailBody.substring(0, 500), channel: 'email',
     });
@@ -127,8 +127,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    supaPost('lead_transcripts', { tenant_id: tenant, lead_id: senderEmail, entry_type: 'message', role: 'ai', content: aiReply, channel: 'email', intent });
-    slackNotify(`EMAIL REPLY SENT\nTo: ${senderEmail}\nIntent: ${intent}\nHandoff: ${shouldHandoff}`);
+    await supaPost('lead_transcripts', { tenant_id: tenant, lead_id: senderEmail, entry_type: 'message', role: 'ai', content: aiReply, channel: 'email', intent });
+    await slackNotify(`EMAIL REPLY SENT\nTo: ${senderEmail}\nIntent: ${intent}\nHandoff: ${shouldHandoff}`);
 
     return NextResponse.json({ action: 'sent', intent, shouldHandoff });
   } catch (error) {

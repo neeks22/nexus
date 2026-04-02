@@ -108,6 +108,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ];
     }
 
+    // 8s timeout to stay within Vercel's 10s function limit
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -120,6 +121,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         max_tokens: type === 'pdf' ? 1500 : 1000,
         messages,
       }),
+      signal: AbortSignal.timeout(8000),
     });
 
     if (!res.ok) {

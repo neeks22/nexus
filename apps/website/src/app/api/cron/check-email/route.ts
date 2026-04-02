@@ -114,7 +114,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         const data = await res.json();
         aiReply = data.content?.[0]?.text || '';
       }
-    } catch { /* Claude failed */ }
+    } catch (err) { console.error('[check-email] Claude API call failed:', err instanceof Error ? err.message : 'unknown'); }
 
     if (!aiReply) {
       aiReply = `I'd love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I'm here whenever you're ready.\n\n${tenantCfg.gm}\nGeneral Sales Manager\n${tenantCfg.signoff}`;
@@ -129,16 +129,16 @@ export async function POST(request: Request): Promise<NextResponse> {
       ...(inReplyTo ? { inReplyTo, references: inReplyTo } : {}),
     });
 
-    // Log
-    fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts`, {
+    // Log — must await on Vercel or unawaited promises get killed
+    await fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts`, {
       method: 'POST', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
       body: JSON.stringify({ tenant_id: tenant, lead_id: senderEmail || to, entry_type: 'message', role: 'ai', content: aiReply, channel: 'email', intent }),
-    }).catch(() => {});
+    }).catch((err) => { console.error('[check-email] Supabase log failed:', err instanceof Error ? err.message : 'unknown'); });
 
-    fetch(SLACK_WEBHOOK, {
+    await fetch(SLACK_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: `EMAIL REPLY SENT\nTo: ${to}\nIntent: ${intent}\nHandoff: ${shouldHandoff}` }),
-    }).catch(() => {});
+    }).catch((err) => { console.error('[check-email] Slack notify failed:', err instanceof Error ? err.message : 'unknown'); });
 
     return NextResponse.json({ sent: true, intent, shouldHandoff });
   } catch (error) {

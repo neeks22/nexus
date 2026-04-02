@@ -1,3 +1,9 @@
+-- DISABLED: This migration contains a hardcoded encryption key ('nexus-pii-key-2026')
+-- which is a critical security vulnerability. Use 002_pii_encryption.sql instead,
+-- which reads the key from Supabase Vault at runtime.
+-- Renamed to .DISABLED so it will not be executed accidentally.
+--
+-- Original file: 002_pii_encryption_simple.sql
 -- NEXUS PII ENCRYPTION (Simple version — no Vault dependency)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
