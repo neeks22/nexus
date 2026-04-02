@@ -165,17 +165,33 @@ const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_RE
     })
   : null;
 
-const upstashRateLimiter = redis
-  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '60 s') })
-  : null;
+// Per-route rate limiter factory (respects caller's maxRequests instead of hardcoding 30)
+const rateLimiters = new Map<string, Ratelimit>();
+
+function getRateLimiter(maxRequests: number, windowSec: number = 60): Ratelimit | null {
+  if (!redis) return null;
+  const key = `${maxRequests}:${windowSec}`;
+  let limiter = rateLimiters.get(key);
+  if (!limiter) {
+    limiter = new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(maxRequests, `${windowSec} s`) });
+    rateLimiters.set(key, limiter);
+  }
+  return limiter;
+}
 
 // Fallback in-memory store when Upstash env vars aren't set
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
 export async function rateLimit(ip: string, maxRequests: number = 30, windowMs: number = 60000): Promise<boolean> {
-  if (upstashRateLimiter) {
-    const { success } = await upstashRateLimiter.limit(ip);
-    return !success; // returns true if LIMITED
+  const windowSec = Math.round(windowMs / 1000);
+  const limiter = getRateLimiter(maxRequests, windowSec);
+  if (limiter) {
+    try {
+      const { success } = await limiter.limit(ip);
+      return !success; // returns true if LIMITED
+    } catch (err) {
+      console.error('[rateLimit] Upstash error, falling back to in-memory:', err instanceof Error ? err.message : 'unknown');
+    }
   }
   // Fallback: in-memory best-effort (serverless caveat — resets on cold start)
   const now = Date.now();

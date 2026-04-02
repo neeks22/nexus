@@ -99,6 +99,9 @@ function unauthorizedResponse(path: string, request: NextRequest, message: strin
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const path = request.nextUrl.pathname;
 
+  // Track verified session tenant for downstream header injection
+  let verifiedTenant: string | null = null;
+
   // ----- CRM session verification for protected routes -----
   if (isProtectedRoute(path)) {
     // No secret configured = can't verify sessions = deny access
@@ -123,7 +126,22 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       if (!session) {
         return unauthorizedResponse(path, request, 'Invalid or expired session');
       }
-      // Session valid — continue to the route
+
+      // Tenant scope check: /readycar routes require readycar session, /readyride requires readyride
+      const sessionTenant = session.tenant;
+      if (path.startsWith('/readycar') && sessionTenant !== 'readycar') {
+        const res = NextResponse.redirect(new URL('/inbox', request.url));
+        res.cookies.delete('nexus_session');
+        return res;
+      }
+      if (path.startsWith('/readyride') && sessionTenant !== 'readyride') {
+        const res = NextResponse.redirect(new URL('/inbox', request.url));
+        res.cookies.delete('nexus_session');
+        return res;
+      }
+
+      // Store verified tenant for header injection after CSRF checks
+      verifiedTenant = sessionTenant;
     }
   }
 
@@ -135,6 +153,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  response.headers.set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.twilio.com https://*.sentry.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self'");
 
   // ----- CSRF: validate Origin on mutating requests to /api/* -----
   if (path.startsWith('/api/')) {
@@ -178,6 +198,11 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
+  }
+
+  // Inject verified tenant header for API route handlers (cross-tenant data access prevention)
+  if (verifiedTenant) {
+    response.headers.set('x-session-tenant', verifiedTenant);
   }
 
   return response;
