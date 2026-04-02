@@ -88,10 +88,10 @@ async function insertLead(lead: FunnelLead, normalizedPhone: string, tenant: Ten
   await supaPost('funnel_submissions', {
     tenant_id: tenant.tenantId,
     vehicle_type: lead.vehicleType,
-    budget_range: lead.budget,
+    budget_range: lead.budget || null,
     employment: lead.employment,
     credit_situation: lead.creditSituation,
-    has_trade_in: lead.tradeIn === 'Yes',
+    has_trade_in: lead.tradeIn ? lead.tradeIn === 'Yes' : null,
     first_name: lead.firstName,
     last_name: lead.lastName,
     phone: normalizedPhone,

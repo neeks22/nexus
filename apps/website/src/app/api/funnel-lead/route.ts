@@ -108,17 +108,15 @@ const emailSchema = z
 
 const FunnelLeadSchema = z.object({
   vehicleType: safeGeneralString,
-  budget: safeGeneralString,
+  employmentStatus: safeGeneralString,
   monthlyIncome: safeGeneralString,
-  jobTitle: safeGeneralString,
-  employment: safeGeneralString,
+  jobDuration: safeGeneralString.optional().default(''),
   creditSituation: safeGeneralString,
-  tradeIn: safeGeneralString,
-  tradeInYear: safeGeneralString.optional().default(''),
   firstName: safeNameString,
   lastName: safeNameString,
   phone: phoneSchema,
   email: emailSchema,
+  preferredContact: z.string().max(50).optional().default(''),
   caslConsent: z.literal(true, {
     errorMap: () => ({ message: 'CASL consent is required' }),
   }),
@@ -240,13 +238,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       phone: body.phone,
       email: body.email,
       vehicleType: body.vehicleType,
-      budget: body.budget,
+      budget: '',
       monthlyIncome: body.monthlyIncome,
-      jobTitle: body.jobTitle,
-      employment: body.employment,
+      jobTitle: body.jobDuration || '',
+      employment: body.employmentStatus,
       creditSituation: body.creditSituation,
-      tradeIn: body.tradeIn,
-      tradeInYear: body.tradeInYear || '',
+      tradeIn: '',
+      tradeInYear: '',
       utmSource: body.utmSource || '',
       utmMedium: body.utmMedium || '',
       utmCampaign: body.utmCampaign || '',
@@ -254,7 +252,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Log only non-PII identifiers server-side
     console.log(
-      `[funnel-lead] Lead submitted | vehicle=${body.vehicleType} budget=${body.budget} ` +
+      `[funnel-lead] Lead submitted | vehicle=${body.vehicleType} employment=${body.employmentStatus} ` +
         `credit=${body.creditSituation} utm_source=${body.utmSource || 'direct'}`
     );
 
@@ -271,13 +269,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         source: 'funnel',
         funnelData: {
           vehicleType: body.vehicleType,
-          budget: body.budget,
           monthlyIncome: body.monthlyIncome,
-          jobTitle: body.jobTitle,
-          employment: body.employment,
+          employmentStatus: body.employmentStatus,
+          jobDuration: body.jobDuration,
           creditSituation: body.creditSituation,
-          tradeIn: body.tradeIn,
-          tradeInYear: body.tradeInYear,
         },
         contact: {
           firstName: body.firstName,
