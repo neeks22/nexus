@@ -1,3 +1,5 @@
+const { withSentryConfig } = require('@sentry/nextjs');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -51,4 +53,11 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG || 'nexus-auto',
+  project: process.env.SENTRY_PROJECT || 'website',
+  silent: true,
+  widenClientFileUpload: true,
+  disableLogger: true,
+  hideSourceMaps: true,
+});
