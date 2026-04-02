@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput } from '../../../../lib/security';
 
 /* ---------- Tenant email config ---------- */
@@ -133,6 +134,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ action: 'sent', intent, shouldHandoff });
   } catch (error) {
     console.error('[email-agent] Error:', error instanceof Error ? error.message : 'unknown');
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

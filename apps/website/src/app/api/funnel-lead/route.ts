@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import * as Sentry from '@sentry/nextjs';
 import { handleAutoResponse } from '../../../lib/auto-response';
 import { rateLimit, getClientIp as sharedGetClientIp } from '../../../lib/security';
 
@@ -229,6 +230,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await Promise.allSettled([
       handleAutoResponse(lead, body.tenant).catch((err) => {
         console.error('[funnel-lead] Auto-response error:', err instanceof Error ? err.message : 'unknown');
+        Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       }),
       fetch(N8N_WEBHOOK_URL, {
         method: 'POST',
@@ -266,6 +268,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         signal: AbortSignal.timeout(10000),
       }).catch((err) => {
         console.error('[funnel-lead] n8n webhook failed:', err instanceof Error ? err.message : 'unknown');
+        Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       }),
     ]);
 
@@ -278,6 +281,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       '[funnel-lead] Error processing lead:',
       error instanceof Error ? error.message : 'Unknown error'
     );
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
 
     return NextResponse.json(
       { error: 'Failed to process application. Please try again.' },

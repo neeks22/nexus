@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { requireApiKey, rateLimit as sharedRateLimit } from '../../../lib/security';
 
 /* =============================================================================
@@ -419,6 +420,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   } catch (error: unknown) {
     // NEVER expose error details to client
     console.error('[messages] Error fetching messages:', error instanceof Error ? error.message : 'Unknown error');
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json(
       { error: 'Failed to fetch messages' },
       { status: 500, headers: securityHeaders(origin) }
@@ -542,6 +544,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   } catch (error: unknown) {
     // NEVER expose error details to client
     console.error('[messages] Error sending message:', error instanceof Error ? error.message : 'Unknown error');
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json(
       { error: 'Failed to send message' },
       { status: 500, headers: securityHeaders(origin) }

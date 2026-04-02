@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { requireApiKey, rateLimit, getClientIp } from '@/lib/security';
 
 const ANTHROPIC_API_KEY = (process.env.ANTHROPIC_API_KEY ?? '').trim();
@@ -154,6 +155,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ analysis, clientInfo });
   } catch (err) {
     console.error('Credit analyze error:', err);
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

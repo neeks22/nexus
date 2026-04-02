@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 // TODO: Switch GET reads to supaAnonHeaders(tenant) once RLS policies (migration 005) are deployed
 // and the anon key has confirmed SELECT permissions on funnel_submissions and lead_transcripts.
 // Until then, service role is required to avoid breaking reads in production.
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ activity: merged }, { headers: { 'Cache-Control': 'no-store' } });
     } catch (err) {
       console.error('[leads] Activity fetch error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       return NextResponse.json({ activity: [] });
     }
   }
@@ -73,6 +75,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ leads: await res.json() }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {
     console.error('[leads] GET error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
   }
 }
@@ -89,6 +92,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     body = await request.json();
   } catch (err) {
     console.error('[leads] PATCH parse error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -109,6 +113,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[leads] PATCH error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
 }
@@ -125,6 +130,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     postBody = await request.json();
   } catch (err) {
     console.error('[leads] POST parse error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -185,6 +191,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[leads] POST error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
   }
 }
@@ -198,6 +205,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     deleteBody = await request.json();
   } catch (err) {
     console.error('[leads] DELETE parse error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -218,6 +226,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true, message: 'All customer data deleted' });
   } catch (err) {
     console.error('[leads] DELETE error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
   }
 }

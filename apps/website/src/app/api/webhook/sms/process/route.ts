@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL } from '../../../../../lib/security';
 
 /* =============================================================================
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         });
       } catch (err) {
         console.error('[sms-process] Failed to PATCH lead status to appointment:', err instanceof Error ? err.message : 'unknown');
+        Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       }
       await slackNotify(`HOT LEAD HANDOFF — AI PAUSED\nPhone: ***${fromPhone.slice(-4)}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nAI will NOT auto-reply until manually resumed in CRM.`);
       return NextResponse.json({ sent: true, immediate: true, handoff: true, paused: true });
@@ -141,6 +143,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (history.length > 0) conversationHistory = history.reverse().map(m => `${m.role}: ${m.content}`).join('\n');
     } catch (err) {
       console.error('[sms-process] Failed to load conversation history:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     }
 
     // Lookup lead name
@@ -152,6 +155,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (leads.length > 0) leadName = [leads[0].first_name, leads[0].last_name].filter(Boolean).join(' ');
     } catch (err) {
       console.error('[sms-process] Failed to lookup lead name:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     }
 
     // Sanitize customer message to prevent prompt injection
@@ -183,11 +187,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const fullConvo = conversationHistory + '\ncustomer: ' + messageBody + '\nai: ' + aiReply;
     runFormExtraction(fullConvo, tenant, fromPhone, toPhone, leadName).catch((err) => {
       console.error('[sms-process] Form extraction background error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     });
 
     return NextResponse.json({ sent: true, delayed: true });
   } catch (error) {
     console.error('[sms-process] Error:', error);
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
   }
 }
@@ -286,6 +292,7 @@ ${fullConvo.split('\n').slice(-10).join('\n')}`;
       });
     } catch (err) {
       console.error('[sms-process] Failed to update lead status:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     }
   }
 }

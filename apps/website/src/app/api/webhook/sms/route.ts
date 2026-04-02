@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { TENANT_MAP, validateTwilioSignature, rateLimit, getClientIp } from '../../../../lib/security';
 
 /* =============================================================================
@@ -66,6 +67,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     signal: AbortSignal.timeout(55000),
   }).catch((err) => {
     console.error('[sms-webhook] Failed to trigger process:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
   });
 
   return new NextResponse(TWIML_OK, { status: 200, headers: { 'Content-Type': 'text/xml' } });

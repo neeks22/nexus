@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { GMAIL_USER, GMAIL_PASS, ANTHROPIC_KEY, SLACK_WEBHOOK, CRON_SECRET, SUPABASE_URL, SUPABASE_KEY, supaHeaders as _supaHeaders } from '../../../../lib/security';
 
 /* ---------- Tenant email config ---------- */
@@ -114,7 +115,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         const data = await res.json();
         aiReply = data.content?.[0]?.text || '';
       }
-    } catch (err) { console.error('[check-email] Claude API call failed:', err instanceof Error ? err.message : 'unknown'); }
+    } catch (err) { console.error('[check-email] Claude API call failed:', err instanceof Error ? err.message : 'unknown'); Sentry.captureException(err instanceof Error ? err : new Error(String(err))); }
 
     if (!aiReply) {
       aiReply = `I'd love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I'm here whenever you're ready.\n\n${tenantCfg.gm}\nGeneral Sales Manager\n${tenantCfg.signoff}`;
@@ -133,16 +134,17 @@ export async function POST(request: Request): Promise<NextResponse> {
     await fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts`, {
       method: 'POST', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
       body: JSON.stringify({ tenant_id: tenant, lead_id: senderEmail || to, entry_type: 'message', role: 'ai', content: aiReply, channel: 'email', intent }),
-    }).catch((err) => { console.error('[check-email] Supabase log failed:', err instanceof Error ? err.message : 'unknown'); });
+    }).catch((err) => { console.error('[check-email] Supabase log failed:', err instanceof Error ? err.message : 'unknown'); Sentry.captureException(err instanceof Error ? err : new Error(String(err))); });
 
     await fetch(SLACK_WEBHOOK, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: `EMAIL REPLY SENT\nTo: ${to}\nIntent: ${intent}\nHandoff: ${shouldHandoff}` }),
-    }).catch((err) => { console.error('[check-email] Slack notify failed:', err instanceof Error ? err.message : 'unknown'); });
+    }).catch((err) => { console.error('[check-email] Slack notify failed:', err instanceof Error ? err.message : 'unknown'); Sentry.captureException(err instanceof Error ? err : new Error(String(err))); });
 
     return NextResponse.json({ sent: true, intent, shouldHandoff });
   } catch (error) {
     console.error('[check-email] Error:', error instanceof Error ? error.message : 'unknown');
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }

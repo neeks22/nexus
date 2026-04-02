@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/nextjs';
 import { supaGet, supaPost, sendTwilioSMS, slackNotify, callClaude, GMAIL_USER, GMAIL_PASS } from './security';
 
 /* =============================================================================
@@ -84,6 +85,7 @@ async function isDuplicate(phone: string, tenantId: string): Promise<boolean> {
     return (data as { id: string }[]).length > 0;
   } catch (err) {
     console.error('[auto-response] Dedup check failed:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return true; // Safe default: treat as duplicate rather than risk double-sending
   }
 }
@@ -165,6 +167,7 @@ async function sendSMS(lead: FunnelLead, normalizedPhone: string, tenant: Tenant
 
   if (!sent) {
     console.error('[auto-response] Twilio SMS failed for', normalizedPhone);
+    Sentry.captureException(new Error(`[auto-response] Twilio SMS failed for ${normalizedPhone}`));
     await slackNotify(`AUTO-RESPONSE SMS FAILED\nLead: ${lead.firstName} ${lead.lastName}\nPhone: ***${normalizedPhone.slice(-4)}\nPlease follow up manually.`);
     return;
   }
@@ -268,6 +271,7 @@ To unsubscribe, reply "unsubscribe". ${tenant.name} | ${tenant.location}`;
     });
   } catch (err) {
     console.error('[auto-response] Email send failed:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     await slackNotify(`AUTO-RESPONSE EMAIL FAILED\nLead: ${lead.firstName} ${lead.lastName}\nEmail: ${lead.email}\nError: ${err instanceof Error ? err.message : 'unknown'}`);
   }
 }
@@ -295,6 +299,7 @@ export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'r
       await insertLead(lead, normalizedPhone, tenant);
     } catch (err) {
       console.error('[auto-response] insertLead failed (continuing with SMS+email):', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       await slackNotify(`AUTO-RESPONSE: Supabase insert failed but sending SMS+email anyway\nLead: ${lead.firstName} ${lead.lastName}\nError: ${err instanceof Error ? err.message : 'unknown'}`).catch(() => {});
     }
 
@@ -315,6 +320,7 @@ export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'r
     console.log(`[auto-response] Lead processed: ${lead.firstName} — SMS + email sent`);
   } catch (err) {
     console.error('[auto-response] Fatal error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     try {
       await slackNotify(`AUTO-RESPONSE FATAL ERROR\nLead: ${lead.firstName} ${lead.lastName}\nError: ${err instanceof Error ? err.message : 'unknown'}\nPlease follow up manually.`);
     } catch (slackErr) {
