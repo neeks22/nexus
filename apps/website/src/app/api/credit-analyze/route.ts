@@ -58,8 +58,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  let analyzeBody;
   try {
-    const body = await request.json();
+    analyzeBody = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  try {
+    const body = analyzeBody;
     const { type, text, pdfBase64 } = body as {
       type: 'text' | 'pdf';
       text?: string;

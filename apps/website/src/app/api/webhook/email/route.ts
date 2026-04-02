@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput } from '../../../../lib/security';
 
+/* ---------- Tenant email config ---------- */
+const TENANT_EMAIL_CONFIG: Record<string, { fromName: string; gm: string; phone: string; signoff: string }> = {
+  readycar: { fromName: 'Nicolas Sayah | ReadyCar', gm: 'Nicolas', phone: '613-363-4494', signoff: 'ReadyCar | 613-363-4494 | readycar.ca/inventory/used/' },
+  readyride: { fromName: 'Moe | ReadyRide', gm: 'Moe', phone: '613-983-9834', signoff: 'ReadyRide | 613-983-9834' },
+};
+
 /* =============================================================================
    EMAIL WEBHOOK — Receives email data, generates AI reply, sends via SMTP
    Security: API key or same-origin required + rate limiting
@@ -26,8 +32,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  let emailPayload;
   try {
-    const body = await request.json();
+    emailPayload = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  try {
+    const body = emailPayload;
     const { from, fromEmail, subject, textBody, htmlBody, tenant: tenantId } = body as {
       from?: string; fromEmail?: string; subject?: string;
       textBody?: string; htmlBody?: string; tenant?: string;
@@ -37,6 +50,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const emailBody = sanitizeInput(textBody || (htmlBody || '').replace(/<[^>]*>/g, ' '), 2000);
     const emailSubject = sanitizeInput(subject || '', 200);
     const tenant = tenantId === 'readyride' ? 'readyride' : 'readycar';
+    const tenantCfg = TENANT_EMAIL_CONFIG[tenant] || TENANT_EMAIL_CONFIG.readycar;
 
     if (!senderEmail || !emailBody) {
       return NextResponse.json({ error: 'Missing from or body' }, { status: 400 });
@@ -79,9 +93,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         const nodemailer = await import('nodemailer');
         const transport = nodemailer.default.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_PASS } });
         await transport.sendMail({
-          from: `"Nicolas Sayah | ReadyCar" <${GMAIL_USER}>`, to: senderEmail,
+          from: `"${tenantCfg.fromName}" <${GMAIL_USER}>`, to: senderEmail,
           subject: `Re: ${emailSubject}`,
-          text: 'Hi,\n\nNo problem at all — I\'ve removed you from our list. Wishing you all the best.\n\nNicolas\nGeneral Sales Manager\nReadyCar | 613-363-4494',
+          text: `Hi,\n\nNo problem at all — I've removed you from our list. Wishing you all the best.\n\n${tenantCfg.gm}\nGeneral Sales Manager\n${tenantCfg.signoff}`,
         });
       }
       return NextResponse.json({ action: 'sent', intent: 'UNSUBSCRIBE' });
@@ -95,12 +109,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     else if (/\b(how much|price|cost|payment|monthly)\b/i.test(lower)) { intent = 'PRICING'; }
 
     // AI reply
-    const systemPrompt = 'You are Nicolas, General Sales Manager at ReadyCar in Ottawa. Reply to customer emails. Warm, personal, professional. 3-5 short paragraphs. NEVER discuss pricing/payments/rates. NEVER guarantee approval. Ask 1-2 follow-up questions. Do NOT start with Hey. Do NOT sign off with "- Nicolas". End naturally. Sign off as Nicolas, General Sales Manager, ReadyCar | 613-363-4494 | readycar.ca/inventory/used/';
+    const systemPrompt = `You are ${tenantCfg.gm}, General Sales Manager at ${tenant === 'readyride' ? 'ReadyRide' : 'ReadyCar'} in Ottawa. Reply to customer emails. Warm, personal, professional. 3-5 short paragraphs. NEVER discuss pricing/payments/rates. NEVER guarantee approval. Ask 1-2 follow-up questions. Do NOT start with Hey. Do NOT sign off with "- ${tenantCfg.gm}". End naturally. Sign off as ${tenantCfg.gm}, General Sales Manager, ${tenantCfg.signoff}`;
     const userMsg = `Customer ${senderName} (${senderEmail}) replied. Intent: ${intent}. Message:\n\n"${emailBody.substring(0, 1000)}"\n\nWrite a personalized reply. You reached out first — do NOT thank them for reaching out.`;
 
     let aiReply = await callClaude(systemPrompt, userMsg, 500);
     if (!aiReply) {
-      aiReply = 'I\'d love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I\'m here whenever you\'re ready.\n\nNicolas\nGeneral Sales Manager\nReadyCar | 613-363-4494';
+      aiReply = `I'd love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I'm here whenever you're ready.\n\n${tenantCfg.gm}\nGeneral Sales Manager\n${tenantCfg.signoff}`;
     }
 
     // Send
@@ -108,7 +122,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const nodemailer = await import('nodemailer');
       const transport = nodemailer.default.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_PASS } });
       await transport.sendMail({
-        from: `"Nicolas Sayah | ReadyCar" <${GMAIL_USER}>`, to: senderEmail,
+        from: `"${tenantCfg.fromName}" <${GMAIL_USER}>`, to: senderEmail,
         subject: `Re: ${emailSubject || 'Your Vehicle Inquiry'}`, text: aiReply,
       });
     }
@@ -118,7 +132,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json({ action: 'sent', intent, shouldHandoff });
   } catch (error) {
-    console.error('[email-agent] Error:', error);
+    console.error('[email-agent] Error:', error instanceof Error ? error.message : 'unknown');
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

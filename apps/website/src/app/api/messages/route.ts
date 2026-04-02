@@ -494,8 +494,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
+  let msgBody: { to?: unknown; body?: unknown; tenant?: unknown };
   try {
-    const body = (await request.json()) as { to?: unknown; body?: unknown; tenant?: unknown };
+    msgBody = (await request.json()) as { to?: unknown; body?: unknown; tenant?: unknown };
+  } catch {
+    return NextResponse.json(
+      { error: 'Invalid JSON body' },
+      { status: 400, headers: securityHeaders(origin) }
+    );
+  }
+
+  try {
+    const body = msgBody;
 
     // Validate required fields exist and are strings
     if (typeof body.to !== 'string' || typeof body.body !== 'string') {

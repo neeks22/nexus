@@ -27,15 +27,32 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Server config error' }, { status: 500 });
   }
 
-  // Activity endpoint
+  // Activity endpoint — CRM notes + all status entries (HOT_PAUSED, AI_RESUMED, etc.)
   if (activity === 'true' && phone) {
     try {
-      const res = await fetch(
-        `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodeSupabaseParam(phone)}&channel=eq.crm&select=id,created_at,role,channel,content&order=created_at.desc&limit=50`,
-        { headers: supaHeaders(), signal: AbortSignal.timeout(10000) }
+      const encodedPhone = encodeSupabaseParam(phone);
+      const [crmRes, statusRes] = await Promise.all([
+        fetch(
+          `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}&channel=eq.crm&select=id,created_at,role,channel,content,entry_type&order=created_at.desc&limit=50`,
+          { headers: supaHeaders(), signal: AbortSignal.timeout(10000) }
+        ),
+        fetch(
+          `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}&entry_type=eq.status&select=id,created_at,role,channel,content,entry_type&order=created_at.desc&limit=10`,
+          { headers: supaHeaders(), signal: AbortSignal.timeout(10000) }
+        ),
+      ]);
+      const crmData = crmRes.ok ? await crmRes.json() : [];
+      const statusData = statusRes.ok ? await statusRes.json() : [];
+      // Merge and deduplicate by id
+      const seen = new Set<string>();
+      const merged = [...crmData, ...statusData].filter((e: { id: string }) => {
+        if (seen.has(e.id)) return false;
+        seen.add(e.id);
+        return true;
+      }).sort((a: { created_at: string }, b: { created_at: string }) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
-      if (res.ok) return NextResponse.json({ activity: await res.json() }, { headers: { 'Cache-Control': 'no-store' } });
-      return NextResponse.json({ activity: [] });
+      return NextResponse.json({ activity: merged }, { headers: { 'Cache-Control': 'no-store' } });
     } catch { return NextResponse.json({ activity: [] }); }
   }
 
@@ -60,8 +77,14 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
   if (rateLimit(ip, 30)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
 
+  let body;
   try {
-    const body = await request.json();
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  try {
     const { phone, status, tenant: rawTenant } = body as { phone?: string; status?: string; tenant?: string };
     const tenant = validateTenant(rawTenant || null);
 
@@ -88,9 +111,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
   if (rateLimit(ip, 20)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
 
+  let postBody;
   try {
-    const body = await request.json();
-    const { tenant: rawTenant, phone, type, content } = body as { tenant?: string; phone?: string; type?: string; content?: string };
+    postBody = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  try {
+    const { tenant: rawTenant, phone, type, content } = postBody as { tenant?: string; phone?: string; type?: string; content?: string };
     const tenant = validateTenant(rawTenant || null);
 
     if (!content) return NextResponse.json({ error: 'content required' }, { status: 400 });
@@ -153,9 +182,15 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   const authError = requireApiKey(request);
   if (authError) return authError;
 
+  let deleteBody;
   try {
-    const body = await request.json();
-    const { tenant: rawTenant, phone } = body as { tenant?: string; phone?: string };
+    deleteBody = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  try {
+    const { tenant: rawTenant, phone } = deleteBody as { tenant?: string; phone?: string };
     const tenant = validateTenant(rawTenant || null);
 
     if (!phone) return NextResponse.json({ error: 'phone required' }, { status: 400 });

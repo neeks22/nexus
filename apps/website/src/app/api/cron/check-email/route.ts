@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { GMAIL_USER, GMAIL_PASS, ANTHROPIC_KEY, SLACK_WEBHOOK, CRON_SECRET, SUPABASE_URL, SUPABASE_KEY, supaHeaders as _supaHeaders } from '../../../../lib/security';
 
+/* ---------- Tenant email config ---------- */
+const TENANT_EMAIL_CONFIG: Record<string, { fromName: string; gm: string; phone: string; signoff: string }> = {
+  readycar: { fromName: 'Nicolas Sayah | ReadyCar', gm: 'Nicolas', phone: '613-363-4494', signoff: 'ReadyCar | 613-363-4494' },
+  readyride: { fromName: 'Moe | ReadyRide', gm: 'Moe', phone: '613-983-9834', signoff: 'ReadyRide | 613-983-9834' },
+};
+
 /* =============================================================================
    EMAIL CRON — Checks Gmail for new replies via SMTP/IMAP workaround
    Uses nodemailer to send replies. Checks Supabase for unprocessed emails.
@@ -42,12 +48,21 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  let cronBody;
   try {
-    const body = await request.json();
-    const { to, subject, textBody, htmlBody, from: senderEmail, fromName, inReplyTo } = body as {
+    cronBody = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  try {
+    const { to, subject, textBody, htmlBody, from: senderEmail, fromName, inReplyTo, tenant: tenantId } = cronBody as {
       to: string; subject: string; textBody?: string; htmlBody?: string;
-      from?: string; fromName?: string; inReplyTo?: string;
+      from?: string; fromName?: string; inReplyTo?: string; tenant?: string;
     };
+
+    const tenant = tenantId === 'readyride' ? 'readyride' : 'readycar';
+    const tenantCfg = TENANT_EMAIL_CONFIG[tenant] || TENANT_EMAIL_CONFIG.readycar;
 
     if (!to || !subject) {
       return NextResponse.json({ error: 'to and subject required' }, { status: 400 });
@@ -73,8 +88,8 @@ export async function POST(request: Request): Promise<NextResponse> {
       // Send unsubscribe confirmation
       const nodemailer = await import('nodemailer');
       const transport = nodemailer.default.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_PASS } });
-      const unsubMsg = 'Hi,\n\nNo problem at all — I\'ve removed you from our list. Wishing you all the best.\n\nNicolas\nGeneral Sales Manager\nReadyCar | 613-363-4494';
-      await transport.sendMail({ from: `"Nicolas Sayah | ReadyCar" <${GMAIL_USER}>`, to, subject: `Re: ${subject}`, text: unsubMsg });
+      const unsubMsg = `Hi,\n\nNo problem at all — I've removed you from our list. Wishing you all the best.\n\n${tenantCfg.gm}\nGeneral Sales Manager\n${tenantCfg.signoff}`;
+      await transport.sendMail({ from: `"${tenantCfg.fromName}" <${GMAIL_USER}>`, to, subject: `Re: ${subject}`, text: unsubMsg });
       return NextResponse.json({ sent: true, intent: 'UNSUBSCRIBE' });
     }
 
@@ -83,7 +98,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     else if (/\b(how much|price|cost|payment|monthly)\b/i.test(lower)) { intent = 'PRICING'; }
 
     // Generate AI reply
-    const systemPrompt = 'You are Nicolas, General Sales Manager at ReadyCar in Ottawa (6231 Hazeldean Rd, Stittsville). You are replying to a customer email. Be warm, personal, professional. 3-5 short paragraphs max. NEVER discuss specific pricing, monthly payments, or interest rates. NEVER guarantee approval. Ask 1-2 follow-up questions. If credit concerns: our lenders care about steady income not perfect scores. If trade-in: acknowledge warmly, ask specifics. If hot lead: say you will reach out personally within the hour. Do NOT start with Hey. Do NOT sign off with "- Nicolas". End naturally. Sign off as Nicolas, General Sales Manager, ReadyCar | 613-363-4494 | readycar.ca/inventory/used/';
+    const systemPrompt = `You are ${tenantCfg.gm}, General Sales Manager at ${tenant === 'readyride' ? 'ReadyRide' : 'ReadyCar'} in Ottawa. You are replying to a customer email. Be warm, personal, professional. 3-5 short paragraphs max. NEVER discuss specific pricing, monthly payments, or interest rates. NEVER guarantee approval. Ask 1-2 follow-up questions. If credit concerns: our lenders care about steady income not perfect scores. If trade-in: acknowledge warmly, ask specifics. If hot lead: say you will reach out personally within the hour. Do NOT start with Hey. Do NOT sign off with "- ${tenantCfg.gm}". End naturally. Sign off as ${tenantCfg.gm}, General Sales Manager, ${tenantCfg.signoff}`;
 
     const userMsg = `Customer ${fromName || 'Unknown'} (${senderEmail || to}) replied to our email. Intent: ${intent}. Their message:\n\n"${emailBody.substring(0, 1000)}"\n\nWrite a personalized reply. You reached out first — do NOT thank them for reaching out.`;
 
@@ -102,14 +117,14 @@ export async function POST(request: Request): Promise<NextResponse> {
     } catch { /* Claude failed */ }
 
     if (!aiReply) {
-      aiReply = 'I\'d love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I\'m here whenever you\'re ready.\n\nNicolas\nGeneral Sales Manager\nReadyCar | 613-363-4494';
+      aiReply = `I'd love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I'm here whenever you're ready.\n\n${tenantCfg.gm}\nGeneral Sales Manager\n${tenantCfg.signoff}`;
     }
 
     // Send reply
     const nodemailer = await import('nodemailer');
     const transport = nodemailer.default.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_PASS } });
     await transport.sendMail({
-      from: `"Nicolas Sayah | ReadyCar" <${GMAIL_USER}>`,
+      from: `"${tenantCfg.fromName}" <${GMAIL_USER}>`,
       to, subject: `Re: ${subject}`, text: aiReply,
       ...(inReplyTo ? { inReplyTo, references: inReplyTo } : {}),
     });
@@ -117,7 +132,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     // Log
     fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts`, {
       method: 'POST', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
-      body: JSON.stringify({ tenant_id: 'readycar', lead_id: senderEmail || to, entry_type: 'message', role: 'ai', content: aiReply, channel: 'email', intent }),
+      body: JSON.stringify({ tenant_id: tenant, lead_id: senderEmail || to, entry_type: 'message', role: 'ai', content: aiReply, channel: 'email', intent }),
     }).catch(() => {});
 
     fetch(SLACK_WEBHOOK, {
@@ -127,7 +142,7 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     return NextResponse.json({ sent: true, intent, shouldHandoff });
   } catch (error) {
-    console.error('[check-email] Error:', error);
+    console.error('[check-email] Error:', error instanceof Error ? error.message : 'unknown');
     return NextResponse.json({ error: 'Failed' }, { status: 500 });
   }
 }
