@@ -161,7 +161,7 @@ async function sendSMS(lead: FunnelLead, normalizedPhone: string, tenant: Tenant
 
   if (!sent) {
     console.error('[auto-response] Twilio SMS failed for', normalizedPhone);
-    await slackNotify(`AUTO-RESPONSE SMS FAILED\nLead: ${lead.firstName} ${lead.lastName}\nPhone: ${normalizedPhone}\nPlease follow up manually.`);
+    await slackNotify(`AUTO-RESPONSE SMS FAILED\nLead: ${lead.firstName} ${lead.lastName}\nPhone: ***${normalizedPhone.slice(-4)}\nPlease follow up manually.`);
     return;
   }
 
@@ -287,7 +287,12 @@ export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'r
       return;
     }
 
-    await insertLead(lead, normalizedPhone, tenant);
+    try {
+      await insertLead(lead, normalizedPhone, tenant);
+    } catch (err) {
+      console.error('[auto-response] insertLead failed (continuing with SMS+email):', err instanceof Error ? err.message : 'unknown');
+      await slackNotify(`AUTO-RESPONSE: Supabase insert failed but sending SMS+email anyway\nLead: ${lead.firstName} ${lead.lastName}\nError: ${err instanceof Error ? err.message : 'unknown'}`).catch(() => {});
+    }
 
     await Promise.allSettled([
       sendSMS(lead, normalizedPhone, tenant),

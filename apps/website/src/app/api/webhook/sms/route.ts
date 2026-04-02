@@ -6,7 +6,13 @@ import { TENANT_MAP, validateTwilioSignature, rateLimit, getClientIp } from '../
    Security: Twilio signature validation + rate limiting
    ============================================================================= */
 
+export const maxDuration = 60;
+
 const TWIML_OK = '<?xml version="1.0" encoding="UTF-8"?><Response></Response>';
+
+// --- MessageSid deduplication (in-memory, covers rapid Twilio retries within same instance) ---
+const recentMessageSids = new Set<string>();
+const MAX_DEDUP_SIZE = 100;
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
@@ -20,6 +26,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const fromPhone = (formData.get('From') as string) || '';
   const toPhone = (formData.get('To') as string) || '';
   const messageBody = (formData.get('Body') as string) || '';
+  const messageSid = (formData.get('MessageSid') as string) || '';
+
+  // Dedup: skip already-seen MessageSids (covers rapid Twilio retries)
+  if (messageSid && recentMessageSids.has(messageSid)) {
+    return new NextResponse(TWIML_OK, { status: 200, headers: { 'Content-Type': 'text/xml' } });
+  }
+  if (messageSid) {
+    recentMessageSids.add(messageSid);
+    if (recentMessageSids.size > MAX_DEDUP_SIZE) {
+      const first = recentMessageSids.values().next().value;
+      if (first) recentMessageSids.delete(first);
+    }
+  }
 
   if (!fromPhone || !messageBody) {
     return new NextResponse(TWIML_OK, { status: 200, headers: { 'Content-Type': 'text/xml' } });
@@ -40,12 +59,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const baseUrl = request.nextUrl.origin || 'https://nexusagents.ca';
   const processSecret = process.env.PROCESS_SECRET || '';
 
-  fetch(`${baseUrl}/api/webhook/sms/process`, {
+  await fetch(`${baseUrl}/api/webhook/sms/process`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-process-secret': processSecret },
     body: JSON.stringify({ fromPhone, toPhone, messageBody, delay: 0 }),
+    signal: AbortSignal.timeout(55000),
   }).catch((err) => {
-    console.error('[sms-webhook] Failed to trigger process:', err);
+    console.error('[sms-webhook] Failed to trigger process:', err instanceof Error ? err.message : 'unknown');
   });
 
   return new NextResponse(TWIML_OK, { status: 200, headers: { 'Content-Type': 'text/xml' } });

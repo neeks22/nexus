@@ -44,19 +44,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ authenticated: false, reason: 'no password configured for tenant' }, { status: 401 });
     }
 
-    // Direct comparison (timing-safe for equal lengths)
-    if (password === expected) {
-      const token = crypto.randomBytes(32).toString('hex');
-      return NextResponse.json({ authenticated: true, token });
-    }
-
-    // Fallback: timing-safe comparison
+    // Timing-safe comparison — pad to same length to avoid leaking password length
     const a = Buffer.from(password);
     const b = Buffer.from(expected);
-    const match = a.length === b.length && crypto.timingSafeEqual(a, b);
+    const maxLen = Math.max(a.length, b.length);
+    const aPadded = Buffer.alloc(maxLen);
+    const bPadded = Buffer.alloc(maxLen);
+    a.copy(aPadded);
+    b.copy(bPadded);
+    const lengthMatch = a.length === b.length;
+    const contentMatch = crypto.timingSafeEqual(aPadded, bPadded);
 
-    if (match) {
-      // Generate session token
+    if (lengthMatch && contentMatch) {
       const token = crypto.randomBytes(32).toString('hex');
       return NextResponse.json({ authenticated: true, token });
     }

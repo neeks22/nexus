@@ -79,8 +79,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
           body: JSON.stringify({ status: 'appointment' }), signal: AbortSignal.timeout(5000),
         });
-      } catch {}
-      await slackNotify(`HOT LEAD HANDOFF — AI PAUSED\nPhone: ${fromPhone}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nAI will NOT auto-reply until manually resumed in CRM.`);
+      } catch (err) {
+        console.error('[sms-process] Failed to PATCH lead status to appointment:', err instanceof Error ? err.message : 'unknown');
+      }
+      await slackNotify(`HOT LEAD HANDOFF — AI PAUSED\nPhone: ***${fromPhone.slice(-4)}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nAI will NOT auto-reply until manually resumed in CRM.`);
       return NextResponse.json({ sent: true, immediate: true, handoff: true, paused: true });
     }
 
@@ -123,7 +125,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       if (isPaused) {
-        await slackNotify(`HOT LEAD MESSAGE (AI PAUSED)\nPhone: ${fromPhone}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nResume AI in CRM to auto-reply.`);
+        await slackNotify(`HOT LEAD MESSAGE (AI PAUSED)\nPhone: ***${fromPhone.slice(-4)}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nResume AI in CRM to auto-reply.`);
         return NextResponse.json({ sent: false, paused: true, reason: 'Lead is HOT — AI paused until manually resumed' });
       }
     }
@@ -137,7 +139,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&channel=eq.sms&select=role,content&order=created_at.desc&limit=10`
       ) as { role: string; content: string }[];
       if (history.length > 0) conversationHistory = history.reverse().map(m => `${m.role}: ${m.content}`).join('\n');
-    } catch { /* no history */ }
+    } catch (err) {
+      console.error('[sms-process] Failed to load conversation history:', err instanceof Error ? err.message : 'unknown');
+    }
 
     // Lookup lead name
     let leadName = '';
@@ -146,7 +150,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         `v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=first_name,last_name&limit=1`
       ) as { first_name?: string; last_name?: string }[];
       if (leads.length > 0) leadName = [leads[0].first_name, leads[0].last_name].filter(Boolean).join(' ');
-    } catch { /* no lead */ }
+    } catch (err) {
+      console.error('[sms-process] Failed to lookup lead name:', err instanceof Error ? err.message : 'unknown');
+    }
 
     // Sanitize customer message to prevent prompt injection
     const safeMessage = messageBody
@@ -170,7 +176,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     await sendTwilioSMS(fromPhone, toPhone, aiReply);
     await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: aiReply, channel: 'sms', intent });
-    slackNotify(`SMS REPLY (${tenant.name})\nTo: ${fromPhone}\nReply: ${aiReply.substring(0, 100)}...`);
+    slackNotify(`SMS REPLY (${tenant.name})\nTo: ***${fromPhone.slice(-4)}\nReply: ${aiReply.substring(0, 100)}...`);
 
     // --- FORM EXTRACTION: Fire-and-forget — moved off the hot path to avoid double Claude call ---
     // The primary SMS response is already sent above. Extraction runs async and won't block the response.
@@ -218,7 +224,13 @@ Return ONLY the JSON, nothing else.`;
   const extractResult = await callClaude('You extract structured data from conversations. Return only valid JSON.', extractPrompt, 300);
   if (!extractResult) return;
 
-  const formData = JSON.parse(extractResult);
+  let formData: Record<string, unknown>;
+  try {
+    formData = JSON.parse(extractResult);
+  } catch {
+    console.error('[sms-process] Form extraction JSON parse failed, raw:', extractResult.substring(0, 200));
+    return;
+  }
   const nonNullFields = Object.entries(formData).filter(([, v]) => v !== null && v !== '' && v !== 'null');
   if (nonNullFields.length === 0) return;
 
@@ -238,7 +250,7 @@ Return ONLY the JSON, nothing else.`;
     const leadCard = `NEW QUALIFIED LEAD — ${tenant.name}
 
 Name: ${leadName || 'Unknown'}
-Phone: ${fromPhone}
+Phone: ***${fromPhone.slice(-4)}
 Email: ${(await supaGet(`v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=email&limit=1`) as {email?: string}[])[0]?.email || 'N/A'}
 Postal Code: ${formData.postal_code || 'N/A'}
 Date of Birth: ${formData.date_of_birth || 'N/A'}
