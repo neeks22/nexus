@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireApiKey, rateLimit as sharedRateLimit } from '../../../lib/security';
+import { requireApiKey, rateLimit as sharedRateLimit, getClientIp } from '../../../lib/security';
 
 /* =============================================================================
    ENVIRONMENT VARIABLES — never hardcode credentials
@@ -21,10 +21,6 @@ const SUPABASE_URL = (process.env.SUPABASE_URL ?? '').trim().replace(/\\n$/, '')
 const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY ?? '').trim().replace(/\\n$/, '');
 
 const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
-
-/* =============================================================================
-   RATE LIMITING — shared Upstash-backed (per-IP, 60 req/min)
-   ============================================================================= */
 
 /* =============================================================================
    INPUT VALIDATION
@@ -78,14 +74,6 @@ function securityHeaders(origin?: string | null): Record<string, string> {
   }
 
   return headers;
-}
-
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    '0.0.0.0'
-  );
 }
 
 /* =============================================================================

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import { handleAutoResponse } from '../../../lib/auto-response';
-import { rateLimit, getClientIp as sharedGetClientIp } from '../../../lib/security';
+import { rateLimit, getClientIp } from '../../../lib/security';
 
 /**
  * POST /api/funnel-lead
@@ -22,10 +22,6 @@ import { rateLimit, getClientIp as sharedGetClientIp } from '../../../lib/securi
 const N8N_WEBHOOK_URL =
   process.env.N8N_FUNNEL_WEBHOOK_URL ?? 'https://nexusagents.app.n8n.cloud/webhook/ad-lead';
 const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
-
-/* =============================================================================
-   RATE LIMITING — 10 submissions per minute per IP (shared Upstash-backed)
-   ============================================================================= */
 
 /* =============================================================================
    INPUT VALIDATION — Zod schema with injection blocking
@@ -114,14 +110,6 @@ function securityHeaders(origin?: string | null): Record<string, string> {
   }
 
   return headers;
-}
-
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    '0.0.0.0'
-  );
 }
 
 function isValidOrigin(request: NextRequest): boolean {
