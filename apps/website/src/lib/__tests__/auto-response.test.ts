@@ -102,7 +102,10 @@ describe('handleAutoResponse', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default happy-path mocks
-    mockSupaGet.mockResolvedValue({ data: [], error: false }); // not duplicate
+    // First call: toggle check (enabled), second call: dedup check (not duplicate)
+    mockSupaGet
+      .mockResolvedValueOnce({ data: [{ enabled: true }], error: false })
+      .mockResolvedValue({ data: [], error: false });
     mockSupaPost.mockResolvedValue(undefined);
     mockSupaInsert.mockResolvedValue('test-lead-id');
     mockSupaPatch.mockResolvedValue(true);
@@ -115,8 +118,8 @@ describe('handleAutoResponse', () => {
     const lead = makeLead();
     await handleAutoResponse(lead, 'readycar');
 
-    // Should check for duplicates
-    expect(mockSupaGet).toHaveBeenCalledTimes(1);
+    // Should check toggle + duplicates
+    expect(mockSupaGet).toHaveBeenCalledTimes(2);
 
     // Should insert lead into funnel_submissions
     expect(mockSupaInsert).toHaveBeenCalledWith('funnel_submissions', expect.objectContaining({
@@ -162,14 +165,16 @@ describe('handleAutoResponse', () => {
   });
 
   it('skips SMS/email for duplicate leads', async () => {
-    // supaGet returns existing record = duplicate
-    mockSupaGet.mockResolvedValue({ data: [{ id: 'existing-id' }], error: false });
+    // First call: toggle check (enabled), second call: dedup returns existing record
+    mockSupaGet
+      .mockResolvedValueOnce({ data: [{ enabled: true }], error: false })
+      .mockResolvedValue({ data: [{ id: 'existing-id' }], error: false });
 
     const lead = makeLead();
     await handleAutoResponse(lead, 'readycar');
 
-    // Should check for duplicates
-    expect(mockSupaGet).toHaveBeenCalledTimes(1);
+    // Should check toggle + duplicates
+    expect(mockSupaGet).toHaveBeenCalledTimes(2);
 
     // Should NOT insert, send SMS, email, or notify
     expect(mockSupaInsert).not.toHaveBeenCalled();

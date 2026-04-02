@@ -289,6 +289,17 @@ export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'r
   const normalizedPhone = normalizePhone(lead.phone);
 
   try {
+    // Check if SMS auto-response is disabled (e.g. spending cap hit)
+    const { data: toggleData } = await supaGet(
+      `agent_toggles?tenant_id=eq.${tenant.tenantId}&agent_id=eq.instant_response&select=enabled&limit=1`
+    );
+    const toggle = (toggleData as { enabled: boolean }[])[0];
+    if (toggle && !toggle.enabled) {
+      console.log(`[auto-response] SMS disabled for ${tenant.tenantId} — skipping auto-response`);
+      await slackNotify(`⚠️ Lead received but SMS auto-response is DISABLED for ${tenant.name}.\nLead: ${lead.firstName} ${lead.lastName}\nPhone: ***${normalizedPhone.slice(-4)}\nRe-enable in CRM to resume.`);
+      return;
+    }
+
     const duplicate = await isDuplicate(normalizedPhone, tenant.tenantId);
     if (duplicate) {
       console.log(`[auto-response] Duplicate lead skipped: ${normalizedPhone}`);
