@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { handleAutoResponse } from '../../../lib/auto-response';
 
 /**
  * POST /api/funnel-lead
@@ -231,57 +232,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const body = parsed.data;
 
-    // Build the lead payload for n8n
-    const leadPayload = {
-      source: 'funnel',
-      funnelData: {
-        vehicleType: body.vehicleType,
-        budget: body.budget,
-        monthlyIncome: body.monthlyIncome,
-        jobTitle: body.jobTitle,
-        employment: body.employment,
-        creditSituation: body.creditSituation,
-        tradeIn: body.tradeIn,
-        tradeInYear: body.tradeInYear,
-      },
-      contact: {
-        firstName: body.firstName,
-        lastName: body.lastName,
-        phone: body.phone,
-        email: body.email,
-      },
-      consent: {
-        casl: body.caslConsent,
-        timestamp: body.completedAt || new Date().toISOString(),
-      },
-      attribution: {
-        utmSource: body.utmSource,
-        utmMedium: body.utmMedium,
-        utmCampaign: body.utmCampaign,
-      },
-      metadata: {
-        submittedAt: new Date().toISOString(),
-        // Only forward sanitized user-agent — never raw headers
-        userAgent: sanitizeString(request.headers.get('user-agent') || '', 500),
-        ip,
-      },
+    // Build the lead data for auto-response
+    const lead = {
+      firstName: body.firstName,
+      lastName: body.lastName,
+      phone: body.phone,
+      email: body.email,
+      vehicleType: body.vehicleType,
+      budget: body.budget,
+      monthlyIncome: body.monthlyIncome,
+      jobTitle: body.jobTitle,
+      employment: body.employment,
+      creditSituation: body.creditSituation,
+      tradeIn: body.tradeIn,
+      tradeInYear: body.tradeInYear || '',
+      utmSource: body.utmSource || '',
+      utmMedium: body.utmMedium || '',
+      utmCampaign: body.utmCampaign || '',
     };
-
-    // Forward to n8n webhook
-    const webhookResponse = await fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(leadPayload),
-      signal: AbortSignal.timeout(10000),
-    });
-
-    if (!webhookResponse.ok) {
-      console.error(
-        `[funnel-lead] n8n webhook returned ${webhookResponse.status}:`,
-        await webhookResponse.text().catch(() => 'no body')
-      );
-      // Still return success to the user — do not block the UX
-    }
 
     // Log only non-PII identifiers server-side
     console.log(
@@ -289,12 +257,58 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         `credit=${body.creditSituation} utm_source=${body.utmSource || 'direct'}`
     );
 
+    // Fire-and-forget: auto-response (Supabase insert + SMS + email + Slack)
+    handleAutoResponse(lead).catch((err) => {
+      console.error('[funnel-lead] Auto-response background error:', err instanceof Error ? err.message : 'unknown');
+    });
+
+    // Also forward to n8n webhook (kept as backup/CRM sync)
+    fetch(N8N_WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'funnel',
+        funnelData: {
+          vehicleType: body.vehicleType,
+          budget: body.budget,
+          monthlyIncome: body.monthlyIncome,
+          jobTitle: body.jobTitle,
+          employment: body.employment,
+          creditSituation: body.creditSituation,
+          tradeIn: body.tradeIn,
+          tradeInYear: body.tradeInYear,
+        },
+        contact: {
+          firstName: body.firstName,
+          lastName: body.lastName,
+          phone: body.phone,
+          email: body.email,
+        },
+        consent: {
+          casl: body.caslConsent,
+          timestamp: body.completedAt || new Date().toISOString(),
+        },
+        attribution: {
+          utmSource: body.utmSource,
+          utmMedium: body.utmMedium,
+          utmCampaign: body.utmCampaign,
+        },
+        metadata: {
+          submittedAt: new Date().toISOString(),
+          userAgent: sanitizeString(request.headers.get('user-agent') || '', 500),
+          ip,
+        },
+      }),
+      signal: AbortSignal.timeout(10000),
+    }).catch((err) => {
+      console.error('[funnel-lead] n8n webhook failed:', err instanceof Error ? err.message : 'unknown');
+    });
+
     return NextResponse.json(
       { success: true },
       { headers: securityHeaders(origin) }
     );
   } catch (error: unknown) {
-    // NEVER expose error details or stack traces to the client
     console.error(
       '[funnel-lead] Error processing lead:',
       error instanceof Error ? error.message : 'Unknown error'
