@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+// TODO: Switch GET reads to supaAnonHeaders(tenant) once RLS policies (migration 005) are deployed
+// and the anon key has confirmed SELECT permissions on v_funnel_submissions and lead_transcripts.
+// Until then, service role is required to avoid breaking reads in production.
 import { SUPABASE_URL, requireApiKey, rateLimit, getClientIp, supaHeaders, validateTenant } from '../../../lib/security';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
@@ -32,5 +35,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }));
 
     return NextResponse.json({ leadsToday: leads.length, messagesToday: messages.length, pipelineCounts, hotLeads: [], recentActivity }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch { return NextResponse.json({ error: 'Failed' }, { status: 500 }); }
+  } catch (err) {
+    console.error('[dashboard] GET error:', err instanceof Error ? err.message : 'unknown');
+    return NextResponse.json({ error: 'Failed' }, { status: 500 });
+  }
 }

@@ -9,7 +9,10 @@ ralph-output.log
 nexus-memory.json
 .env
 .env.*
+!.env.example
+!apps/website/.env.example
 .mcp.json
 .env
 .env.local
 workflows/
+.vercel

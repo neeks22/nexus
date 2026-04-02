@@ -145,7 +145,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (jsonMatch) {
       try {
         clientInfo = JSON.parse(jsonMatch[1]);
-      } catch { /* couldn't parse */ }
+      } catch (err) {
+        console.error('[credit-analyze] CLIENT_JSON parse error:', err instanceof Error ? err.message : 'unknown');
+      }
       analysis = rawAnalysis.replace(/CLIENT_JSON:\s*\{[^}]+\}/, '').trim();
     }
 

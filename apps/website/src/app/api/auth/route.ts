@@ -14,7 +14,7 @@ function cleanEnv(val: string | undefined): string {
   return val.replace(/\\n$/g, '').replace(/\n$/g, '').trim();
 }
 
-const AUTH_SECRET = cleanEnv(process.env.AUTH_SECRET) || cleanEnv(process.env.CSRF_SECRET) || 'nexus-fallback-auth-secret-change-me';
+const AUTH_SECRET = (cleanEnv(process.env.AUTH_SECRET) || cleanEnv(process.env.CSRF_SECRET) || '').trim();
 
 const PASSWORDS: Record<string, string> = {
   readycar: cleanEnv(process.env.CRM_PASSWORD_READYCAR),
@@ -26,6 +26,11 @@ function signPayload(payloadB64: string): string {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  if (!AUTH_SECRET) {
+    console.error('[auth] AUTH_SECRET not configured — cannot create sessions');
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+
   // Rate limit: 5 attempts per minute per IP
   const ip = getClientIp(request);
   if (await rateLimit(ip, 5)) {
@@ -37,7 +42,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
       const text = await request.text();
       body = JSON.parse(text);
-    } catch {
+    } catch (err) {
+      console.error('[auth] Body parse error:', err instanceof Error ? err.message : 'unknown');
       return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
     const { password, tenant } = body as { password?: string; tenant?: string };
@@ -81,13 +87,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     return NextResponse.json({ authenticated: false }, { status: 401 });
-  } catch {
+  } catch (err) {
+    console.error('[auth] POST error:', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ error: 'Auth failed' }, { status: 500 });
   }
 }
 
 /** GET /api/auth — check if session cookie is valid (for client-side auth gating) */
 export async function GET(request: NextRequest): Promise<NextResponse> {
+  if (!AUTH_SECRET) {
+    return NextResponse.json({ authenticated: false, reason: 'server misconfigured' }, { status: 500 });
+  }
+
   const sessionCookie = request.cookies.get('nexus_session')?.value;
   if (!sessionCookie) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
@@ -119,7 +130,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       return res;
     }
     return NextResponse.json({ authenticated: true, tenant: payload.tenant });
-  } catch {
+  } catch (err) {
+    console.error('[auth] Session decode error:', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 }

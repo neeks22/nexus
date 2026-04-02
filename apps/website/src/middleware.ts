@@ -17,7 +17,7 @@ function cleanEnv(val: string | undefined): string {
   return val.replace(/\\n$/g, '').replace(/\n$/g, '').trim();
 }
 
-const AUTH_SECRET = cleanEnv(process.env.AUTH_SECRET) || cleanEnv(process.env.CSRF_SECRET) || 'nexus-fallback-auth-secret-change-me';
+const AUTH_SECRET = (cleanEnv(process.env.AUTH_SECRET) || cleanEnv(process.env.CSRF_SECRET) || '').trim();
 
 /* ----- Session verification using Web Crypto API (Edge Runtime compatible) ----- */
 
@@ -63,7 +63,8 @@ async function verifySession(cookie: string): Promise<SessionPayload | null> {
     const payload = JSON.parse(decoded) as SessionPayload;
     if (payload.exp < Date.now()) return null;
     return payload;
-  } catch {
+  } catch (err) {
+    console.error('[middleware] Session decode error:', err instanceof Error ? err.message : String(err));
     return null;
   }
 }
@@ -100,6 +101,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   // ----- CRM session verification for protected routes -----
   if (isProtectedRoute(path)) {
+    // No secret configured = can't verify sessions = deny access
+    if (!AUTH_SECRET) {
+      return isProtectedApiRoute(path)
+        ? NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        : NextResponse.redirect(new URL('/inbox', request.url));
+    }
+
     const sessionCookie = request.cookies.get('nexus_session')?.value;
 
     if (!sessionCookie) {

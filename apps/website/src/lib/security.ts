@@ -113,7 +113,8 @@ export function validateTwilioSignature(request: NextRequest, params: Record<str
     const compBuf = Buffer.from(computed);
     if (sigBuf.length !== compBuf.length) return false;
     return crypto.timingSafeEqual(sigBuf, compBuf);
-  } catch {
+  } catch (err) {
+    console.error('[twilio] Signature comparison error:', err instanceof Error ? err.message : 'unknown');
     return false;
   }
 }
@@ -124,7 +125,8 @@ function isValidOrigin(o: string): boolean {
   try {
     const hostname = new URL(o).hostname;
     return hostname === 'nexusagents.ca' || hostname.endsWith('.nexusagents.ca');
-  } catch {
+  } catch (err) {
+    console.error('[security] Invalid origin URL:', err instanceof Error ? err.message : 'unknown');
     return false;
   }
 }

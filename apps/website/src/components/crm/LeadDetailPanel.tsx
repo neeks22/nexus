@@ -100,7 +100,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
             });
           }
         }
-      } catch { /* activity fetch is optional */ }
+      } catch (err) { console.error('[LeadDetail] Activity fetch error:', err instanceof Error ? err.message : 'unknown'); }
 
       // Merge and sort by time (newest first for display, but timeline shows oldest first)
       const allEntries = [...smsEntries, ...crmEntries].sort((a, b) => {
@@ -135,7 +135,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
       } else {
         alert('Failed to send SMS');
       }
-    } catch { alert('Failed to send SMS'); }
+    } catch (err) { console.error('[LeadDetail] SMS send error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to send SMS'); }
     finally { setSending(false); }
   }
 
@@ -150,7 +150,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
       setEmailBody('');
       setActiveAction('none');
       setTimeout(() => setSendSuccess(''), 3000);
-    } catch { alert('Failed to open email'); }
+    } catch (err) { console.error('[LeadDetail] Email open error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to open email'); }
     finally { setSending(false); }
   }
 
@@ -165,8 +165,43 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
       if (res.ok && lead) {
         setLead({ ...lead, status: newStatus });
       }
-    } catch { console.error('Failed to update status'); }
+    } catch (err) { console.error('[LeadDetail] Status update error:', err instanceof Error ? err.message : 'unknown'); }
     finally { setStatusUpdating(false); }
+  }
+
+  // Check if this lead is HOT_PAUSED (AI stopped auto-replying)
+  const isHotPaused = timeline.some(
+    (e) => e.content === 'HOT_PAUSED' && e.role === 'system'
+  ) && !timeline.some(
+    (e) => e.content === 'AI_RESUMED' && e.role === 'system' &&
+    new Date(e.rawTime).getTime() > Math.max(
+      ...timeline.filter((t) => t.content === 'HOT_PAUSED').map((t) => new Date(t.rawTime).getTime())
+    )
+  );
+
+  async function resumeAI(): Promise<void> {
+    try {
+      // Write AI_RESUMED status to transcript
+      await fetch('/api/leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant, phone, type: 'status', content: 'AI_RESUMED',
+        }),
+      });
+      // Also reset lead status to 'contacted' so the SMS processor's second check passes
+      await fetch('/api/leads', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant, phone, status: 'contacted' }),
+      });
+      if (lead) setLead({ ...lead, status: 'contacted' });
+      setSendSuccess('AI resumed — auto-replies are back on');
+      setTimeout(() => setSendSuccess(''), 3000);
+      fetchData();
+    } catch (err) {
+      console.error('[LeadDetail] Resume AI error:', err instanceof Error ? err.message : 'unknown');
+    }
   }
 
   const name = lead ? [lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Unknown' : phone;
@@ -221,6 +256,29 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
             onClick={() => window.open(`tel:${phone}`, '_self')}
           />
         </div>
+
+        {/* HOT LEAD BANNER */}
+        {isHotPaused && (
+          <div style={{
+            marginTop: '10px', padding: '12px 16px', borderRadius: '10px',
+            background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <div>
+              <div style={{ color: '#ef4444', fontSize: '14px', fontWeight: 700 }}>
+                HOT LEAD — AI Paused
+              </div>
+              <div style={{ color: '#f87171', fontSize: '12px', marginTop: '2px' }}>
+                Waiting for human transfer. AI will not auto-reply.
+              </div>
+            </div>
+            <button onClick={resumeAI} style={{
+              padding: '8px 16px', borderRadius: '8px', border: 'none',
+              background: '#10b981', color: '#fff', fontSize: '13px',
+              fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
+            }}>Resume AI</button>
+          </div>
+        )}
 
         {/* Success toast */}
         {sendSuccess && (
@@ -361,7 +419,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
                   } else {
                     alert('Failed to delete data.');
                   }
-                } catch { alert('Failed to delete data.'); }
+                } catch (err) { console.error('[LeadDetail] Delete error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to delete data.'); }
               }}
               style={{
                 padding: '8px 14px', borderRadius: '6px', fontSize: '12px',

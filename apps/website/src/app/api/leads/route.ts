@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+// TODO: Switch GET reads to supaAnonHeaders(tenant) once RLS policies (migration 005) are deployed
+// and the anon key has confirmed SELECT permissions on funnel_submissions and lead_transcripts.
+// Until then, service role is required to avoid breaking reads in production.
 import { SUPABASE_URL, SUPABASE_KEY, requireApiKey, rateLimit, getClientIp, supaHeaders, validateTenant, encodeSupabaseParam, sanitizeInput } from '../../../lib/security';
 
 /* =============================================================================
@@ -53,7 +56,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       return NextResponse.json({ activity: merged }, { headers: { 'Cache-Control': 'no-store' } });
-    } catch { return NextResponse.json({ activity: [] }); }
+    } catch (err) {
+      console.error('[leads] Activity fetch error:', err instanceof Error ? err.message : 'unknown');
+      return NextResponse.json({ activity: [] });
+    }
   }
 
   try {
@@ -65,7 +71,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     if (!res.ok) return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
 
     return NextResponse.json({ leads: await res.json() }, { headers: { 'Cache-Control': 'no-store' } });
-  } catch {
+  } catch (err) {
+    console.error('[leads] GET error:', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
   }
 }
@@ -80,7 +87,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   let body;
   try {
     body = await request.json();
-  } catch {
+  } catch (err) {
+    console.error('[leads] PATCH parse error:', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -99,7 +107,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     if (!res.ok) return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[leads] PATCH error:', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
   }
 }
@@ -114,7 +123,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   let postBody;
   try {
     postBody = await request.json();
-  } catch {
+  } catch (err) {
+    console.error('[leads] POST parse error:', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -173,7 +183,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!res.ok) return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (err) {
+    console.error('[leads] POST error:', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
   }
 }
@@ -185,7 +196,8 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   let deleteBody;
   try {
     deleteBody = await request.json();
-  } catch {
+  } catch (err) {
+    console.error('[leads] DELETE parse error:', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -204,7 +216,8 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     ]);
 
     return NextResponse.json({ success: true, message: 'All customer data deleted' });
-  } catch {
+  } catch (err) {
+    console.error('[leads] DELETE error:', err instanceof Error ? err.message : 'unknown');
     return NextResponse.json({ error: 'Failed to delete' }, { status: 500 });
   }
 }

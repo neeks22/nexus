@@ -33,7 +33,8 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
         setError(true);
         setPassword('');
       }
-    } catch {
+    } catch (err) {
+      console.error('[readycar] Login error:', err instanceof Error ? err.message : 'unknown');
       setError(true);
       setPassword('');
     }
@@ -234,8 +235,8 @@ export default function InboxPage(): React.ReactElement {
       try {
         const res = await fetch('/api/auth');
         if (res.ok) setAuthed(true);
-      } catch {
-        // No valid session — show login
+      } catch (err) {
+        console.error('[readycar] Session check error:', err instanceof Error ? err.message : 'unknown');
       }
     }
     checkSession();
@@ -283,7 +284,7 @@ function InboxContent(): React.ReactElement {
     try {
       const saved = sessionStorage.getItem('archived_readycar');
       return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch { return new Set(); }
+    } catch (err) { console.error('[readycar] Archive restore error:', err instanceof Error ? err.message : 'unknown'); return new Set(); }
   });
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -423,7 +424,7 @@ function InboxContent(): React.ReactElement {
     if (!window.confirm('Remove this conversation?')) return;
     setArchivedPhones((prev) => {
       const next = new Set(prev).add(phone);
-      try { sessionStorage.setItem('archived_readycar', JSON.stringify(Array.from(next))); } catch {}
+      try { sessionStorage.setItem('archived_readycar', JSON.stringify(Array.from(next))); } catch (err) { console.error('[readycar] Archive save error:', err instanceof Error ? err.message : 'unknown'); }
       return next;
     });
     if (activeConversation?.phone === phone) {
@@ -885,7 +886,7 @@ function InboxContent(): React.ReactElement {
                               });
                               // Delete the HOT_PAUSED flag by posting a resume status
                               alert('AI auto-replies resumed for this lead.');
-                            } catch { alert('Failed to resume.'); }
+                            } catch (err) { console.error('[readycar] Resume AI error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to resume.'); }
                           }}
                           style={{
                             padding: '6px 14px', borderRadius: '6px', border: 'none',

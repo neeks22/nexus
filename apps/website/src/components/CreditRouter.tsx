@@ -297,7 +297,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             setLeadMatch({ found: false });
           }
         }
-      } catch { /* ignore */ }
+      } catch (err) { console.error('[CreditRouter] Lead search error:', err instanceof Error ? err.message : 'unknown'); }
       finally { setSearchingLead(false); }
     }, 500);
   };
@@ -329,7 +329,8 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
       const data = await res.json();
       setAiInsight(data.analysis || 'AI analysis unavailable.');
       if (data.clientInfo) fillFromClientInfo(data.clientInfo);
-    } catch {
+    } catch (err) {
+      console.error('[CreditRouter] AI text analysis error:', err instanceof Error ? err.message : 'unknown');
       setAiInsight('AI analysis unavailable. Enter credit details manually below.');
     }
     setAnalyzing(false);
@@ -361,7 +362,8 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
               setProfile((p) => ({ ...p, fico: ficoMatch[1] }));
             }
           }
-        } catch {
+        } catch (err) {
+          console.error('[CreditRouter] PDF analysis error:', err instanceof Error ? err.message : 'unknown');
           setAiInsight('Could not analyze PDF. Please enter details manually.');
         }
         setAnalyzing(false);
