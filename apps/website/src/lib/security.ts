@@ -236,7 +236,10 @@ export async function callClaude(system: string, userMsg: string, maxTokens: num
 /* ---------- Twilio SMS ---------- */
 
 export async function sendTwilioSMS(to: string, from: string, body: string): Promise<boolean> {
-  if (!TWILIO_SID || !TWILIO_TOKEN) return false;
+  if (!TWILIO_SID || !TWILIO_TOKEN) {
+    console.error('[twilio] Missing TWILIO_SID or TWILIO_AUTH_TOKEN');
+    return false;
+  }
 
   try {
     const params = new URLSearchParams({ To: to, From: from, Body: body });
@@ -249,8 +252,15 @@ export async function sendTwilioSMS(to: string, from: string, body: string): Pro
       body: params.toString(),
       signal: AbortSignal.timeout(10000),
     });
+    if (!res.ok) {
+      const errBody = await res.text().catch(() => 'no body');
+      console.error(`[twilio] SMS failed ${res.status}: to=${to} from=${from} error=${errBody}`);
+    }
     return res.ok;
-  } catch { return false; }
+  } catch (err) {
+    console.error('[twilio] SMS exception:', err instanceof Error ? err.message : 'unknown');
+    return false;
+  }
 }
 
 /* ---------- Env Validation ---------- */
