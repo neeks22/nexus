@@ -57,7 +57,9 @@ export async function supaGet(path: string): Promise<unknown[]> {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: supaHeaders(), signal: AbortSignal.timeout(8000) });
     if (res.ok) return await res.json();
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('[supaGet] Error:', err instanceof Error ? err.message : 'unknown');
+  }
   return [];
 }
 
@@ -67,7 +69,9 @@ export async function supaPost(table: string, data: Record<string, unknown>): Pr
       method: 'POST', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
       body: JSON.stringify(data), signal: AbortSignal.timeout(8000),
     });
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('[supaPost] Error:', err instanceof Error ? err.message : 'unknown');
+  }
 }
 
 /* ---------- Twilio Signature Validation ---------- */
@@ -158,14 +162,8 @@ export function rateLimit(ip: string, maxRequests: number = 30, windowMs: number
   return false;
 }
 
-// Cleanup stale entries every 2 minutes
-setInterval(() => {
-  const now = Date.now();
-  const entries = Array.from(rateLimitStore.entries());
-  for (let i = 0; i < entries.length; i++) {
-    if (now > entries[i][1].resetAt) rateLimitStore.delete(entries[i][0]);
-  }
-}, 120000);
+// NOTE: In-memory rate limiting is best-effort on serverless (each cold start gets a fresh Map).
+// No setInterval cleanup — it fires on every cold start and serves no purpose on Vercel.
 
 export function getClientIp(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '0.0.0.0';
@@ -200,7 +198,9 @@ export async function slackNotify(text: string): Promise<void> {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }), signal: AbortSignal.timeout(5000),
     });
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.error('[slackNotify] Error:', err instanceof Error ? err.message : 'unknown');
+  }
 }
 
 /* ---------- Claude API ---------- */
@@ -222,7 +222,7 @@ export async function callClaude(system: string, userMsg: string, maxTokens: num
         system,
         messages: [{ role: 'user', content: userMsg }],
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(8000), // Vercel Hobby has 10s limit — 15s guaranteed failure
     });
 
     if (!res.ok) return '';
@@ -254,7 +254,7 @@ export async function sendTwilioSMS(to: string, from: string, body: string): Pro
     });
     if (!res.ok) {
       const errBody = await res.text().catch(() => 'no body');
-      console.error(`[twilio] SMS failed ${res.status}: to=${to} from=${from} error=${errBody}`);
+      console.error(`[twilio] SMS failed ${res.status}: to=...${to.slice(-4)} from=...${from.slice(-4)} error=${errBody}`);
     }
     return res.ok;
   } catch (err) {
