@@ -5,6 +5,10 @@ import { Redis } from '@upstash/redis';
 
 /* =============================================================================
    SECURITY MODULE — Shared auth, rate limiting, validation for all API routes
+   =============================================================================
+   TODO: funnel-lead/route.ts and messages/route.ts define their own getClientIp,
+   securityHeaders, ALLOWED_ORIGIN, and isValidOrigin locally. These should be
+   consolidated here and imported from this module to eliminate duplication.
    ============================================================================= */
 
 /* ---------- Environment Variables (NO FALLBACKS — fail if missing) ---------- */

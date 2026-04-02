@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-// TODO: Switch GET reads to supaAnonHeaders(tenant) once RLS policies (migration 005) are deployed
-// and the anon key has confirmed SELECT permissions on funnel_submissions and lead_transcripts.
-// Until then, service role is required to avoid breaking reads in production.
-import { SUPABASE_URL, SUPABASE_KEY, requireApiKey, rateLimit, getClientIp, supaHeaders, validateTenant, encodeSupabaseParam, sanitizeInput } from '../../../lib/security';
+import { SUPABASE_URL, SUPABASE_KEY, requireApiKey, rateLimit, getClientIp, supaHeaders, supaAnonHeaders, validateTenant, encodeSupabaseParam, sanitizeInput } from '../../../lib/security';
 
 /* =============================================================================
    LEADS API — CRUD for lead management
@@ -35,14 +32,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (activity === 'true' && phone) {
     try {
       const encodedPhone = encodeSupabaseParam(phone);
+      const anonH = supaAnonHeaders(tenant);
       const [crmRes, statusRes] = await Promise.all([
         fetch(
           `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}&channel=eq.crm&select=id,created_at,role,channel,content,entry_type&order=created_at.desc&limit=50`,
-          { headers: supaHeaders(), signal: AbortSignal.timeout(10000) }
+          { headers: anonH, signal: AbortSignal.timeout(10000) }
         ),
         fetch(
           `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}&entry_type=eq.status&select=id,created_at,role,channel,content,entry_type&order=created_at.desc&limit=10`,
-          { headers: supaHeaders(), signal: AbortSignal.timeout(10000) }
+          { headers: anonH, signal: AbortSignal.timeout(10000) }
         ),
       ]);
       const crmData = crmRes.ok ? await crmRes.json() : [];
@@ -69,7 +67,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     if (status && VALID_STATUSES.includes(status)) query += `&status=eq.${status}`;
     if (search) query += `&or=(first_name.ilike.*${encodeSupabaseParam(search)}*,last_name.ilike.*${encodeSupabaseParam(search)}*,phone.ilike.*${encodeSupabaseParam(search)}*,email.ilike.*${encodeSupabaseParam(search)}*)`;
 
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, { headers: supaHeaders(), signal: AbortSignal.timeout(10000) });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, { headers: supaAnonHeaders(tenant), signal: AbortSignal.timeout(10000) });
     if (!res.ok) return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
 
     return NextResponse.json({ leads: await res.json() }, { headers: { 'Cache-Control': 'no-store' } });
@@ -149,7 +147,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Check duplicate
       const checkRes = await fetch(
         `${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&phone=eq.${encodeSupabaseParam(fullPhone)}&limit=1`,
-        { headers: supaHeaders(), signal: AbortSignal.timeout(10000) }
+        { headers: supaAnonHeaders(tenant), signal: AbortSignal.timeout(10000) }
       );
       if (checkRes.ok) {
         const existing = await checkRes.json();
