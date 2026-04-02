@@ -8,6 +8,8 @@ import { normalizePhone } from '../auto-response';
 // Mock the security module (external dependencies)
 const mockSupaGet = vi.fn();
 const mockSupaPost = vi.fn();
+const mockSupaInsert = vi.fn();
+const mockSupaPatch = vi.fn();
 const mockSendTwilioSMS = vi.fn();
 const mockSlackNotify = vi.fn();
 const mockCallClaude = vi.fn();
@@ -15,6 +17,8 @@ const mockCallClaude = vi.fn();
 vi.mock('../security', () => ({
   supaGet: (...args: unknown[]) => mockSupaGet(...args),
   supaPost: (...args: unknown[]) => mockSupaPost(...args),
+  supaInsert: (...args: unknown[]) => mockSupaInsert(...args),
+  supaPatch: (...args: unknown[]) => mockSupaPatch(...args),
   sendTwilioSMS: (...args: unknown[]) => mockSendTwilioSMS(...args),
   slackNotify: (...args: unknown[]) => mockSlackNotify(...args),
   callClaude: (...args: unknown[]) => mockCallClaude(...args),
@@ -100,6 +104,8 @@ describe('handleAutoResponse', () => {
     // Default happy-path mocks
     mockSupaGet.mockResolvedValue({ data: [], error: false }); // not duplicate
     mockSupaPost.mockResolvedValue(undefined);
+    mockSupaInsert.mockResolvedValue('test-lead-id');
+    mockSupaPatch.mockResolvedValue(true);
     mockCallClaude.mockResolvedValue('Hey John, it is Nico from ReadyCar. What vehicle are you looking for?');
     mockSendTwilioSMS.mockResolvedValue(true);
     mockSlackNotify.mockResolvedValue(undefined);
@@ -113,7 +119,7 @@ describe('handleAutoResponse', () => {
     expect(mockSupaGet).toHaveBeenCalledTimes(1);
 
     // Should insert lead into funnel_submissions
-    expect(mockSupaPost).toHaveBeenCalledWith('funnel_submissions', expect.objectContaining({
+    expect(mockSupaInsert).toHaveBeenCalledWith('funnel_submissions', expect.objectContaining({
       tenant_id: 'readycar',
       first_name: 'John',
       last_name: 'Doe',
@@ -166,7 +172,7 @@ describe('handleAutoResponse', () => {
     expect(mockSupaGet).toHaveBeenCalledTimes(1);
 
     // Should NOT insert, send SMS, email, or notify
-    expect(mockSupaPost).not.toHaveBeenCalled();
+    expect(mockSupaInsert).not.toHaveBeenCalled();
     expect(mockCallClaude).not.toHaveBeenCalled();
     expect(mockSendTwilioSMS).not.toHaveBeenCalled();
     expect(mockSendMail).not.toHaveBeenCalled();
@@ -206,14 +212,8 @@ describe('handleAutoResponse', () => {
   });
 
   it('still sends SMS + email even when insertLead fails', async () => {
-    // First supaPost call (insertLead) throws, subsequent calls succeed
-    let callCount = 0;
-    mockSupaPost.mockImplementation(async (table: string) => {
-      callCount++;
-      if (callCount === 1 && table === 'funnel_submissions') {
-        throw new Error('Supabase insert failed');
-      }
-    });
+    // supaInsert (insertLead) throws, but SMS+email should still send
+    mockSupaInsert.mockRejectedValue(new Error('Supabase insert failed'));
 
     const lead = makeLead();
     await handleAutoResponse(lead, 'readycar');

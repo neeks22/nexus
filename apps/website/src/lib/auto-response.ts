@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
-import { supaGet, supaPost, sendTwilioSMS, slackNotify, callClaude, GMAIL_USER, GMAIL_PASS } from './security';
+import { supaGet, supaPost, supaInsert, supaPatch, sendTwilioSMS, slackNotify, callClaude, GMAIL_USER, GMAIL_PASS } from './security';
 
 /* =============================================================================
    AUTO-RESPONSE — Instant SMS + email when a lead submits the funnel
@@ -76,7 +76,7 @@ export function normalizePhone(phone: string): string {
 async function isDuplicate(phone: string, tenantId: string): Promise<boolean> {
   try {
     const { data, error } = await supaGet(
-      `funnel_submissions?tenant_id=eq.${tenantId}&phone=eq.${encodeURIComponent(phone)}&select=id&limit=1`
+      `v_funnel_submissions?tenant_id=eq.${tenantId}&phone=eq.${encodeURIComponent(phone)}&select=id&limit=1`
     );
     if (error) {
       console.error('[auto-response] Dedup check failed: supaGet returned error');
@@ -90,8 +90,8 @@ async function isDuplicate(phone: string, tenantId: string): Promise<boolean> {
   }
 }
 
-async function insertLead(lead: FunnelLead, normalizedPhone: string, tenant: TenantConfig): Promise<void> {
-  await supaPost('funnel_submissions', {
+async function insertLead(lead: FunnelLead, normalizedPhone: string, tenant: TenantConfig): Promise<string | null> {
+  return supaInsert('funnel_submissions', {
     tenant_id: tenant.tenantId,
     vehicle_type: lead.vehicleType,
     budget_range: lead.budget || null,
@@ -295,18 +295,33 @@ export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'r
       return;
     }
 
+    let leadId: string | null = null;
     try {
-      await insertLead(lead, normalizedPhone, tenant);
+      leadId = await insertLead(lead, normalizedPhone, tenant);
     } catch (err) {
       console.error('[auto-response] insertLead failed (continuing with SMS+email):', err instanceof Error ? err.message : 'unknown');
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       await slackNotify(`AUTO-RESPONSE: Supabase insert failed but sending SMS+email anyway\nLead: ${lead.firstName} ${lead.lastName}\nError: ${err instanceof Error ? err.message : 'unknown'}`).catch(() => {});
     }
 
-    await Promise.allSettled([
+    const results = await Promise.allSettled([
       sendSMS(lead, normalizedPhone, tenant),
       sendWelcomeEmail(lead, normalizedPhone, tenant),
     ]);
+
+    // Update status to 'contacted' if at least one message was sent
+    const anySent = results.some(r => r.status === 'fulfilled');
+    if (anySent && leadId) {
+      const ok = await supaPatch(
+        'funnel_submissions',
+        `id=eq.${leadId}`,
+        { status: 'contacted' }
+      );
+      if (!ok) {
+        console.error(`[auto-response] Failed to update status to contacted for lead ${leadId}`);
+        Sentry.captureException(new Error(`Status update failed for lead ${leadId}`));
+      }
+    }
 
     await slackNotify(
       `NEW FUNNEL LEAD — AUTO-RESPONDED\n` +

@@ -88,6 +88,37 @@ export async function supaPost(table: string, data: Record<string, unknown>): Pr
   }
 }
 
+export async function supaInsert(table: string, data: Record<string, unknown>): Promise<string | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: 'POST', headers: { ...supaHeaders(), Prefer: 'return=representation' },
+      body: JSON.stringify(data), signal: AbortSignal.timeout(8000),
+    });
+    if (res.ok) {
+      const rows = await res.json() as { id: string }[];
+      return rows[0]?.id ?? null;
+    }
+    console.error(`[supaInsert] HTTP ${res.status}:`, await res.text().catch(() => ''));
+    return null;
+  } catch (err) {
+    console.error('[supaInsert] Error:', err instanceof Error ? err.message : 'unknown');
+    return null;
+  }
+}
+
+export async function supaPatch(table: string, filter: string, data: Record<string, unknown>): Promise<boolean> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+      method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
+      body: JSON.stringify(data), signal: AbortSignal.timeout(8000),
+    });
+    return res.ok;
+  } catch (err) {
+    console.error('[supaPatch] Error:', err instanceof Error ? err.message : 'unknown');
+    return false;
+  }
+}
+
 /* ---------- Twilio Signature Validation ---------- */
 
 export function validateTwilioSignature(request: NextRequest, params: Record<string, string>): boolean {
