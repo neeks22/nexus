@@ -85,21 +85,50 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // Check if this lead is paused (was marked HOT previously) — don't auto-reply
-    try {
-      const statusEntries = await supaGet(
-        `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&entry_type=eq.status&select=content,created_at&order=created_at.desc&limit=1`
-      ) as { content: string; created_at: string }[];
+    // TWO checks: transcript status entries AND funnel_submissions status
+    // If EITHER indicates paused, do NOT reply. Errors default to NOT replying (safe).
+    {
+      let isPaused = false;
 
-      if (statusEntries.length > 0 && statusEntries[0].content === 'HOT_PAUSED') {
-        // Lead is paused — log the inbound but don't reply
+      // Check 1: transcript status entries (HOT_PAUSED / AI_RESUMED)
+      try {
+        const statusEntries = await supaGet(
+          `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&entry_type=eq.status&select=content,created_at&order=created_at.desc&limit=1`
+        ) as { content: string; created_at: string }[];
+
+        if (statusEntries.length > 0 && statusEntries[0].content === 'HOT_PAUSED') {
+          isPaused = true;
+        }
+      } catch {
+        // Supabase query failed — default to paused (safe: don't risk replying to a hot lead)
+        console.error('[sms-process] HOT check failed for phone ...', fromPhone.slice(-4), '— defaulting to paused');
+        isPaused = true;
+      }
+
+      // Check 2: funnel_submissions status — appointment or credit_app means human took over
+      if (!isPaused) {
+        try {
+          const leadStatus = await supaGet(
+            `v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=status&limit=1`
+          ) as { status: string }[];
+
+          if (leadStatus.length > 0 && ['appointment', 'credit_app', 'approved', 'delivered'].includes(leadStatus[0].status)) {
+            isPaused = true;
+          }
+        } catch {
+          // If we can't check, don't reply — safer than spamming a hot lead
+          console.error('[sms-process] Lead status check failed for phone ...', fromPhone.slice(-4), '— defaulting to paused');
+          isPaused = true;
+        }
+      }
+
+      if (isPaused) {
         await slackNotify(`HOT LEAD MESSAGE (AI PAUSED)\nPhone: ${fromPhone}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nResume AI in CRM to auto-reply.`);
         return NextResponse.json({ sent: false, paused: true, reason: 'Lead is HOT — AI paused until manually resumed' });
       }
-      // If latest status is AI_RESUMED, continue with auto-reply
-    } catch {}
+    }
 
-    // Small delay for human feel (must stay under Vercel's 10s timeout on Hobby)
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Removed 3s artificial delay — it wasted 30% of the 10s Vercel budget
 
     // Load conversation history
     let conversationHistory = '';
@@ -143,10 +172,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: aiReply, channel: 'sms', intent });
     slackNotify(`SMS REPLY (${tenant.name})\nTo: ${fromPhone}\nReply: ${aiReply.substring(0, 100)}...`);
 
-    // --- FORM EXTRACTION: Check if we can extract qualification data from conversation ---
-    try {
-      const fullConvo = conversationHistory + '\ncustomer: ' + messageBody + '\nai: ' + aiReply;
-      const extractPrompt = `Extract customer qualification data from this car dealership SMS conversation. Return ONLY a JSON object with these fields (use null if not mentioned):
+    // --- FORM EXTRACTION: Fire-and-forget — moved off the hot path to avoid double Claude call ---
+    // The primary SMS response is already sent above. Extraction runs async and won't block the response.
+    const fullConvo = conversationHistory + '\ncustomer: ' + messageBody + '\nai: ' + aiReply;
+    runFormExtraction(fullConvo, tenant, fromPhone, toPhone, leadName).catch((err) => {
+      console.error('[sms-process] Form extraction background error:', err instanceof Error ? err.message : 'unknown');
+    });
+
+    return NextResponse.json({ sent: true, delayed: true });
+  } catch (error) {
+    console.error('[sms-process] Error:', error);
+    return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
+  }
+}
+
+/**
+ * Form extraction — runs as fire-and-forget after the SMS response is sent.
+ * Uses a second Claude call to extract qualification data from the conversation.
+ */
+async function runFormExtraction(
+  fullConvo: string,
+  tenant: { name: string; location: string; phone: string; gm: string; tenant: string },
+  fromPhone: string,
+  toPhone: string,
+  leadName: string,
+): Promise<void> {
+  const extractPrompt = `Extract customer qualification data from this car dealership SMS conversation. Return ONLY a JSON object with these fields (use null if not mentioned):
 {"postal_code":null,"date_of_birth":null,"monthly_income":null,"employment_length":null,"company_name":null,"job_title":null,"vehicle_type":null,"employment_status":null}
 
 Rules:
@@ -164,28 +215,27 @@ ${fullConvo}
 
 Return ONLY the JSON, nothing else.`;
 
-      const extractResult = await callClaude('You extract structured data from conversations. Return only valid JSON.', extractPrompt, 300);
+  const extractResult = await callClaude('You extract structured data from conversations. Return only valid JSON.', extractPrompt, 300);
+  if (!extractResult) return;
 
-      if (extractResult) {
-        try {
-          const formData = JSON.parse(extractResult);
-          const nonNullFields = Object.entries(formData).filter(([, v]) => v !== null && v !== '' && v !== 'null');
+  const formData = JSON.parse(extractResult);
+  const nonNullFields = Object.entries(formData).filter(([, v]) => v !== null && v !== '' && v !== 'null');
+  if (nonNullFields.length === 0) return;
 
-          if (nonNullFields.length > 0) {
-            // Save extracted form data to lead record
-            await supaPost('lead_transcripts', {
-              tenant_id: tenant.tenant, lead_id: fromPhone,
-              entry_type: 'form_data', role: 'system',
-              content: JSON.stringify(formData), channel: 'crm',
-            });
+  // Save extracted form data to lead record
+  await supaPost('lead_transcripts', {
+    tenant_id: tenant.tenant, lead_id: fromPhone,
+    entry_type: 'form_data', role: 'system',
+    content: JSON.stringify(formData), channel: 'crm',
+  });
 
-            // Check if form is complete (need at least 5 of 7 fields)
-            const requiredFields = ['postal_code', 'date_of_birth', 'monthly_income', 'employment_length', 'company_name', 'vehicle_type'];
-            const filledRequired = requiredFields.filter(f => formData[f] !== null && formData[f] !== '' && formData[f] !== 'null');
+  // Check if form is complete (need at least 5 of 7 fields)
+  const requiredFields = ['postal_code', 'date_of_birth', 'monthly_income', 'employment_length', 'company_name', 'vehicle_type'];
+  const filledRequired = requiredFields.filter(f => formData[f] !== null && formData[f] !== '' && formData[f] !== 'null');
 
-            if (filledRequired.length >= 5) {
-              // FORM IS COMPLETE — generate lead card and send to rep
-              const leadCard = `NEW QUALIFIED LEAD — ${tenant.name}
+  if (filledRequired.length >= 5) {
+    // FORM IS COMPLETE — generate lead card and send to rep
+    const leadCard = `NEW QUALIFIED LEAD — ${tenant.name}
 
 Name: ${leadName || 'Unknown'}
 Phone: ${fromPhone}
@@ -202,42 +252,29 @@ Vehicle: ${formData.vehicle_type || 'N/A'}
 Conversation Summary:
 ${fullConvo.split('\n').slice(-10).join('\n')}`;
 
-              // Save form to lead activity
-              await supaPost('lead_transcripts', {
-                tenant_id: tenant.tenant, lead_id: fromPhone,
-                entry_type: 'completed_form', role: 'system',
-                content: JSON.stringify({ ...formData, leadName, phone: fromPhone, completedAt: new Date().toISOString() }),
-                channel: 'crm',
-              });
+    await supaPost('lead_transcripts', {
+      tenant_id: tenant.tenant, lead_id: fromPhone,
+      entry_type: 'completed_form', role: 'system',
+      content: JSON.stringify({ ...formData, leadName, phone: fromPhone, completedAt: new Date().toISOString() }),
+      channel: 'crm',
+    });
 
-              // Send to Slack
-              await slackNotify(`QUALIFIED LEAD FORM COMPLETE\n${leadCard}`);
+    await slackNotify(`QUALIFIED LEAD FORM COMPLETE\n${leadCard}`);
 
-              // Send handoff SMS
-              const handoffMsg = 'I\'m setting up a call for you with our team right now. Someone will call you within the hour to go over everything and get the ball rolling. We handle everything from approval to delivery right to your door.';
-              await sendTwilioSMS(fromPhone, toPhone, handoffMsg);
-              await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: handoffMsg, channel: 'sms' });
+    const handoffMsg = 'I\'m setting up a call for you with our team right now. Someone will call you within the hour to go over everything and get the ball rolling. We handle everything from approval to delivery right to your door.';
+    await sendTwilioSMS(fromPhone, toPhone, handoffMsg);
+    await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: handoffMsg, channel: 'sms' });
 
-              // Pause AI
-              await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'status', role: 'system', content: 'HOT_PAUSED', channel: 'sms' });
+    await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'status', role: 'system', content: 'HOT_PAUSED', channel: 'sms' });
 
-              // Update lead status
-              try {
-                await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeURIComponent(fromPhone)}&tenant_id=eq.${tenant.tenant}`, {
-                  method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
-                  body: JSON.stringify({ status: 'credit_app' }), signal: AbortSignal.timeout(5000),
-                });
-              } catch {}
-            }
-          }
-        } catch { /* JSON parse failed, skip */ }
-      }
-    } catch { /* extraction failed, continue */ }
-
-    return NextResponse.json({ sent: true, delayed: true });
-  } catch (error) {
-    console.error('[sms-process] Error:', error);
-    return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeURIComponent(fromPhone)}&tenant_id=eq.${tenant.tenant}`, {
+        method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
+        body: JSON.stringify({ status: 'credit_app' }), signal: AbortSignal.timeout(5000),
+      });
+    } catch (err) {
+      console.error('[sms-process] Failed to update lead status:', err instanceof Error ? err.message : 'unknown');
+    }
   }
 }
 
