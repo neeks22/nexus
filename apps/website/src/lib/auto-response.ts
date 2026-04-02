@@ -32,14 +32,25 @@ interface TenantConfig {
   email: string;
 }
 
-const READYCAR: TenantConfig = {
-  tenantId: 'readycar',
-  name: 'ReadyCar',
-  gm: 'Nico',
-  phone: '613-363-4494',
-  location: 'Stittsville ON',
-  fromPhone: '+13433125045',
-  email: 'nicolas@readycar.ca',
+const TENANTS: Record<string, TenantConfig> = {
+  readycar: {
+    tenantId: 'readycar',
+    name: 'ReadyCar',
+    gm: 'Nico',
+    phone: '613-363-4494',
+    location: 'Stittsville ON',
+    fromPhone: '+13433125045',
+    email: 'nicolas@readycar.ca',
+  },
+  readyride: {
+    tenantId: 'readyride',
+    name: 'ReadyRide',
+    gm: 'Moe',
+    phone: '613-983-9834',
+    location: 'Gloucester ON',
+    fromPhone: '+13433412797',
+    email: 'moe@readyride.ca',
+  },
 };
 
 /* =============================================================================
@@ -265,8 +276,8 @@ To unsubscribe, reply "unsubscribe". ${tenant.name} | ${tenant.location}`;
  * Main auto-response handler. Called fire-and-forget from the funnel-lead route.
  * Saves lead to Supabase, sends personalized SMS + welcome email, logs everything.
  */
-export async function handleAutoResponse(lead: FunnelLead): Promise<void> {
-  const tenant = READYCAR;
+export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'readycar'): Promise<void> {
+  const tenant = TENANTS[tenantId] || TENANTS.readycar;
   const normalizedPhone = normalizePhone(lead.phone);
 
   try {

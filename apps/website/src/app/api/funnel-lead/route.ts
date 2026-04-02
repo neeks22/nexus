@@ -126,6 +126,7 @@ const FunnelLeadSchema = z.object({
   utmMedium: z.string().max(200).optional().default(''),
   utmCampaign: z.string().max(200).optional().default(''),
   completedAt: z.string().max(50).optional(),
+  tenant: z.enum(['readycar', 'readyride']).optional().default('readycar'),
 });
 
 /* =============================================================================
@@ -258,7 +259,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
 
     // Fire-and-forget: auto-response (Supabase insert + SMS + email + Slack)
-    handleAutoResponse(lead).catch((err) => {
+    handleAutoResponse(lead, body.tenant).catch((err) => {
       console.error('[funnel-lead] Auto-response background error:', err instanceof Error ? err.message : 'unknown');
     });
 
