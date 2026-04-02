@@ -6,12 +6,119 @@ import { NextRequest, NextResponse } from 'next/server';
  * Responsibilities:
  * 1. Enforce security headers globally
  * 2. CSRF protection for POST/PUT/DELETE on API routes (Origin check)
- * 3. Block non-browser automated probing on sensitive routes
+ * 3. Server-side session verification for CRM protected routes
+ * 4. Block non-browser automated probing on sensitive routes
  */
 
 const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
 
-export function middleware(request: NextRequest): NextResponse {
+function cleanEnv(val: string | undefined): string {
+  if (!val) return '';
+  return val.replace(/\\n$/g, '').replace(/\n$/g, '').trim();
+}
+
+const AUTH_SECRET = cleanEnv(process.env.AUTH_SECRET) || cleanEnv(process.env.CSRF_SECRET) || 'nexus-fallback-auth-secret-change-me';
+
+/* ----- Session verification using Web Crypto API (Edge Runtime compatible) ----- */
+
+async function computeHmac(secret: string, data: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(data));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+interface SessionPayload {
+  tenant: string;
+  exp: number;
+}
+
+async function verifySession(cookie: string): Promise<SessionPayload | null> {
+  const dotIdx = cookie.indexOf('.');
+  if (dotIdx === -1) return null;
+
+  const payloadB64 = cookie.substring(0, dotIdx);
+  const signature = cookie.substring(dotIdx + 1);
+  if (!payloadB64 || !signature) return null;
+
+  const expectedSig = await computeHmac(AUTH_SECRET, payloadB64);
+  // Length check before byte-by-byte comparison
+  if (signature.length !== expectedSig.length) return null;
+
+  // Constant-time comparison (safe for Edge Runtime without Node crypto)
+  let mismatch = 0;
+  for (let i = 0; i < signature.length; i++) {
+    mismatch |= signature.charCodeAt(i) ^ expectedSig.charCodeAt(i);
+  }
+  if (mismatch !== 0) return null;
+
+  try {
+    const decoded = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
+    const payload = JSON.parse(decoded) as SessionPayload;
+    if (payload.exp < Date.now()) return null;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+/* ----- Protected paths ----- */
+
+const PROTECTED_PAGE_PATHS = ['/inbox', '/readycar', '/readyride'];
+const PROTECTED_API_PATHS = ['/api/leads', '/api/messages', '/api/dashboard'];
+
+function isProtectedRoute(path: string): boolean {
+  return PROTECTED_PAGE_PATHS.some(p => path.startsWith(p)) ||
+         PROTECTED_API_PATHS.some(p => path.startsWith(p));
+}
+
+function isProtectedApiRoute(path: string): boolean {
+  return PROTECTED_API_PATHS.some(p => path.startsWith(p));
+}
+
+/* ----- Helper to build unauthorized response ----- */
+
+function unauthorizedResponse(path: string, request: NextRequest, message: string = 'Unauthorized'): NextResponse {
+  if (isProtectedApiRoute(path)) {
+    return NextResponse.json({ error: message }, { status: 401 });
+  }
+  // For pages: redirect to the page itself (which will show the login modal)
+  // We clear the cookie to ensure a clean state
+  const res = NextResponse.redirect(new URL('/inbox', request.url));
+  res.cookies.delete('nexus_session');
+  return res;
+}
+
+export async function middleware(request: NextRequest): Promise<NextResponse> {
+  const path = request.nextUrl.pathname;
+
+  // ----- CRM session verification for protected routes -----
+  if (isProtectedRoute(path)) {
+    const sessionCookie = request.cookies.get('nexus_session')?.value;
+
+    if (!sessionCookie) {
+      // No session cookie — API gets 401, pages get passed through to show login modal
+      if (isProtectedApiRoute(path)) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+      // Let pages through — the client-side PasswordGate will show the login form
+      // (we don't redirect to avoid infinite loops; the page handles its own auth UI)
+    } else {
+      // Verify the session cookie signature and expiry
+      const session = await verifySession(sessionCookie);
+      if (!session) {
+        return unauthorizedResponse(path, request, 'Invalid or expired session');
+      }
+      // Session valid — continue to the route
+    }
+  }
+
   const response = NextResponse.next();
 
   // ----- Global security headers -----
@@ -22,7 +129,7 @@ export function middleware(request: NextRequest): NextResponse {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 
   // ----- CSRF: validate Origin on mutating requests to /api/* -----
-  if (request.nextUrl.pathname.startsWith('/api/')) {
+  if (path.startsWith('/api/')) {
     const method = request.method.toUpperCase();
     if (method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH') {
       const origin = request.headers.get('origin');
@@ -30,8 +137,7 @@ export function middleware(request: NextRequest): NextResponse {
       const isDev = process.env.NODE_ENV === 'development';
 
       // Exempt webhook and cron endpoints from CSRF (they have their own auth: Twilio signature, API keys, secrets)
-      const path = request.nextUrl.pathname;
-      const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/') || path === '/api/auth';
+      const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/') || path === '/api/auth' || path === '/api/campaign';
 
       // Reject mutating requests with no origin AND no referer (CSRF protection)
       // But allow webhooks/crons since external services (Twilio, Gmail) don't send origin headers

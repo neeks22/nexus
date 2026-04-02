@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TENANT_MAP, supaGet, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL } from '../../../../../lib/security';
+import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL } from '../../../../../lib/security';
 
 /* =============================================================================
    DELAYED SMS PROCESSOR — Called internally by the webhook
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const ip = getClientIp(request);
-  if (rateLimit(ip, 30)) {
+  if (await rateLimit(ip, 30)) {
     return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
   }
 
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
       // Check 1: transcript status entries (HOT_PAUSED / AI_RESUMED)
       try {
-        const statusEntries = await supaGet(
+        const statusEntries = await supaGetData(
           `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&entry_type=eq.status&select=content,created_at&order=created_at.desc&limit=1`
         ) as { content: string; created_at: string }[];
 
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Check 2: funnel_submissions status — appointment or credit_app means human took over
       if (!isPaused) {
         try {
-          const leadStatus = await supaGet(
+          const leadStatus = await supaGetData(
             `v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=status&limit=1`
           ) as { status: string }[];
 
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Load conversation history
     let conversationHistory = '';
     try {
-      const history = await supaGet(
+      const history = await supaGetData(
         `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&channel=eq.sms&select=role,content&order=created_at.desc&limit=10`
       ) as { role: string; content: string }[];
       if (history.length > 0) conversationHistory = history.reverse().map(m => `${m.role}: ${m.content}`).join('\n');
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Lookup lead name
     let leadName = '';
     try {
-      const leads = await supaGet(
+      const leads = await supaGetData(
         `v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=first_name,last_name&limit=1`
       ) as { first_name?: string; last_name?: string }[];
       if (leads.length > 0) leadName = [leads[0].first_name, leads[0].last_name].filter(Boolean).join(' ');
@@ -251,7 +251,7 @@ Return ONLY the JSON, nothing else.`;
 
 Name: ${leadName || 'Unknown'}
 Phone: ***${fromPhone.slice(-4)}
-Email: ${(await supaGet(`v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=email&limit=1`) as {email?: string}[])[0]?.email || 'N/A'}
+Email: ${(await supaGetData(`v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=email&limit=1`) as {email?: string}[])[0]?.email || 'N/A'}
 Postal Code: ${formData.postal_code || 'N/A'}
 Date of Birth: ${formData.date_of_birth || 'N/A'}
 Employment: ${formData.employment_status || 'Employed'}

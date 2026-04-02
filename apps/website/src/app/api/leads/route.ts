@@ -14,7 +14,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (authError) return authError;
 
   const ip = getClientIp(request);
-  if (rateLimit(ip, 60)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+  if (await rateLimit(ip, 60)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
 
   const tenant = validateTenant(request.nextUrl.searchParams.get('tenant'));
   const status = request.nextUrl.searchParams.get('status');
@@ -75,7 +75,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   if (authError) return authError;
 
   const ip = getClientIp(request);
-  if (rateLimit(ip, 30)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+  if (await rateLimit(ip, 30)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
 
   let body;
   try {
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (authError) return authError;
 
   const ip = getClientIp(request);
-  if (rateLimit(ip, 20)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+  if (await rateLimit(ip, 20)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
 
   let postBody;
   try {

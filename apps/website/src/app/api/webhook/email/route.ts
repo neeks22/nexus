@@ -16,7 +16,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
 
   // Rate limit: 20 requests/min
-  if (rateLimit(ip, 20)) {
+  if (await rateLimit(ip, 20)) {
     return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
   }
 

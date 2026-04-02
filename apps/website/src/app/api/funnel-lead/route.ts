@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { handleAutoResponse } from '../../../lib/auto-response';
+import { rateLimit, getClientIp as sharedGetClientIp } from '../../../lib/security';
 
 /**
  * POST /api/funnel-lead
@@ -22,42 +23,8 @@ const N8N_WEBHOOK_URL =
 const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
 
 /* =============================================================================
-   RATE LIMITING — 10 submissions per minute per IP
+   RATE LIMITING — 10 submissions per minute per IP (shared Upstash-backed)
    ============================================================================= */
-
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX_REQUESTS = 10;
-
-interface RateLimitEntry {
-  timestamps: number[];
-}
-
-const rateLimitMap = new Map<string, RateLimitEntry>();
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  let entry = rateLimitMap.get(ip);
-  if (!entry) {
-    entry = { timestamps: [] };
-    rateLimitMap.set(ip, entry);
-  }
-  entry.timestamps = entry.timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  if (entry.timestamps.length >= RATE_LIMIT_MAX_REQUESTS) {
-    return true;
-  }
-  entry.timestamps.push(now);
-  return false;
-}
-
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of Array.from(rateLimitMap.entries())) {
-    entry.timestamps = entry.timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-    if (entry.timestamps.length === 0) {
-      rateLimitMap.delete(ip);
-    }
-  }
-}, 120_000);
 
 /* =============================================================================
    INPUT VALIDATION — Zod schema with injection blocking
@@ -191,8 +158,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
   const origin = request.headers.get('origin');
 
-  // Rate limiting
-  if (isRateLimited(ip)) {
+  // Rate limiting (shared Upstash-backed, 10 req/min for funnel submissions)
+  if (await rateLimit(ip, 10)) {
     return NextResponse.json(
       { error: 'Too many submissions. Please wait a minute and try again.' },
       { status: 429, headers: securityHeaders(origin) }
@@ -258,49 +225,49 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         `credit=${body.creditSituation} utm_source=${body.utmSource || 'direct'}`
     );
 
-    // Fire-and-forget: auto-response (Supabase insert + SMS + email + Slack)
-    handleAutoResponse(lead, body.tenant).catch((err) => {
-      console.error('[funnel-lead] Auto-response background error:', err instanceof Error ? err.message : 'unknown');
-    });
-
-    // Also forward to n8n webhook (kept as backup/CRM sync)
-    fetch(N8N_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        source: 'funnel',
-        funnelData: {
-          vehicleType: body.vehicleType,
-          monthlyIncome: body.monthlyIncome,
-          employmentStatus: body.employmentStatus,
-          jobDuration: body.jobDuration,
-          creditSituation: body.creditSituation,
-        },
-        contact: {
-          firstName: body.firstName,
-          lastName: body.lastName,
-          phone: body.phone,
-          email: body.email,
-        },
-        consent: {
-          casl: body.caslConsent,
-          timestamp: body.completedAt || new Date().toISOString(),
-        },
-        attribution: {
-          utmSource: body.utmSource,
-          utmMedium: body.utmMedium,
-          utmCampaign: body.utmCampaign,
-        },
-        metadata: {
-          submittedAt: new Date().toISOString(),
-          userAgent: sanitizeString(request.headers.get('user-agent') || '', 500),
-          ip,
-        },
+    // Run auto-response and n8n webhook in parallel to stay within Vercel time limits
+    await Promise.allSettled([
+      handleAutoResponse(lead, body.tenant).catch((err) => {
+        console.error('[funnel-lead] Auto-response error:', err instanceof Error ? err.message : 'unknown');
       }),
-      signal: AbortSignal.timeout(10000),
-    }).catch((err) => {
-      console.error('[funnel-lead] n8n webhook failed:', err instanceof Error ? err.message : 'unknown');
-    });
+      fetch(N8N_WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'funnel',
+          funnelData: {
+            vehicleType: body.vehicleType,
+            monthlyIncome: body.monthlyIncome,
+            employmentStatus: body.employmentStatus,
+            jobDuration: body.jobDuration,
+            creditSituation: body.creditSituation,
+          },
+          contact: {
+            firstName: body.firstName,
+            lastName: body.lastName,
+            phone: body.phone,
+            email: body.email,
+          },
+          consent: {
+            casl: body.caslConsent,
+            timestamp: body.completedAt || new Date().toISOString(),
+          },
+          attribution: {
+            utmSource: body.utmSource,
+            utmMedium: body.utmMedium,
+            utmCampaign: body.utmCampaign,
+          },
+          metadata: {
+            submittedAt: new Date().toISOString(),
+            userAgent: sanitizeString(request.headers.get('user-agent') || '', 500),
+            ip,
+          },
+        }),
+        signal: AbortSignal.timeout(10000),
+      }).catch((err) => {
+        console.error('[funnel-lead] n8n webhook failed:', err instanceof Error ? err.message : 'unknown');
+      }),
+    ]);
 
     return NextResponse.json(
       { success: true },

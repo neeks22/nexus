@@ -47,7 +47,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // Rate limit: 10 per minute per IP
   const ip = getClientIp(request);
-  if (rateLimit(ip, 10)) {
+  if (await rateLimit(ip, 10)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 

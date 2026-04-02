@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireApiKey } from '../../../lib/security';
+import { requireApiKey, rateLimit as sharedRateLimit } from '../../../lib/security';
 
 /* =============================================================================
    ENVIRONMENT VARIABLES — never hardcode credentials
@@ -22,38 +22,8 @@ const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY ?? '').trim().replace(/\\
 const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
 
 /* =============================================================================
-   RATE LIMITING — in-memory sliding window (per-IP, 60 req/min)
+   RATE LIMITING — shared Upstash-backed (per-IP, 60 req/min)
    ============================================================================= */
-
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX_REQUESTS = 60;
-
-interface RateLimitEntry {
-  timestamps: number[];
-}
-
-const rateLimitMap = new Map<string, RateLimitEntry>();
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  let entry = rateLimitMap.get(ip);
-  if (!entry) {
-    entry = { timestamps: [] };
-    rateLimitMap.set(ip, entry);
-  }
-  // Prune expired timestamps
-  entry.timestamps = entry.timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
-  if (entry.timestamps.length >= RATE_LIMIT_MAX_REQUESTS) {
-    return true;
-  }
-  entry.timestamps.push(now);
-  return false;
-}
-
-// NOTE: setInterval removed — on Vercel serverless, each invocation gets a fresh
-// instance so in-memory rate limiting is best-effort. A persistent store (e.g.
-// Upstash Redis) is needed for production-grade rate limiting. Cleanup happens
-// inline inside isRateLimited() via the timestamp filter on each call.
 
 /* =============================================================================
    INPUT VALIDATION
@@ -394,7 +364,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
   const origin = request.headers.get('origin');
 
-  if (isRateLimited(ip)) {
+  if (await sharedRateLimit(ip, 60)) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
       { status: 429, headers: securityHeaders(origin) }
@@ -464,7 +434,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
   const origin = request.headers.get('origin');
 
-  if (isRateLimited(ip)) {
+  if (await sharedRateLimit(ip, 60)) {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
       { status: 429, headers: securityHeaders(origin) }

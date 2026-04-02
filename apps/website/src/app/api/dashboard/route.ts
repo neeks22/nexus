@@ -6,7 +6,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (authError) return authError;
 
   const ip = getClientIp(request);
-  if (rateLimit(ip, 30)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+  if (await rateLimit(ip, 30)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
 
   const tenant = validateTenant(request.nextUrl.searchParams.get('tenant'));
   if (!SUPABASE_URL) return NextResponse.json({ error: 'Config error' }, { status: 500 });

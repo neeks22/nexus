@@ -23,7 +23,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
       });
       const data = await res.json();
       if (data.authenticated) {
-        sessionStorage.setItem('inbox_auth', data.token || 'true');
+        // Cookie is set server-side (HttpOnly) — no sessionStorage needed
         onUnlock();
       } else {
         setError(true);
@@ -224,9 +224,17 @@ export default function InboxPage(): React.ReactElement {
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    if (sessionStorage.getItem('inbox_auth') === 'true') {
-      setAuthed(true);
+    // Check for valid server-side session via GET /api/auth
+    // The HttpOnly cookie is sent automatically; we just check the response
+    async function checkSession(): Promise<void> {
+      try {
+        const res = await fetch('/api/auth');
+        if (res.ok) setAuthed(true);
+      } catch {
+        // No valid session — show login
+      }
     }
+    checkSession();
   }, []);
 
   if (!authed) {

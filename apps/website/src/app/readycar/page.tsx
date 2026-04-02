@@ -27,7 +27,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
       });
       const data = await res.json();
       if (data.authenticated) {
-        sessionStorage.setItem('readycar_auth', data.token || 'true');
+        // Cookie is set server-side (HttpOnly) — no sessionStorage needed
         onUnlock();
       } else {
         setError(true);
@@ -229,8 +229,16 @@ export default function InboxPage(): React.ReactElement {
   const [authed, setAuthed] = useState(false);
 
   useEffect(() => {
-    const token = sessionStorage.getItem('readycar_auth');
-    if (token && token.length > 10) setAuthed(true);
+    // Check for valid server-side session via GET /api/auth
+    async function checkSession(): Promise<void> {
+      try {
+        const res = await fetch('/api/auth');
+        if (res.ok) setAuthed(true);
+      } catch {
+        // No valid session — show login
+      }
+    }
+    checkSession();
   }, []);
 
   if (!authed) {

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const ip = getClientIp(request);
 
   // Rate limit: 60 requests/min per IP
-  if (rateLimit(ip, 60)) {
+  if (await rateLimit(ip, 60)) {
     return new NextResponse(TWIML_OK, { status: 200, headers: { 'Content-Type': 'text/xml' } });
   }
 

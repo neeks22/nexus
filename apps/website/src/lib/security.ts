@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 
 /* =============================================================================
    SECURITY MODULE — Shared auth, rate limiting, validation for all API routes
@@ -53,14 +55,22 @@ export function supaAnonHeaders(tenant?: string): Record<string, string> {
   return headers;
 }
 
-export async function supaGet(path: string): Promise<unknown[]> {
+export async function supaGet(path: string): Promise<{ data: unknown[]; error: boolean }> {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: supaHeaders(), signal: AbortSignal.timeout(8000) });
-    if (res.ok) return await res.json();
+    if (res.ok) return { data: await res.json(), error: false };
+    console.error(`[supaGet] HTTP ${res.status}:`, await res.text().catch(() => ''));
+    return { data: [], error: true };
   } catch (err) {
     console.error('[supaGet] Error:', err instanceof Error ? err.message : 'unknown');
+    return { data: [], error: true };
   }
-  return [];
+}
+
+// Backward-compatible wrapper — returns just the data array for existing callers
+export async function supaGetData(path: string): Promise<unknown[]> {
+  const { data } = await supaGet(path);
+  return data;
 }
 
 export async function supaPost(table: string, data: Record<string, unknown>): Promise<void> {
@@ -144,26 +154,37 @@ export function requireApiKey(request: NextRequest): NextResponse | null {
   return null; // Authorized
 }
 
-/* ---------- Rate Limiting ---------- */
+/* ---------- Rate Limiting (Upstash Redis with in-memory fallback) ---------- */
 
+const redis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    })
+  : null;
+
+const upstashRateLimiter = redis
+  ? new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '60 s') })
+  : null;
+
+// Fallback in-memory store when Upstash env vars aren't set
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
-export function rateLimit(ip: string, maxRequests: number = 30, windowMs: number = 60000): boolean {
+export async function rateLimit(ip: string, maxRequests: number = 30, windowMs: number = 60000): Promise<boolean> {
+  if (upstashRateLimiter) {
+    const { success } = await upstashRateLimiter.limit(ip);
+    return !success; // returns true if LIMITED
+  }
+  // Fallback: in-memory best-effort (serverless caveat — resets on cold start)
   const now = Date.now();
   const entry = rateLimitStore.get(ip);
-
   if (!entry || now > entry.resetAt) {
     rateLimitStore.set(ip, { count: 1, resetAt: now + windowMs });
-    return false; // Not limited
+    return false;
   }
-
   entry.count++;
-  if (entry.count > maxRequests) return true; // Limited
-  return false;
+  return entry.count > maxRequests;
 }
-
-// NOTE: In-memory rate limiting is best-effort on serverless (each cold start gets a fresh Map).
-// No setInterval cleanup — it fires on every cold start and serves no purpose on Vercel.
 
 export function getClientIp(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '0.0.0.0';
@@ -225,10 +246,14 @@ export async function callClaude(system: string, userMsg: string, maxTokens: num
       signal: AbortSignal.timeout(8000), // Vercel Hobby has 10s limit — 15s guaranteed failure
     });
 
-    if (!res.ok) return '';
+    if (!res.ok) {
+      console.error(`[callClaude] API error ${res.status}:`, await res.text().catch(() => 'no body'));
+      return '';
+    }
     const data = await res.json();
     return data.content?.[0]?.text || '';
-  } catch {
+  } catch (err) {
+    console.error('[callClaude] Error:', err instanceof Error ? err.message : 'unknown');
     return '';
   }
 }

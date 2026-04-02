@@ -74,13 +74,17 @@ export function normalizePhone(phone: string): string {
 
 async function isDuplicate(phone: string, tenantId: string): Promise<boolean> {
   try {
-    const existing = await supaGet(
+    const { data, error } = await supaGet(
       `funnel_submissions?tenant_id=eq.${tenantId}&phone=eq.${encodeURIComponent(phone)}&select=id&limit=1`
-    ) as { id: string }[];
-    return existing.length > 0;
+    );
+    if (error) {
+      console.error('[auto-response] Dedup check failed: supaGet returned error');
+      return true; // Safe default: treat as duplicate rather than risk double-sending
+    }
+    return (data as { id: string }[]).length > 0;
   } catch (err) {
     console.error('[auto-response] Dedup check failed:', err instanceof Error ? err.message : 'unknown');
-    return false;
+    return true; // Safe default: treat as duplicate rather than risk double-sending
   }
 }
 
@@ -313,6 +317,8 @@ export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'r
     console.error('[auto-response] Fatal error:', err instanceof Error ? err.message : 'unknown');
     try {
       await slackNotify(`AUTO-RESPONSE FATAL ERROR\nLead: ${lead.firstName} ${lead.lastName}\nError: ${err instanceof Error ? err.message : 'unknown'}\nPlease follow up manually.`);
-    } catch { /* last resort */ }
+    } catch (slackErr) {
+      console.error('[auto-response] Slack fallback failed:', slackErr instanceof Error ? slackErr.message : 'unknown');
+    }
   }
 }
