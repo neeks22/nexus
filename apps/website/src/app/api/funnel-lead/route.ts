@@ -19,7 +19,7 @@ import { handleAutoResponse } from '../../../lib/auto-response';
 
 const N8N_WEBHOOK_URL =
   process.env.N8N_FUNNEL_WEBHOOK_URL ?? 'https://nexusagents.app.n8n.cloud/webhook/ad-lead';
-const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca';
+const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
 
 /* =============================================================================
    RATE LIMITING — 10 submissions per minute per IP
@@ -199,8 +199,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Origin validation (CSRF protection)
+  // Origin validation handled by middleware (CSRF check)
+  // Route-level check kept as defense-in-depth but with env var trimming applied
   if (!isValidOrigin(request)) {
+    console.error('[funnel-lead] Origin rejected:', origin, 'expected:', ALLOWED_ORIGIN);
     return NextResponse.json(
       { error: 'Forbidden' },
       { status: 403, headers: securityHeaders(origin) }
