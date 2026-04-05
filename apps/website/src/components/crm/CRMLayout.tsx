@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, Component, ErrorInfo, ReactNode } from 'react';
+import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
+import ProfileDropdown from './ProfileDropdown';
 
-export type CRMTab = 'dashboard' | 'pipeline' | 'inbox' | 'leads' | 'credit' | 'reports' | 'inventory' | 'appointments' | 'deals';
+export type CRMTab = 'dashboard' | 'pipeline' | 'inbox' | 'leads' | 'credit' | 'reports' | 'inventory' | 'appointments' | 'deals' | 'settings';
 
 const TABS: { id: CRMTab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
@@ -52,6 +53,7 @@ const ReportsTab = dynamic(() => import('./ReportsTab'), { ssr: false, loading: 
 const InventoryTab = dynamic(() => import('./InventoryTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading inventory...</div> });
 const AppointmentsTab = dynamic(() => import('./AppointmentsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading appointments...</div> });
 const DealsTab = dynamic(() => import('./DealsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading deals...</div> });
+const SettingsTab = dynamic(() => import('./SettingsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading settings...</div> });
 const LeadDetailPanel = dynamic(() => import('./LeadDetailPanel'), { ssr: false });
 
 interface BrandTheme {
@@ -98,7 +100,14 @@ export default function CRMLayout({
 }: CRMLayoutProps): React.ReactElement {
   const [activeTab, setActiveTab] = useState<CRMTab>('dashboard');
   const [selectedLead, setSelectedLead] = useState<string | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; role: string; tenant_id: string } | null>(null);
   const theme = BRAND_THEMES[tenant] || DEFAULT_THEME;
+
+  useEffect(() => {
+    fetch('/api/auth').then(r => r.ok ? r.json() : null).then(data => {
+      if (data?.authenticated && data.user) setUser(data.user);
+    }).catch(err => console.error('Failed to fetch user:', err));
+  }, []);
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -170,10 +179,23 @@ export default function CRMLayout({
           </button>
         ))}
 
-        {/* Status indicator */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px' }}>
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-          <span style={{ color: '#555', fontSize: '12px' }}>Nexus AI Active</span>
+        {/* Right side: status + profile */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '16px', padding: '0 8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
+            <span style={{ color: '#555', fontSize: '11px' }}>AI Active</span>
+          </div>
+          {user && (
+            <ProfileDropdown
+              userName={user.name}
+              userRole={user.role}
+              onSettings={() => setActiveTab('settings')}
+              onLogout={async () => {
+                await fetch('/api/auth', { method: 'DELETE' });
+                window.location.href = '/login';
+              }}
+            />
+          )}
         </div>
       </div>
 
@@ -198,6 +220,7 @@ export default function CRMLayout({
           {activeTab === 'appointments' && <AppointmentsTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
           {activeTab === 'deals' && <DealsTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
           {activeTab === 'reports' && <ReportsTab tenant={tenant} />}
+          {activeTab === 'settings' && user && <SettingsTab user={{ name: user.name, email: user.email, role: user.role, tenant }} />}
         </TabErrorBoundary>
 
         {selectedLead && (

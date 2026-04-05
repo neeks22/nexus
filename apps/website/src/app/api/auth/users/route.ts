@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
+import * as Sentry from '@sentry/nextjs';
 import { SUPABASE_URL, SUPABASE_KEY, rateLimit, getClientIp } from '@/lib/security';
-import { hashPassword } from '@/lib/auth';
+import { hashPassword, verifyPassword, findUserByEmail } from '@/lib/auth';
 
 function cleanEnv(val: string | undefined): string {
   if (!val) return '';
@@ -9,6 +10,33 @@ function cleanEnv(val: string | undefined): string {
 }
 
 const AUTH_SECRET = (cleanEnv(process.env.AUTH_SECRET) || cleanEnv(process.env.CSRF_SECRET) || '').trim();
+
+function verifySession(request: NextRequest): { user_id: string; email: string; role: string; tenant_id: string } | null {
+  const sessionCookie = request.cookies.get('nexus_session')?.value;
+  if (!sessionCookie || !AUTH_SECRET) return null;
+
+  const dotIdx = sessionCookie.indexOf('.');
+  if (dotIdx === -1) return null;
+
+  const payloadB64 = sessionCookie.substring(0, dotIdx);
+  const signature = sessionCookie.substring(dotIdx + 1);
+  const expectedSig = crypto.createHmac('sha256', AUTH_SECRET).update(payloadB64).digest('hex');
+
+  const sigBuf = Buffer.from(signature);
+  const expectedBuf = Buffer.from(expectedSig);
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
+    if (payload.exp < Date.now()) return null;
+    if (!payload.user_id || !payload.email) return null;
+    return { user_id: payload.user_id, email: payload.email, role: payload.role, tenant_id: payload.tenant_id };
+  } catch {
+    return null;
+  }
+}
 
 function verifyAdminSession(request: NextRequest): { role: string; tenant_id: string } | null {
   const sessionCookie = request.cookies.get('nexus_session')?.value;
@@ -125,6 +153,72 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ users });
   } catch (err) {
     console.error('[users] GET error:', err instanceof Error ? err.message : 'unknown');
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+
+/** PATCH /api/auth/users — change own password (any authenticated user) */
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
+  const session = verifySession(request);
+  if (!session) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const ip = getClientIp(request);
+  if (await rateLimit(ip, 5)) {
+    return NextResponse.json({ error: 'Too many attempts' }, { status: 429 });
+  }
+
+  try {
+    const body = await request.json();
+    const { current_password, new_password } = body as { current_password?: string; new_password?: string };
+
+    if (!current_password || !new_password) {
+      return NextResponse.json({ error: 'Missing current_password or new_password' }, { status: 400 });
+    }
+
+    if (new_password.length < 8) {
+      return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 });
+    }
+
+    // Look up user to get current password hash
+    const user = await findUserByEmail(session.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    // Verify current password
+    const valid = await verifyPassword(current_password, user.password_hash);
+    if (!valid) {
+      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 403 });
+    }
+
+    // Hash and update
+    const newHash = await hashPassword(new_password);
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/crm_users?id=eq.${user.id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ password_hash: newHash }),
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+
+    if (!res.ok) {
+      console.error(`[users] Password update failed: HTTP ${res.status}`);
+      return NextResponse.json({ error: 'Failed to update password' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[users] PATCH error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
