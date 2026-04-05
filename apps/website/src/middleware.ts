@@ -35,7 +35,11 @@ async function computeHmac(secret: string, data: string): Promise<string> {
 }
 
 interface SessionPayload {
-  tenant: string;
+  user_id: string;
+  email: string;
+  name: string;
+  tenant_id: string;
+  role: string;
   exp: number;
 }
 
@@ -71,7 +75,7 @@ async function verifySession(cookie: string): Promise<SessionPayload | null> {
 
 /* ----- Protected paths ----- */
 
-const PROTECTED_PAGE_PATHS = ['/inbox', '/readycar', '/readyride'];
+const PROTECTED_PAGE_PATHS = ['/inbox', '/readycar', '/readyride', '/dashboard'];
 const PROTECTED_API_PATHS = ['/api/leads', '/api/messages', '/api/dashboard'];
 
 function isProtectedRoute(path: string): boolean {
@@ -89,9 +93,7 @@ function unauthorizedResponse(path: string, request: NextRequest, message: strin
   if (isProtectedApiRoute(path)) {
     return NextResponse.json({ error: message }, { status: 401 });
   }
-  // For pages: redirect to the page itself (which will show the login modal)
-  // We clear the cookie to ensure a clean state
-  const res = NextResponse.redirect(new URL('/inbox', request.url));
+  const res = NextResponse.redirect(new URL('/login', request.url));
   res.cookies.delete('nexus_session');
   return res;
 }
@@ -104,44 +106,46 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 
   // ----- CRM session verification for protected routes -----
   if (isProtectedRoute(path)) {
-    // No secret configured = can't verify sessions = deny access
     if (!AUTH_SECRET) {
       return isProtectedApiRoute(path)
         ? NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-        : NextResponse.redirect(new URL('/inbox', request.url));
+        : NextResponse.redirect(new URL('/login', request.url));
     }
 
     const sessionCookie = request.cookies.get('nexus_session')?.value;
 
     if (!sessionCookie) {
-      // No session cookie — API gets 401, pages get passed through to show login modal
       if (isProtectedApiRoute(path)) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-      // Let pages through — the client-side PasswordGate will show the login form
-      // (we don't redirect to avoid infinite loops; the page handles its own auth UI)
-    } else {
-      // Verify the session cookie signature and expiry
-      const session = await verifySession(sessionCookie);
-      if (!session) {
-        return unauthorizedResponse(path, request, 'Invalid or expired session');
-      }
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
 
-      // Tenant scope check: /readycar routes require readycar session, /readyride requires readyride
-      const sessionTenant = session.tenant;
+    const session = await verifySession(sessionCookie);
+    if (!session) {
+      return unauthorizedResponse(path, request, 'Invalid or expired session');
+    }
+
+    // Tenant scope check: staff/manager can only access their own tenant
+    // Admin (role='admin') can access any tenant
+    const sessionTenant = session.tenant_id;
+    const sessionRole = session.role;
+
+    if (sessionRole !== 'admin') {
       if (path.startsWith('/readycar') && sessionTenant !== 'readycar') {
-        const res = NextResponse.redirect(new URL('/inbox', request.url));
-        res.cookies.delete('nexus_session');
-        return res;
+        return NextResponse.redirect(new URL('/dashboard', request.url));
       }
       if (path.startsWith('/readyride') && sessionTenant !== 'readyride') {
-        const res = NextResponse.redirect(new URL('/inbox', request.url));
-        res.cookies.delete('nexus_session');
-        return res;
+        return NextResponse.redirect(new URL('/dashboard', request.url));
       }
+    }
 
-      // Store verified tenant for header injection after CSRF checks
-      verifiedTenant = sessionTenant;
+    verifiedTenant = sessionTenant;
+
+    // For admin accessing a specific tenant path, use that tenant for RLS
+    if (sessionRole === 'admin') {
+      if (path.startsWith('/readycar')) verifiedTenant = 'readycar';
+      else if (path.startsWith('/readyride')) verifiedTenant = 'readyride';
     }
   }
 
@@ -168,7 +172,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       const isDev = process.env.NODE_ENV === 'development';
 
       // Exempt webhook and cron endpoints from CSRF (they have their own auth: Twilio signature, API keys, secrets)
-      const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/') || path === '/api/auth' || path === '/api/campaign';
+      const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/') || path.startsWith('/api/auth') || path === '/api/campaign';
 
       // Reject mutating requests with no origin AND no referer (CSRF protection)
       // But allow webhooks/crons since external services (Twilio, Gmail) don't send origin headers
