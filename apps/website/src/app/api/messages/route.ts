@@ -448,9 +448,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  let msgBody: { to?: unknown; body?: unknown; tenant?: unknown };
+  let msgBody: { to?: unknown; body?: unknown; tenant?: unknown; channel?: unknown; subject?: unknown; email?: unknown };
   try {
-    msgBody = (await request.json()) as { to?: unknown; body?: unknown; tenant?: unknown };
+    msgBody = (await request.json()) as { to?: unknown; body?: unknown; tenant?: unknown; channel?: unknown; subject?: unknown; email?: unknown };
   } catch {
     return NextResponse.json(
       { error: 'Invalid JSON body' },
@@ -460,6 +460,58 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   try {
     const body = msgBody;
+    const channel = typeof body.channel === 'string' ? body.channel : 'sms';
+
+    // ---- EMAIL CHANNEL ----
+    if (channel === 'email') {
+      const GMAIL_USER = (process.env.GMAIL_USER || '').trim();
+      const GMAIL_PASS = (process.env.GMAIL_PASS || '').trim();
+      if (!GMAIL_USER || !GMAIL_PASS) {
+        console.error('[messages] Gmail credentials not configured');
+        return NextResponse.json(
+          { error: 'Email not configured' },
+          { status: 500, headers: securityHeaders(origin) }
+        );
+      }
+
+      const toEmail = typeof body.email === 'string' ? body.email.trim() : '';
+      const subject = typeof body.subject === 'string' ? body.subject.trim() : 'Following up';
+      const emailBody = typeof body.body === 'string' ? body.body.trim() : '';
+
+      if (!toEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+        return NextResponse.json(
+          { error: 'Invalid email address' },
+          { status: 400, headers: securityHeaders(origin) }
+        );
+      }
+      if (!emailBody) {
+        return NextResponse.json(
+          { error: 'Email body cannot be empty' },
+          { status: 400, headers: securityHeaders(origin) }
+        );
+      }
+
+      // Dynamic import nodemailer (already a dependency)
+      const nodemailer = await import('nodemailer');
+      const transporter = nodemailer.default.createTransport({
+        service: 'gmail',
+        auth: { user: GMAIL_USER, pass: GMAIL_PASS },
+      });
+
+      await transporter.sendMail({
+        from: GMAIL_USER,
+        to: toEmail,
+        subject,
+        text: emailBody,
+      });
+
+      return NextResponse.json(
+        { success: true, message: { to: toEmail, subject, body: emailBody, channel: 'email' } },
+        { headers: securityHeaders(origin) }
+      );
+    }
+
+    // ---- SMS CHANNEL (default) ----
 
     // Validate required fields exist and are strings
     if (typeof body.to !== 'string' || typeof body.body !== 'string') {

@@ -24,11 +24,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const anonH = supaAnonHeaders(tenant);
     const paginatedHeaders = { ...anonH, Range: `${offset}-${offset + limit - 1}`, Prefer: 'count=exact' };
 
-    const [leads, messages, allLeadsRes, recentMessages] = await Promise.all([
+    const [leads, messages, allLeadsRes, recentMessages, hotLeadRows] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&created_at=gte.${todayISO}&select=phone`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&created_at=gte.${todayISO}&select=lead_id`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&select=phone,first_name,last_name,status&order=created_at.desc`, { headers: paginatedHeaders }),
       fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&select=lead_id,content,role,channel,created_at&order=created_at.desc&limit=20`, { headers: anonH }).then(r => r.ok ? r.json() : []),
+      // Hot leads: appointment/showed status OR HOT_PAUSED in transcripts
+      fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&status=in.(appointment,showed)&select=phone,first_name,last_name,status,created_at&order=created_at.desc`, { headers: anonH }).then(r => r.ok ? r.json() : []),
     ]);
 
     const allLeads = allLeadsRes.ok ? await allLeadsRes.json() : [];
@@ -45,9 +47,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       type: msg.channel || 'sms', content: (msg.content as string) || '', phone: (msg.lead_id as string) || '',
     }));
 
+    // Build hot leads list from appointment/showed status leads
+    const hotLeads = (hotLeadRows as Array<{ phone: string; first_name: string; last_name: string; status: string; created_at: string }>).map((lead) => ({
+      phone: lead.phone,
+      name: [lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.phone,
+      status: lead.status,
+      since: lead.created_at,
+    }));
+
     return NextResponse.json({
       leadsToday: leads.length, messagesToday: messages.length,
-      pipelineCounts, hotLeads: [], recentActivity,
+      pipelineCounts, hotLeads, recentActivity,
       pagination: { page, limit, total: totalLeads, pages: Math.ceil(totalLeads / limit) },
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {

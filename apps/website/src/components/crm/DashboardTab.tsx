@@ -12,7 +12,7 @@ interface DashboardData {
   leadsToday: number;
   messagesToday: number;
   pipelineCounts: Record<string, number>;
-  hotLeads: { phone: string; name: string; score: number }[];
+  hotLeads: { phone: string; name: string; status: string }[];
   recentActivity: { time: string; type: string; content: string; phone: string }[];
 }
 
@@ -59,7 +59,7 @@ export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps
         <StatCard title="New Leads Today" value={d.leadsToday} color="#10b981" />
         <StatCard title="Messages Today" value={d.messagesToday} color="#6366f1" />
         <StatCard title="Total in Pipeline" value={totalPipeline} color="#f59e0b" />
-        <StatCard title="Hot Leads" value={d.hotLeads.length} subtitle="BANT 10+" color="#ef4444" />
+        <StatCard title="Hot Leads" value={d.hotLeads.length} subtitle="Appointment / Showed" color="#ef4444" />
       </div>
 
       {/* Two Column */}
@@ -100,7 +100,8 @@ export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps
                   borderRadius: '10px',
                   fontSize: '11px',
                   fontWeight: 600,
-                }}>BANT {lead.score}</span>
+                  textTransform: 'capitalize',
+                }}>{lead.status.replace('_', ' ')}</span>
               </div>
             ))
           )}

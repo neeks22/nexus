@@ -143,14 +143,29 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
     if (!emailBody.trim() || !lead?.email || sending) return;
     setSending(true);
     try {
-      // Use the existing messages API to send — or open mailto as fallback
-      window.open(`mailto:${lead.email}?subject=${encodeURIComponent(emailSubject || 'Following up')}&body=${encodeURIComponent(emailBody)}`, '_blank');
-      setSendSuccess('Email client opened!');
-      setEmailSubject('');
-      setEmailBody('');
-      setActiveAction('none');
-      setTimeout(() => setSendSuccess(''), 3000);
-    } catch (err) { console.error('[LeadDetail] Email open error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to open email'); }
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channel: 'email',
+          email: lead.email,
+          subject: emailSubject || 'Following up',
+          body: emailBody.trim(),
+          tenant,
+        }),
+      });
+      if (res.ok) {
+        setSendSuccess('Email sent!');
+        setEmailSubject('');
+        setEmailBody('');
+        setActiveAction('none');
+        setTimeout(() => setSendSuccess(''), 3000);
+        fetchData();
+      } else {
+        const data = await res.json().catch(() => ({ error: 'Unknown error' }));
+        alert(`Failed to send email: ${data.error || 'Server error'}`);
+      }
+    } catch (err) { console.error('[LeadDetail] Email send error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to send email'); }
     finally { setSending(false); }
   }
 
