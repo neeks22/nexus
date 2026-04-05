@@ -183,10 +183,13 @@ function InboxContent(): React.ReactElement {
   const [transferPhone, setTransferPhone] = useState('6133634494');
   const [transferring, setTransferring] = useState(false);
   const [transferSuccess, setTransferSuccess] = useState(false);
-  const [showNewMessage, setShowNewMessage] = useState(false);
+  const [showNewMessage, setShowNewMessage] = useState<false | 'pick' | 'single' | 'mass'>(false);
   const [newMessagePhone, setNewMessagePhone] = useState('');
   const [newMessageText, setNewMessageText] = useState('');
   const [sendingNew, setSendingNew] = useState(false);
+  const [massRecipients, setMassRecipients] = useState<Set<string>>(new Set());
+  const [massSent, setMassSent] = useState(0);
+  const [massTotal, setMassTotal] = useState(0);
   const [agentPaused, setAgentPaused] = useState(false);
   const [agentToggling, setAgentToggling] = useState(false);
 
@@ -428,6 +431,52 @@ function InboxContent(): React.ReactElement {
     }
   };
 
+  /* ---- Send mass message ---- */
+  const sendMassMessage = async (): Promise<void> => {
+    if (massRecipients.size === 0 || !newMessageText.trim() || sendingNew) return;
+    if (!window.confirm(`Send this message to ${massRecipients.size} recipients?`)) return;
+    setSendingNew(true);
+    setMassSent(0);
+    setMassTotal(massRecipients.size);
+    let sent = 0;
+    const recipients = Array.from(massRecipients);
+    for (const phone of recipients) {
+      try {
+        await fetch('/api/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ to: phone, body: newMessageText.trim(), tenant: TENANT }),
+        });
+        sent++;
+        setMassSent(sent);
+      } catch (err) {
+        console.error(`[mass] Failed to send to ${phone}:`, err instanceof Error ? err.message : 'unknown');
+      }
+    }
+    setSendingNew(false);
+    setNewMessageText('');
+    setMassRecipients(new Set());
+    setShowNewMessage(false);
+    setMassSent(0);
+    setMassTotal(0);
+    alert(`Sent ${sent} of ${massRecipients.size} messages`);
+    fetchConversations();
+  };
+
+  const toggleRecipient = (phone: string): void => {
+    setMassRecipients(prev => {
+      const next = new Set(prev);
+      if (next.has(phone)) next.delete(phone);
+      else next.add(phone);
+      return next;
+    });
+  };
+
+  const selectAllRecipients = (): void => {
+    const allPhones = conversations.filter(c => !archivedPhones.has(c.phone)).map(c => c.phone);
+    setMassRecipients(prev => prev.size === allPhones.length ? new Set() : new Set(allPhones));
+  };
+
   /* ---- Filter conversations ---- */
   const filtered = conversations.filter((conv) => {
     if (archivedPhones.has(conv.phone)) return false;
@@ -463,7 +512,7 @@ function InboxContent(): React.ReactElement {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <button
-              onClick={() => setShowNewMessage(true)}
+              onClick={() => setShowNewMessage('single')}
               style={{
                 padding: '8px 16px',
                 borderRadius: '8px',
@@ -480,6 +529,16 @@ function InboxContent(): React.ReactElement {
             >
               + New Message
             </button>
+            <button
+              onClick={() => setShowNewMessage('mass')}
+              style={{
+                padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+                background: 'rgba(255,255,255,0.05)', color: '#f0f0f5', fontSize: '13px',
+                fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
+              }}
+            >
+              Mass Message
+            </button>
             <div className={styles.connectionStatus}>
               <span className={styles.statusDot} />
               Live
@@ -487,8 +546,8 @@ function InboxContent(): React.ReactElement {
           </div>
         </div>
 
-        {/* New Message Modal */}
-        {showNewMessage && (
+        {/* Single Message Modal */}
+        {showNewMessage === 'single' && (
           <div style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(0,0,0,0.7)', zIndex: 1000,
@@ -545,6 +604,114 @@ function InboxContent(): React.ReactElement {
                     opacity: (!newMessagePhone.trim() || !newMessageText.trim()) ? 0.5 : 1
                   }}
                 >{sendingNew ? 'Sending...' : 'Send'}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mass Message Modal */}
+        {showNewMessage === 'mass' && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            backdropFilter: 'blur(4px)'
+          }} onClick={() => { setShowNewMessage(false); setMassRecipients(new Set()); }}>
+            <div style={{
+              background: '#1a1a2e', borderRadius: '16px', padding: '32px',
+              width: '100%', maxWidth: '540px', maxHeight: '80vh', display: 'flex', flexDirection: 'column',
+              border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+            }} onClick={(e) => e.stopPropagation()}>
+              <h3 style={{ color: '#f0f0f5', margin: '0 0 4px', fontSize: '18px' }}>Mass Message</h3>
+              <p style={{ color: '#8888a0', fontSize: '13px', margin: '0 0 16px' }}>
+                Select recipients and compose one message for all.
+              </p>
+
+              {/* Select All + Count */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <button onClick={selectAllRecipients} style={{
+                  padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '12px', cursor: 'pointer',
+                }}>
+                  {massRecipients.size === conversations.filter(c => !archivedPhones.has(c.phone)).length ? 'Deselect All' : 'Select All'}
+                </button>
+                <span style={{ color: '#8888a0', fontSize: '12px' }}>
+                  {massRecipients.size} selected
+                </span>
+              </div>
+
+              {/* Recipient List */}
+              <div style={{
+                flex: 1, overflowY: 'auto', marginBottom: '16px', borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.08)', maxHeight: '250px',
+              }}>
+                {conversations.filter(c => !archivedPhones.has(c.phone)).map(conv => (
+                  <label key={conv.phone} style={{
+                    display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer',
+                    background: massRecipients.has(conv.phone) ? 'rgba(220,38,38,0.08)' : 'transparent',
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={massRecipients.has(conv.phone)}
+                      onChange={() => toggleRecipient(conv.phone)}
+                      style={{ accentColor: '#DC2626', width: '16px', height: '16px', cursor: 'pointer' }}
+                    />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ color: '#f0f0f5', fontSize: '14px', fontWeight: 500 }}>
+                        {conv.leadName || conv.phone}
+                      </div>
+                      <div style={{ color: '#8888a0', fontSize: '11px' }}>{conv.phone}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              {/* Message */}
+              <textarea
+                placeholder="Type your message to all selected recipients..."
+                value={newMessageText}
+                onChange={(e) => setNewMessageText(e.target.value)}
+                rows={3}
+                style={{
+                  width: '100%', padding: '12px 16px', borderRadius: '8px',
+                  border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
+                  color: '#f0f0f5', fontSize: '15px', outline: 'none', marginBottom: '16px',
+                  boxSizing: 'border-box', resize: 'vertical', fontFamily: 'inherit'
+                }}
+              />
+
+              {/* Progress */}
+              {sendingNew && massTotal > 0 && (
+                <div style={{ marginBottom: '12px', padding: '8px 12px', borderRadius: '8px', background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.2)' }}>
+                  <div style={{ color: '#f0f0f5', fontSize: '13px', fontWeight: 500 }}>
+                    Sending... {massSent} / {massTotal}
+                  </div>
+                  <div style={{ marginTop: '6px', height: '4px', borderRadius: '2px', background: 'rgba(255,255,255,0.1)' }}>
+                    <div style={{ height: '100%', borderRadius: '2px', background: '#DC2626', width: `${(massSent / massTotal) * 100}%`, transition: 'width 0.3s' }} />
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => { setShowNewMessage(false); setMassRecipients(new Set()); setNewMessageText(''); }}
+                  style={{
+                    padding: '10px 20px', borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.1)', background: 'transparent',
+                    color: '#8888a0', fontSize: '14px', cursor: 'pointer'
+                  }}
+                >Cancel</button>
+                <button
+                  onClick={sendMassMessage}
+                  disabled={massRecipients.size === 0 || !newMessageText.trim() || sendingNew}
+                  style={{
+                    padding: '10px 24px', borderRadius: '8px', border: 'none',
+                    background: (massRecipients.size === 0 || !newMessageText.trim()) ? '#333' : 'linear-gradient(135deg, #DC2626, #B91C1C)',
+                    color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+                    opacity: (massRecipients.size === 0 || !newMessageText.trim()) ? 0.5 : 1
+                  }}
+                >{sendingNew ? `Sending ${massSent}/${massTotal}...` : `Send to ${massRecipients.size}`}</button>
               </div>
             </div>
           </div>
