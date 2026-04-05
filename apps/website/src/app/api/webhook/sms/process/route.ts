@@ -219,7 +219,7 @@ Rules:
 - employment_length: like "6 months" or "2 years"
 - company_name: employer name
 - job_title: their job
-- vehicle_type: SUV, truck, sedan, etc.
+- vehicle_type: Be specific. If they mention a make/model (e.g. "RAV4", "F-150", "Civic"), use that. If they mention a category (e.g. "SUV", "truck", "sedan", "minivan"), use that. If they describe needs (e.g. "something for the family", "need 4x4", "good on gas"), infer the category. Examples: "Toyota RAV4", "SUV", "Ford F-150", "Truck", "Sedan", "Minivan", "Compact SUV"
 - employment_status: employed/self-employed/unemployed
 
 Conversation:
@@ -246,6 +246,26 @@ Return ONLY the JSON, nothing else.`;
     entry_type: 'form_data', role: 'system',
     content: JSON.stringify(formData), channel: 'crm',
   });
+
+  // Update lead record with extracted fields (vehicle_type, credit_situation, etc.)
+  const leadUpdate: Record<string, string> = {};
+  if (formData.vehicle_type && typeof formData.vehicle_type === 'string') {
+    leadUpdate.vehicle_type = formData.vehicle_type;
+  }
+  if (formData.monthly_income && typeof formData.monthly_income === 'string') {
+    leadUpdate.budget = `$${formData.monthly_income}/mo`;
+  }
+  if (Object.keys(leadUpdate).length > 0) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeURIComponent(fromPhone)}&tenant_id=eq.${tenant.tenant}`, {
+        method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
+        body: JSON.stringify(leadUpdate), signal: AbortSignal.timeout(5000),
+      });
+    } catch (err) {
+      console.error('[sms-process] Failed to update lead with extracted data:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+    }
+  }
 
   // Check if form is complete (need at least 5 of 7 fields)
   const requiredFields = ['postal_code', 'date_of_birth', 'monthly_income', 'employment_length', 'company_name', 'vehicle_type'];
