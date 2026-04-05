@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import {
   SUPABASE_URL, requireApiKey, rateLimit, getClientIp,
-  validateTenant, sanitizeInput, supaHeaders, encodeSupabaseParam, sendTwilioSMS,
+  validateTenant, sanitizeInput, supaHeaders, supaAnonHeaders, encodeSupabaseParam, sendTwilioSMS, isValidUuid,
 } from '@/lib/security';
 
 const VALID_TYPES = ['test_drive', 'financing', 'trade_appraisal', 'general'];
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     url += '&limit=200';
 
     const res = await fetch(url, {
-      headers: supaHeaders(tenant),
+      headers: supaAnonHeaders(tenant),
       signal: AbortSignal.timeout(10000),
     });
 
@@ -72,6 +73,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ appointments });
   } catch (err) {
     console.error('[appointments] GET error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -93,8 +95,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       const { appointment_id } = body as { appointment_id?: string };
-      if (!appointment_id) {
-        return NextResponse.json({ error: 'Missing appointment_id' }, { status: 400 });
+      if (!appointment_id || !isValidUuid(appointment_id)) {
+        return NextResponse.json({ error: 'Missing or invalid appointment_id' }, { status: 400 });
       }
 
       // Fetch appointment
@@ -193,6 +195,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true, appointment: created[0] }, { status: 201 });
   } catch (err) {
     console.error('[appointments] POST error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -211,8 +214,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     const tenant = validateTenant(body.tenant);
     const { id } = body as { id?: string };
 
-    if (!id) {
-      return NextResponse.json({ error: 'Missing appointment id' }, { status: 400 });
+    if (!id || !isValidUuid(id)) {
+      return NextResponse.json({ error: 'Missing or invalid appointment id' }, { status: 400 });
     }
 
     const updates: Record<string, unknown> = {};
@@ -247,6 +250,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[appointments] PATCH error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import {
   SUPABASE_URL, requireApiKey, rateLimit, getClientIp,
-  validateTenant, sanitizeInput, supaHeaders, encodeSupabaseParam,
+  validateTenant, sanitizeInput, supaHeaders, supaAnonHeaders, encodeSupabaseParam, isValidUuid,
 } from '@/lib/security';
 
 const VALID_STATUSES = ['negotiating', 'approved', 'funded', 'delivered', 'lost'];
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     }
 
     const res = await fetch(url, {
-      headers: supaHeaders(tenant),
+      headers: supaAnonHeaders(tenant),
       signal: AbortSignal.timeout(10000),
     });
 
@@ -44,6 +45,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ deals });
   } catch (err) {
     console.error('[deals] GET error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -99,6 +101,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true, deal: created[0] }, { status: 201 });
   } catch (err) {
     console.error('[deals] POST error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
@@ -117,8 +120,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     const tenant = validateTenant(body.tenant);
     const { id } = body as { id?: string };
 
-    if (!id) {
-      return NextResponse.json({ error: 'Missing deal id' }, { status: 400 });
+    if (!id || !isValidUuid(id)) {
+      return NextResponse.json({ error: 'Missing or invalid deal id' }, { status: 400 });
     }
 
     const updates: Record<string, unknown> = {};
@@ -156,6 +159,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[deals] PATCH error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

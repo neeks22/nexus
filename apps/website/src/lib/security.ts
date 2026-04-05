@@ -59,6 +59,13 @@ export function supaAnonHeaders(tenant?: string): Record<string, string> {
   return headers;
 }
 
+/* ---------- UUID Validation ---------- */
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isValidUuid(id: string): boolean {
+  return UUID_RE.test(id);
+}
+
 export async function supaGet(path: string): Promise<{ data: unknown[]; error: boolean }> {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: supaHeaders(), signal: AbortSignal.timeout(8000) });
