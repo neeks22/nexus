@@ -241,8 +241,14 @@ async function fetchLeads(tenant?: string): Promise<Map<string, SupabaseLead>> {
       for (const lead of leads) {
         if (lead.phone) {
           const normalized = normalizePhone(lead.phone);
+          const digitsOnly = lead.phone.replace(/\D/g, '');
           leadMap.set(normalized, lead);
           leadMap.set(lead.phone, lead);
+          leadMap.set(digitsOnly, lead);
+          // Also store without country code for 11-digit numbers
+          if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+            leadMap.set(digitsOnly.substring(1), lead);
+          }
         }
       }
       return leadMap;
@@ -271,8 +277,14 @@ async function fetchLeads(tenant?: string): Promise<Map<string, SupabaseLead>> {
       for (const lead of leads) {
         if (lead.phone) {
           const normalized = normalizePhone(lead.phone);
+          const digitsOnly = lead.phone.replace(/\D/g, '');
           leadMap.set(normalized, lead);
           leadMap.set(lead.phone, lead);
+          leadMap.set(digitsOnly, lead);
+          // Also store without country code for 11-digit numbers
+          if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
+            leadMap.set(digitsOnly.substring(1), lead);
+          }
         }
       }
     } else {
@@ -328,7 +340,8 @@ function groupIntoConversations(
 
     msgs.sort((a, b) => new Date(a.dateSent).getTime() - new Date(b.dateSent).getTime());
 
-    const lead = leads.get(phone);
+    const digitsOnly = phone.replace(/\D/g, '');
+    const lead = leads.get(phone) || leads.get(digitsOnly) || leads.get(digitsOnly.length === 11 && digitsOnly.startsWith('1') ? digitsOnly.substring(1) : '') || null;
     const lastMsg = msgs[msgs.length - 1];
 
     let unreadCount = 0;
