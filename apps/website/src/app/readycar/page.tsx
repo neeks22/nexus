@@ -520,7 +520,7 @@ function InboxContent(): React.ReactElement {
         <div className={styles.inboxHeader}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
               color: '#fff',
               width: '32px',
               height: '32px',
@@ -540,7 +540,7 @@ function InboxContent(): React.ReactElement {
                 padding: '8px 16px',
                 borderRadius: '8px',
                 border: 'none',
-                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
                 color: '#fff',
                 fontSize: '13px',
                 fontWeight: 600,
@@ -612,7 +612,7 @@ function InboxContent(): React.ReactElement {
                   disabled={!newMessagePhone.trim() || !newMessageText.trim() || sendingNew}
                   style={{
                     padding: '10px 24px', borderRadius: '8px', border: 'none',
-                    background: (!newMessagePhone.trim() || !newMessageText.trim()) ? '#333' : 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                    background: (!newMessagePhone.trim() || !newMessageText.trim()) ? '#333' : 'linear-gradient(135deg, #DC2626, #B91C1C)',
                     color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
                     opacity: (!newMessagePhone.trim() || !newMessageText.trim()) ? 0.5 : 1
                   }}

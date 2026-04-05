@@ -71,9 +71,9 @@ const BRAND_THEMES: Record<string, BrandTheme> = {
 };
 
 const DEFAULT_THEME: BrandTheme = {
-  primary: '#6366f1',
-  primaryHover: '#4f46e5',
-  primaryGlow: 'rgba(99, 102, 241, 0.3)',
+  primary: '#DC2626',
+  primaryHover: '#B91C1C',
+  primaryGlow: 'rgba(220, 38, 38, 0.3)',
   logo: '',
 };
 

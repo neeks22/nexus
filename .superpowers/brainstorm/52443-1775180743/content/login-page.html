@@ -1,0 +1,61 @@
+<h2>Login Page Design</h2>
+<p class="subtitle">What users see at nexusagents.ca/login</p>
+
+<div class="mockup">
+  <div class="mockup-header">nexusagents.ca/login</div>
+  <div class="mockup-body" style="background: #0a0a0a; padding: 0; min-height: 500px; display: flex; align-items: center; justify-content: center;">
+    <div style="width: 400px; padding: 40px; background: #111; border-radius: 12px; border: 1px solid #222;">
+      <!-- Logo -->
+      <div style="text-align: center; margin-bottom: 32px;">
+        <div style="font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.5px;">NEXUS</div>
+        <div style="font-size: 13px; color: #666; margin-top: 4px;">Dealership CRM</div>
+      </div>
+
+      <!-- Email field -->
+      <div style="margin-bottom: 16px;">
+        <label style="display: block; font-size: 13px; color: #999; margin-bottom: 6px;">Email</label>
+        <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px 14px; color: #fff; font-size: 14px;">
+          nico@readycar.ca
+        </div>
+      </div>
+
+      <!-- Password field -->
+      <div style="margin-bottom: 24px;">
+        <label style="display: block; font-size: 13px; color: #999; margin-bottom: 6px;">Password</label>
+        <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 12px 14px; color: #666; font-size: 14px;">
+          ••••••••
+        </div>
+      </div>
+
+      <!-- Sign in button -->
+      <div style="background: #2563eb; border-radius: 8px; padding: 12px; text-align: center; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer;">
+        Sign In
+      </div>
+
+      <!-- Forgot password -->
+      <div style="text-align: center; margin-top: 16px;">
+        <span style="color: #2563eb; font-size: 13px;">Forgot password?</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 style="margin-top: 40px;">After Login: Where Users Land</h2>
+<p class="subtitle">Based on their tenant, users go straight to their CRM</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Direct to CRM</h3>
+      <p>Login redirects to /readycar or /readyride based on user's tenant. No extra navigation. This replaces the current password gate entirely.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Landing Dashboard First</h3>
+      <p>Login goes to a neutral /dashboard page showing tenant selector (for users with multi-tenant access), then into the CRM.</p>
+    </div>
+  </div>
+</div>

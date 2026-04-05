@@ -29,10 +29,10 @@
   --text-muted: #55556a;
 
   /* Accent */
-  --accent-primary: #6366f1;
-  --accent-secondary: #8b5cf6;
-  --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
-  --accent-glow: 0 0 40px rgba(99,102,241,0.15);
+  --accent-primary: #DC2626;
+  --accent-secondary: #B91C1C;
+  --accent-gradient: linear-gradient(135deg, #DC2626, #B91C1C, #991B1B);
+  --accent-glow: 0 0 40px rgba(220,38,38,0.15);
   --accent-green: #10b981;
   --accent-green-hover: #059669;
   --accent-green-dim: rgba(16, 185, 129, 0.12);

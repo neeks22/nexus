@@ -559,7 +559,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
     btnPrimary: (enabled: boolean) => ({
       width: '100%',
       padding: 14,
-      background: enabled ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#1a1a25',
+      background: enabled ? 'linear-gradient(135deg, #DC2626, #B91C1C)' : '#1a1a25',
       border: 'none',
       borderRadius: 8,
       color: enabled ? '#fff' : '#55556a',
@@ -596,14 +596,14 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
           @keyframes crPulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
           @keyframes crSlide { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
           .cr-enter { animation: crSlide .35s ease-out forwards }
-          .cr-input:focus { border-color: #6366f1 !important; box-shadow: 0 0 0 3px rgba(99,102,241,.1) !important }
+          .cr-input:focus { border-color: #DC2626 !important; box-shadow: 0 0 0 3px rgba(220,38,38,.1) !important }
         `}</style>
 
         {/* HEADER */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{
-              background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+              background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
               color: '#fff', width: 36, height: 36, borderRadius: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontWeight: 800, fontSize: 18,
@@ -636,7 +636,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                     type="checkbox"
                     checked={bureauConsent}
                     onChange={(e) => setBureauConsent(e.target.checked)}
-                    style={{ marginTop: 2, accentColor: '#6366f1', width: 16, height: 16, flexShrink: 0 }}
+                    style={{ marginTop: 2, accentColor: '#DC2626', width: 16, height: 16, flexShrink: 0 }}
                   />
                   <span style={{ fontSize: 12, color: '#ccc', lineHeight: 1.5 }}>
                     I confirm the client has provided written consent to pull and process their credit information.
@@ -667,7 +667,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 }}
               >
                 <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: 22 }}>
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                 </div>
                 <div style={{ fontSize: 14, color: '#8888a0', fontWeight: 500 }}>
                   {bureauConsent ? 'Drop credit bureau PDF or TXT here' : 'Check consent box above to upload'}
@@ -678,14 +678,14 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
 
               {analyzing && (
                 <div style={{ marginTop: 16, padding: 16, background: 'rgba(99,102,241,0.08)', borderRadius: 12, border: '1px solid rgba(99,102,241,0.15)', animation: 'crPulse 1.5s infinite', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 20, height: 20, border: '2px solid rgba(255,255,255,0.08)', borderTop: '2px solid #6366f1', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
+                  <div style={{ width: 20, height: 20, border: '2px solid rgba(255,255,255,0.08)', borderTop: '2px solid #DC2626', borderRadius: '50%', animation: 'spin .8s linear infinite' }} />
                   <span style={{ fontSize: 13, color: '#8888a0' }}>AI analyzing credit bureau...</span>
                 </div>
               )}
 
               {aiInsight && (
                 <div style={{ marginTop: 16, padding: 16, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)', borderRadius: 12, maxHeight: 350, overflow: 'auto' }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', color: '#6366f1', marginBottom: 8, textTransform: 'uppercase' }}>AI Bureau Analysis</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', color: '#DC2626', marginBottom: 8, textTransform: 'uppercase' }}>AI Bureau Analysis</div>
                   <pre style={{ fontSize: 13, color: '#8888a0', whiteSpace: 'pre-wrap', lineHeight: 1.7, fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>{aiInsight}</pre>
                 </div>
               )}
@@ -728,7 +728,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 <div>
                   <label style={s.label}>Phone</label>
                   <input value={customerInfo.phone} onChange={(e) => { setCustomerInfo({ ...customerInfo, phone: e.target.value }); searchLead(e.target.value); }} placeholder="6131234567" className="cr-input" style={s.input} />
-                  {searchingLead && <div style={{ fontSize: 11, color: '#6366f1', marginTop: 4 }}>Searching...</div>}
+                  {searchingLead && <div style={{ fontSize: 11, color: '#DC2626', marginTop: 4 }}>Searching...</div>}
                   {leadMatch && leadMatch.found && <div style={{ fontSize: 11, color: '#10b981', marginTop: 4, fontWeight: 500 }}>Lead found: {leadMatch.name}</div>}
                   {leadMatch && !leadMatch.found && customerInfo.phone.replace(/\D/g, '').length >= 10 && <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4 }}>New lead — will be created automatically</div>}
                 </div>
@@ -785,13 +785,13 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                   <div style={{
                     width: 18, height: 18, borderRadius: 4,
-                    border: profile.selfEmployed ? '1px solid #6366f1' : '1px solid rgba(255,255,255,0.12)',
+                    border: profile.selfEmployed ? '1px solid #DC2626' : '1px solid rgba(255,255,255,0.12)',
                     background: profile.selfEmployed ? 'rgba(99,102,241,0.2)' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     transition: '200ms',
                   }}>
                     {profile.selfEmployed && (
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                     )}
                   </div>
                   <input type="checkbox" checked={profile.selfEmployed} onChange={(e) => setProfile({ ...profile, selfEmployed: e.target.checked })} style={{ display: 'none' }} />
@@ -882,7 +882,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 <span style={s.badge('rgba(245,158,11,0.12)', '#f59e0b')}>{profile.situation.toUpperCase()}</span>
               )}
               {profile.selfEmployed && (
-                <span style={s.badge('rgba(99,102,241,0.12)', '#6366f1')}>SELF-EMPLOYED</span>
+                <span style={s.badge('rgba(99,102,241,0.12)', '#DC2626')}>SELF-EMPLOYED</span>
               )}
             </div>
           </div>
@@ -901,7 +901,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
       {/* AI INSIGHT */}
       {aiInsight && (
         <div className="cr-enter" style={{ ...s.card, background: 'rgba(99,102,241,0.04)', borderColor: 'rgba(99,102,241,0.15)', marginBottom: 20, animationDelay: '0.05s' }}>
-          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', color: '#6366f1', marginBottom: 8, textTransform: 'uppercase' }}>AI Bureau Analysis</div>
+          <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', color: '#DC2626', marginBottom: 8, textTransform: 'uppercase' }}>AI Bureau Analysis</div>
           <pre style={{ fontSize: 13, color: '#8888a0', whiteSpace: 'pre-wrap', lineHeight: 1.7, fontFamily: "'JetBrains Mono', 'Fira Code', monospace" }}>{aiInsight}</pre>
         </div>
       )}
@@ -941,7 +941,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             {i < 3 && (
               <div style={{
                 position: 'absolute', top: 0, right: 0,
-                background: isTop ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#1a1a25',
+                background: isTop ? 'linear-gradient(135deg, #DC2626, #B91C1C)' : '#1a1a25',
                 color: isTop ? '#fff' : '#55556a',
                 fontSize: 10, fontWeight: 600, letterSpacing: '0.05em',
                 padding: '5px 14px', borderBottomLeftRadius: 10,
@@ -959,7 +959,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 )}
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 20 }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: isTop ? '#6366f1' : '#55556a', lineHeight: 1 }}>{r.score}</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: isTop ? '#DC2626' : '#55556a', lineHeight: 1 }}>{r.score}</div>
                 <div style={{ fontSize: 10, color: '#55556a', letterSpacing: '0.05em', marginTop: 2 }}>SCORE</div>
               </div>
             </div>
