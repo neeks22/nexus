@@ -589,7 +589,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
           lender: r.lender,
           tier: r.tier?.tier || 'N/A',
           rate: r.tier?.rate || 'N/A',
-          score: r.score,
+          score: Math.round(r.score),
           reasons: r.reasons,
           warnings: r.warnings,
         })),
@@ -1145,7 +1145,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 )}
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 20 }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: isTop ? '#DC2626' : '#55556a', lineHeight: 1 }}>{r.score}</div>
+                <div style={{ fontSize: 28, fontWeight: 700, color: isTop ? '#DC2626' : '#55556a', lineHeight: 1 }}>{Math.round(r.score)}</div>
                 <div style={{ fontSize: 10, color: '#55556a', letterSpacing: '0.05em', marginTop: 2 }}>SCORE</div>
               </div>
             </div>
