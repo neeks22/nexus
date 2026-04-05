@@ -21,11 +21,11 @@ interface KanbanBoardProps {
 }
 
 const STAGES = [
-  { id: 'new', label: 'New Lead', color: '#6366f1' },
+  { id: 'new', label: 'New Lead', color: '#DC2626' },
   { id: 'contacted', label: 'Contacted', color: '#f59e0b' },
   { id: 'appointment', label: 'Appointment', color: '#10b981' },
   { id: 'showed', label: 'Showed', color: '#06b6d4' },
-  { id: 'credit_app', label: 'Credit App', color: '#8b5cf6' },
+  { id: 'credit_app', label: 'Credit App', color: '#B91C1C' },
   { id: 'approved', label: 'Approved', color: '#22c55e' },
   { id: 'delivered', label: 'Delivered', color: '#10b981' },
   { id: 'lost', label: 'Lost', color: '#ef4444' },

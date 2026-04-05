@@ -60,9 +60,9 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
         backdropFilter: 'blur(20px)',
         textAlign: 'center'
       }}>
-        <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
-        <h2 style={{ color: '#f0f0f5', margin: '0 0 8px', fontSize: '20px' }}>ReadyCar Inbox</h2>
-        <p style={{ color: '#8888a0', margin: '0 0 24px', fontSize: '14px' }}>Enter password to access conversations</p>
+        <img src="/readycar-logo.svg" alt="ReadyCar" style={{ height: '40px', marginBottom: '16px' }} />
+        <h2 style={{ color: '#f0f0f5', margin: '0 0 8px', fontSize: '20px' }}>ReadyCar CRM</h2>
+        <p style={{ color: '#8888a0', margin: '0 0 24px', fontSize: '14px' }}>Enter password to access your dashboard</p>
         <input
           type="password"
           value={password}
@@ -88,7 +88,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
           padding: '12px',
           borderRadius: '8px',
           border: 'none',
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          background: '#DC2626',
           color: '#fff',
           fontSize: '15px',
           fontWeight: 600,

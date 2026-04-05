@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 40" fill="none">
+  <rect width="36" height="36" x="2" y="2" rx="8" fill="#DC2626"/>
+  <path d="M12 14h16l-2 4H14l-2-4zm-1 6h18l-1 6H12l-1-6z" fill="#fff"/>
+  <circle cx="15" cy="28" r="2.5" fill="#fff"/>
+  <circle cx="25" cy="28" r="2.5" fill="#fff"/>
+  <text x="46" y="17" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="800" fill="#fff">Ready</text>
+  <text x="86" y="17" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="800" fill="#DC2626">Car</text>
+  <text x="46" y="32" font-family="Inter, system-ui, sans-serif" font-size="10" font-weight="400" fill="#999">Auto Finance</text>
+</svg>

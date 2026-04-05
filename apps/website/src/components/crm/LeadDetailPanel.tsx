@@ -254,7 +254,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <ActionButton
             label="Send SMS"
-            color="#6366f1"
+            color="#DC2626"
             active={activeAction === 'sms'}
             onClick={() => { setActiveAction(activeAction === 'sms' ? 'none' : 'sms'); setTimeout(() => inputRef.current?.focus(), 100); }}
           />
@@ -328,7 +328,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
             }}>Cancel</button>
             <button onClick={sendSMS} disabled={!messageText.trim() || sending} style={{
               padding: '8px 18px', borderRadius: '6px', border: 'none',
-              background: messageText.trim() ? '#6366f1' : '#333', color: '#fff',
+              background: messageText.trim() ? '#DC2626' : '#333', color: '#fff',
               fontSize: '13px', fontWeight: 600, cursor: 'pointer',
             }}>{sending ? 'Sending...' : 'Send SMS'}</button>
           </div>
@@ -394,7 +394,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
                       disabled={statusUpdating}
                       style={{
                         padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 500,
-                        border: lead.status === s ? '2px solid #6366f1' : '1px solid rgba(255,255,255,0.1)',
+                        border: lead.status === s ? '2px solid #DC2626' : '1px solid rgba(255,255,255,0.1)',
                         background: lead.status === s ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
                         color: lead.status === s ? '#818cf8' : '#8888a0',
                         cursor: 'pointer', textTransform: 'capitalize',

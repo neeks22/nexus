@@ -57,7 +57,7 @@ export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps
       {/* KPI Row */}
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
         <StatCard title="New Leads Today" value={d.leadsToday} color="#10b981" />
-        <StatCard title="Messages Today" value={d.messagesToday} color="#6366f1" />
+        <StatCard title="Messages Today" value={d.messagesToday} color="#DC2626" />
         <StatCard title="Total in Pipeline" value={totalPipeline} color="#f59e0b" />
         <StatCard title="Hot Leads" value={d.hotLeads.length} subtitle="Appointment / Showed" color="#ef4444" />
       </div>

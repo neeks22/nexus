@@ -7,7 +7,7 @@ interface StatCardProps {
   color?: string;
 }
 
-export default function StatCard({ title, value, subtitle, color = '#6366f1' }: StatCardProps): React.ReactElement {
+export default function StatCard({ title, value, subtitle, color = '#DC2626' }: StatCardProps): React.ReactElement {
   return (
     <div style={{
       background: 'rgba(255,255,255,0.03)',

@@ -20,11 +20,11 @@ interface LeadsTabProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  new: '#6366f1',
+  new: '#DC2626',
   contacted: '#f59e0b',
   appointment: '#10b981',
   showed: '#06b6d4',
-  credit_app: '#8b5cf6',
+  credit_app: '#B91C1C',
   approved: '#22c55e',
   delivered: '#10b981',
   lost: '#ef4444',
@@ -86,7 +86,7 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
         <h1 style={{ color: '#f0f0f5', fontSize: '22px', fontWeight: 700, margin: 0 }}>Leads</h1>
         <button onClick={() => setShowCreate(true)} style={{
           padding: '8px 18px', borderRadius: '8px', border: 'none',
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff',
+          background: 'linear-gradient(135deg, #DC2626, #B91C1C)', color: '#fff',
           fontSize: '13px', fontWeight: 600, cursor: 'pointer',
         }}>+ New Lead</button>
       </div>
@@ -134,7 +134,7 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
               <button onClick={() => setShowCreate(false)} style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#8888a0', fontSize: '14px', cursor: 'pointer' }}>Cancel</button>
               <button onClick={createLead} disabled={!newLead.first_name || !newLead.phone || creating} style={{
                 padding: '10px 24px', borderRadius: '8px', border: 'none',
-                background: (newLead.first_name && newLead.phone) ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : '#333',
+                background: (newLead.first_name && newLead.phone) ? 'linear-gradient(135deg, #DC2626, #B91C1C)' : '#333',
                 color: '#fff', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
                 opacity: (newLead.first_name && newLead.phone) ? 1 : 0.5,
               }}>{creating ? 'Creating...' : 'Create Lead'}</button>
@@ -191,7 +191,7 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
             padding: '10px 20px',
             borderRadius: '8px',
             border: 'none',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
             color: '#fff',
             fontSize: '14px',
             fontWeight: 600,

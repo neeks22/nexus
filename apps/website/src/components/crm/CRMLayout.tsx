@@ -48,6 +48,35 @@ const LeadsTab = dynamic(() => import('./LeadsTab'), { ssr: false, loading: () =
 const ReportsTab = dynamic(() => import('./ReportsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading reports...</div> });
 const LeadDetailPanel = dynamic(() => import('./LeadDetailPanel'), { ssr: false });
 
+interface BrandTheme {
+  primary: string;
+  primaryHover: string;
+  primaryGlow: string;
+  logo: string;
+}
+
+const BRAND_THEMES: Record<string, BrandTheme> = {
+  readycar: {
+    primary: '#DC2626',
+    primaryHover: '#B91C1C',
+    primaryGlow: 'rgba(220, 38, 38, 0.3)',
+    logo: '/readycar-logo.svg',
+  },
+  readyride: {
+    primary: '#DC2626',
+    primaryHover: '#B91C1C',
+    primaryGlow: 'rgba(220, 38, 38, 0.3)',
+    logo: '/readyride-logo.svg',
+  },
+};
+
+const DEFAULT_THEME: BrandTheme = {
+  primary: '#6366f1',
+  primaryHover: '#4f46e5',
+  primaryGlow: 'rgba(99, 102, 241, 0.3)',
+  logo: '',
+};
+
 interface CRMLayoutProps {
   tenant: string;
   dealerName: string;
@@ -63,6 +92,7 @@ export default function CRMLayout({
 }: CRMLayoutProps): React.ReactElement {
   const [activeTab, setActiveTab] = useState<CRMTab>('dashboard');
   const [selectedLead, setSelectedLead] = useState<string | null>(null);
+  const theme = BRAND_THEMES[tenant] || DEFAULT_THEME;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', fontFamily: 'Inter, system-ui, sans-serif' }}>
@@ -72,34 +102,40 @@ export default function CRMLayout({
         alignItems: 'center',
         gap: 0,
         background: '#0d0d14',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        borderBottom: `1px solid ${theme.primaryGlow}`,
         padding: '0 16px',
         position: 'sticky',
         top: 0,
         zIndex: 50,
       }}>
-        {/* Dealer Name */}
+        {/* Brand Logo + Name */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
-          padding: '12px 16px 12px 0',
+          padding: '8px 16px 8px 0',
           borderRight: '1px solid rgba(255,255,255,0.08)',
           marginRight: '4px',
         }}>
-          <span style={{
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            color: '#fff',
-            width: '28px',
-            height: '28px',
-            borderRadius: '6px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 800,
-            fontSize: '13px',
-          }}>{dealerName[0]}</span>
-          <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '15px' }}>{dealerName}</span>
+          {theme.logo ? (
+            <img src={theme.logo} alt={dealerName} style={{ height: '32px', width: 'auto' }} />
+          ) : (
+            <>
+              <span style={{
+                background: theme.primary,
+                color: '#fff',
+                width: '28px',
+                height: '28px',
+                borderRadius: '6px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 800,
+                fontSize: '13px',
+              }}>{dealerName[0]}</span>
+              <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '15px' }}>{dealerName}</span>
+            </>
+          )}
         </div>
 
         {/* Tab Buttons */}
@@ -111,7 +147,7 @@ export default function CRMLayout({
               padding: '14px 20px',
               background: 'transparent',
               border: 'none',
-              borderBottom: activeTab === tab.id ? '2px solid #6366f1' : '2px solid transparent',
+              borderBottom: activeTab === tab.id ? `2px solid ${theme.primary}` : '2px solid transparent',
               color: activeTab === tab.id ? '#f0f0f5' : '#8888a0',
               fontSize: '14px',
               fontWeight: activeTab === tab.id ? 600 : 400,

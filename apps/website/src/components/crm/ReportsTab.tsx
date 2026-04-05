@@ -25,7 +25,7 @@ interface TranscriptRow {
   channel: string;
 }
 
-const COLORS = ['#6366f1', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#22c55e', '#ef4444', '#666'];
+const COLORS = ['#DC2626', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#22c55e', '#ef4444', '#666'];
 const STAGES = ['new', 'contacted', 'appointment', 'showed', 'credit_app', 'approved', 'delivered', 'lost'];
 
 export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElement {
@@ -158,7 +158,7 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
 
       {/* KPI Summary */}
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
-        <KPICard label="Total Leads" value={String(stats.totalLeads)} color="#6366f1" />
+        <KPICard label="Total Leads" value={String(stats.totalLeads)} color="#DC2626" />
         <KPICard label="Conversion Rate" value={`${stats.conversionRate}%`} sub="To Delivered" color="#10b981" />
         <KPICard label="Avg Response Time" value={stats.avgResponseMin < 1 ? '<1 min' : `${stats.avgResponseMin} min`} sub="First AI reply" color="#f59e0b" />
       </div>
@@ -202,7 +202,7 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
               <XAxis dataKey="date" tick={{ fill: '#8888a0', fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: '#8888a0', fontSize: 11 }} axisLine={false} tickLine={false} />
               <Tooltip contentStyle={tooltipStyle} />
-              <Line type="monotone" dataKey="leads" stroke="#6366f1" strokeWidth={2} dot={{ r: 4, fill: '#6366f1' }} />
+              <Line type="monotone" dataKey="leads" stroke="#DC2626" strokeWidth={2} dot={{ r: 4, fill: '#DC2626' }} />
             </LineChart>
           </ResponsiveContainer>
         </ChartCard>

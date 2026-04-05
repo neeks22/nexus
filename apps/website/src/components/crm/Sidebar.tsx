@@ -43,7 +43,7 @@ export default function Sidebar({ activeTab, onTabChange, dealerName }: SidebarP
         cursor: 'pointer',
       }} onClick={() => setCollapsed(!collapsed)}>
         <span style={{
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+          background: '#DC2626',
           color: '#fff',
           width: '32px',
           height: '32px',
