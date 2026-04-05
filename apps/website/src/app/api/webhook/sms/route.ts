@@ -45,15 +45,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return new NextResponse(TWIML_OK, { status: 200, headers: { 'Content-Type': 'text/xml' } });
   }
 
-  // Validate Twilio signature (skip in dev for testing)
-  if (process.env.NODE_ENV !== 'development') {
-    const params: Record<string, string> = {};
-    formData.forEach((value, key) => { params[key] = value.toString(); });
-    const valid = validateTwilioSignature(request, params);
-    if (!valid) {
-      console.warn('[sms-webhook] Invalid Twilio signature from', ip);
-      return new NextResponse(TWIML_OK, { status: 200, headers: { 'Content-Type': 'text/xml' } });
-    }
+  // Validate Twilio signature — always enforced
+  const params: Record<string, string> = {};
+  formData.forEach((value, key) => { params[key] = value.toString(); });
+  const valid = validateTwilioSignature(request, params);
+  if (!valid) {
+    console.warn('[sms-webhook] Invalid Twilio signature from', ip);
+    return new NextResponse(TWIML_OK, { status: 200, headers: { 'Content-Type': 'text/xml' } });
   }
 
   // Trigger delayed processing

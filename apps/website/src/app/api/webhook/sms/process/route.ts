@@ -9,12 +9,12 @@ import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNot
 
 export const maxDuration = 60;
 
-const PROCESS_SECRET = process.env.PROCESS_SECRET || '';
+const PROCESS_SECRET = (process.env.PROCESS_SECRET ?? '').trim();
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  // Verify internal call
+  // Verify internal call — reject if secret not configured or mismatch
   const secret = request.headers.get('x-process-secret');
-  if (secret !== PROCESS_SECRET) {
+  if (!PROCESS_SECRET || secret !== PROCESS_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

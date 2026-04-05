@@ -25,8 +25,8 @@ function supaHeaders(): Record<string, string> {
 }
 
 export async function GET(request: Request): Promise<NextResponse> {
-  const url = new URL(request.url);
-  if (url.searchParams.get('secret') !== CRON_SECRET) {
+  const cronAuth = request.headers.get('authorization')?.replace('Bearer ', '') || new URL(request.url).searchParams.get('secret');
+  if (!CRON_SECRET || cronAuth !== CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -44,8 +44,8 @@ export async function GET(request: Request): Promise<NextResponse> {
 
 /* ---------- Direct email send endpoint ---------- */
 export async function POST(request: Request): Promise<NextResponse> {
-  const url = new URL(request.url);
-  if (url.searchParams.get('secret') !== CRON_SECRET) {
+  const cronAuth = request.headers.get('authorization')?.replace('Bearer ', '') || new URL(request.url).searchParams.get('secret');
+  if (!CRON_SECRET || cronAuth !== CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

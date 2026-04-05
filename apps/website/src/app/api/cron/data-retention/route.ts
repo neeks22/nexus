@@ -10,8 +10,8 @@ import { SUPABASE_URL, CRON_SECRET, supaHeaders } from '../../../../lib/security
    ============================================================================= */
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const url = new URL(request.url);
-  if (url.searchParams.get('secret') !== CRON_SECRET) {
+  const cronAuth = request.headers.get('authorization')?.replace('Bearer ', '') || new URL(request.url).searchParams.get('secret');
+  if (!CRON_SECRET || cronAuth !== CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

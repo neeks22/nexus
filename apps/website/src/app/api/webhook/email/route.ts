@@ -21,15 +21,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
   }
 
-  // Auth: require API key OR same-origin (from Gmail Apps Script or CRM)
+  // Auth: require API key OR same-origin
   const authHeader = request.headers.get('authorization');
   const apiKey = authHeader?.replace('Bearer ', '');
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
-  const isGoogleAppsScript = request.headers.get('user-agent')?.includes('Google-Apps-Script');
   const isSameOrigin = origin?.includes('nexusagents.ca') || referer?.includes('nexusagents.ca');
 
-  if (!isGoogleAppsScript && !isSameOrigin && apiKey !== NEXUS_API_KEY && process.env.NODE_ENV !== 'development') {
+  if (!isSameOrigin && apiKey !== NEXUS_API_KEY) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
