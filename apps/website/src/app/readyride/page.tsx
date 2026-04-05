@@ -53,6 +53,7 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
       <form onSubmit={handleSubmit} style={{
         background: 'rgba(255,255,255,0.03)',
         border: '1px solid rgba(255,255,255,0.08)',
+        borderTop: '3px solid #DC2626',
         borderRadius: '16px',
         padding: '40px',
         width: '100%',
@@ -60,9 +61,9 @@ function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
         backdropFilter: 'blur(20px)',
         textAlign: 'center'
       }}>
-        <img src="/readyride-logo.svg" alt="ReadyRide" style={{ height: '40px', marginBottom: '16px' }} />
-        <h2 style={{ color: '#f0f0f5', margin: '0 0 8px', fontSize: '20px' }}>ReadyRide CRM</h2>
-        <p style={{ color: '#8888a0', margin: '0 0 24px', fontSize: '14px' }}>Enter password to access your dashboard</p>
+        <img src="/readyride-logo-real.png" alt="ReadyRide" style={{ height: '48px', marginBottom: '20px', objectFit: 'contain' }} />
+        <h2 style={{ color: '#f0f0f5', margin: '0 0 8px', fontSize: '20px' }}>Dealer Portal</h2>
+        <p style={{ color: '#8888a0', margin: '0 0 24px', fontSize: '14px' }}>Enter your password to access the CRM</p>
         <input
           type="password"
           value={password}

@@ -60,13 +60,13 @@ const BRAND_THEMES: Record<string, BrandTheme> = {
     primary: '#DC2626',
     primaryHover: '#B91C1C',
     primaryGlow: 'rgba(220, 38, 38, 0.3)',
-    logo: '/readycar-logo.svg',
+    logo: '/readycar-logo-real.png',
   },
   readyride: {
     primary: '#DC2626',
     primaryHover: '#B91C1C',
     primaryGlow: 'rgba(220, 38, 38, 0.3)',
-    logo: '/readyride-logo.svg',
+    logo: '/readyride-logo-real.png',
   },
 };
 
@@ -96,29 +96,32 @@ export default function CRMLayout({
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* TOP NAV BAR — always visible */}
+      {/* Red accent line at top */}
+      <div style={{ height: '3px', background: `linear-gradient(90deg, ${theme.primary}, ${theme.primaryHover})` }} />
+
+      {/* TOP NAV BAR */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         gap: 0,
         background: '#0d0d14',
-        borderBottom: `1px solid ${theme.primaryGlow}`,
-        padding: '0 16px',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+        padding: '0 20px',
         position: 'sticky',
         top: 0,
         zIndex: 50,
       }}>
-        {/* Brand Logo + Name */}
+        {/* Brand Logo */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
-          padding: '8px 16px 8px 0',
+          gap: '12px',
+          padding: '10px 20px 10px 0',
           borderRight: '1px solid rgba(255,255,255,0.08)',
-          marginRight: '4px',
+          marginRight: '8px',
         }}>
           {theme.logo ? (
-            <img src={theme.logo} alt={dealerName} style={{ height: '32px', width: 'auto' }} />
+            <img src={theme.logo} alt={dealerName} style={{ height: '36px', width: 'auto', objectFit: 'contain' }} />
           ) : (
             <>
               <span style={{
@@ -144,7 +147,7 @@ export default function CRMLayout({
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
             style={{
-              padding: '14px 20px',
+              padding: '16px 20px',
               background: 'transparent',
               border: 'none',
               borderBottom: activeTab === tab.id ? `2px solid ${theme.primary}` : '2px solid transparent',
@@ -162,9 +165,9 @@ export default function CRMLayout({
         ))}
 
         {/* Status indicator */}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', padding: '0 8px' }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '8px', padding: '0 8px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', display: 'inline-block' }} />
-          <span style={{ color: '#666', fontSize: '12px' }}>Live</span>
+          <span style={{ color: '#555', fontSize: '12px' }}>Nexus AI Active</span>
         </div>
       </div>
 
