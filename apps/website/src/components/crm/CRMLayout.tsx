@@ -3,14 +3,17 @@
 import { useState, Component, ErrorInfo, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 
-export type CRMTab = 'dashboard' | 'pipeline' | 'inbox' | 'leads' | 'credit' | 'reports';
+export type CRMTab = 'dashboard' | 'pipeline' | 'inbox' | 'leads' | 'credit' | 'reports' | 'inventory' | 'appointments' | 'deals';
 
 const TABS: { id: CRMTab; label: string }[] = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'pipeline', label: 'Pipeline' },
   { id: 'inbox', label: 'Inbox' },
   { id: 'leads', label: 'Leads' },
-  { id: 'credit', label: 'Credit Router' },
+  { id: 'inventory', label: 'Inventory' },
+  { id: 'appointments', label: 'Appts' },
+  { id: 'deals', label: 'Deals' },
+  { id: 'credit', label: 'Credit' },
   { id: 'reports', label: 'Reports' },
 ];
 
@@ -46,6 +49,9 @@ const DashboardTab = dynamic(() => import('./DashboardTab'), { ssr: false, loadi
 const PipelineTab = dynamic(() => import('./PipelineTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading pipeline...</div> });
 const LeadsTab = dynamic(() => import('./LeadsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading leads...</div> });
 const ReportsTab = dynamic(() => import('./ReportsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading reports...</div> });
+const InventoryTab = dynamic(() => import('./InventoryTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading inventory...</div> });
+const AppointmentsTab = dynamic(() => import('./AppointmentsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading appointments...</div> });
+const DealsTab = dynamic(() => import('./DealsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading deals...</div> });
 const LeadDetailPanel = dynamic(() => import('./LeadDetailPanel'), { ssr: false });
 
 interface BrandTheme {
@@ -188,6 +194,9 @@ export default function CRMLayout({
               {creditRouterContent}
             </div>
           )}
+          {activeTab === 'inventory' && <InventoryTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
+          {activeTab === 'appointments' && <AppointmentsTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
+          {activeTab === 'deals' && <DealsTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
           {activeTab === 'reports' && <ReportsTab tenant={tenant} />}
         </TabErrorBoundary>
 
