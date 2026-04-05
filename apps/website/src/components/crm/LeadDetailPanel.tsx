@@ -184,38 +184,65 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
     finally { setStatusUpdating(false); }
   }
 
-  // Check if this lead is HOT_PAUSED (AI stopped auto-replying)
-  const isHotPaused = timeline.some(
-    (e) => e.content === 'HOT_PAUSED' && e.role === 'system'
-  ) && !timeline.some(
-    (e) => e.content === 'AI_RESUMED' && e.role === 'system' &&
-    new Date(e.rawTime).getTime() > Math.max(
-      ...timeline.filter((t) => t.content === 'HOT_PAUSED').map((t) => new Date(t.rawTime).getTime())
-    )
-  );
+  // Check if agent is paused for this lead (HOT_PAUSED or manually AGENT_PAUSED)
+  const isAgentPaused = (() => {
+    const statuses = timeline.filter(e => ['HOT_PAUSED', 'AGENT_PAUSED', 'AI_RESUMED'].includes(e.content) && e.role === 'system');
+    if (statuses.length === 0) return false;
+    const latest = statuses.sort((a, b) => new Date(b.rawTime).getTime() - new Date(a.rawTime).getTime())[0];
+    return latest.content !== 'AI_RESUMED';
+  })();
+  const pauseReason = timeline.filter(e => ['HOT_PAUSED', 'AGENT_PAUSED'].includes(e.content))
+    .sort((a, b) => new Date(b.rawTime).getTime() - new Date(a.rawTime).getTime())[0]?.content;
 
-  async function resumeAI(): Promise<void> {
+  async function pauseAgent(): Promise<void> {
     try {
-      // Write AI_RESUMED status to transcript
-      await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant, phone, type: 'status', content: 'AI_RESUMED',
+      const promises: Promise<Response>[] = [
+        fetch('/api/leads', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant, phone, type: 'status', content: 'AGENT_PAUSED' }),
         }),
-      });
-      // Also reset lead status to 'contacted' so the SMS processor's second check passes
-      await fetch('/api/leads', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, phone, status: 'contacted' }),
-      });
-      if (lead) setLead({ ...lead, status: 'contacted' });
-      setSendSuccess('AI resumed — auto-replies are back on');
+      ];
+      if (lead?.email) {
+        promises.push(fetch('/api/leads', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant, phone: lead.email, type: 'status', content: 'AGENT_PAUSED' }),
+        }));
+      }
+      await Promise.all(promises);
+      setSendSuccess('Agent paused — manual mode');
       setTimeout(() => setSendSuccess(''), 3000);
       fetchData();
     } catch (err) {
-      console.error('[LeadDetail] Resume AI error:', err instanceof Error ? err.message : 'unknown');
+      console.error('[LeadDetail] Pause Agent error:', err instanceof Error ? err.message : 'unknown');
+    }
+  }
+
+  async function resumeAgent(): Promise<void> {
+    try {
+      const promises: Promise<Response>[] = [
+        fetch('/api/leads', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant, phone, type: 'status', content: 'AI_RESUMED' }),
+        }),
+        // Reset lead status so the SMS processor's funnel check passes
+        fetch('/api/leads', {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant, phone, status: 'contacted' }),
+        }),
+      ];
+      if (lead?.email) {
+        promises.push(fetch('/api/leads', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant, phone: lead.email, type: 'status', content: 'AI_RESUMED' }),
+        }));
+      }
+      await Promise.all(promises);
+      if (lead) setLead({ ...lead, status: 'contacted' });
+      setSendSuccess('Agent resumed — auto-replies are back on');
+      setTimeout(() => setSendSuccess(''), 3000);
+      fetchData();
+    } catch (err) {
+      console.error('[LeadDetail] Resume Agent error:', err instanceof Error ? err.message : 'unknown');
     }
   }
 
@@ -270,28 +297,34 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
             color="#10b981"
             onClick={() => window.open(`tel:${phone}`, '_self')}
           />
+          <ActionButton
+            label={isAgentPaused ? 'Resume Agent' : 'Pause Agent'}
+            color={isAgentPaused ? '#10b981' : '#6366f1'}
+            onClick={isAgentPaused ? resumeAgent : pauseAgent}
+          />
         </div>
 
-        {/* HOT LEAD BANNER */}
-        {isHotPaused && (
+        {/* AGENT PAUSED BANNER */}
+        {isAgentPaused && (
           <div style={{
             marginTop: '10px', padding: '12px 16px', borderRadius: '10px',
-            background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.4)',
+            background: pauseReason === 'HOT_PAUSED' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
+            border: `1px solid ${pauseReason === 'HOT_PAUSED' ? 'rgba(239,68,68,0.4)' : 'rgba(245,158,11,0.4)'}`,
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           }}>
             <div>
-              <div style={{ color: '#ef4444', fontSize: '14px', fontWeight: 700 }}>
-                HOT LEAD — AI Paused
+              <div style={{ color: pauseReason === 'HOT_PAUSED' ? '#ef4444' : '#f59e0b', fontSize: '14px', fontWeight: 700 }}>
+                {pauseReason === 'HOT_PAUSED' ? 'HOT LEAD — Agent Paused' : 'Agent Paused'}
               </div>
-              <div style={{ color: '#f87171', fontSize: '12px', marginTop: '2px' }}>
-                Waiting for human transfer. AI will not auto-reply.
+              <div style={{ color: pauseReason === 'HOT_PAUSED' ? '#f87171' : '#fbbf24', fontSize: '12px', marginTop: '2px' }}>
+                {pauseReason === 'HOT_PAUSED' ? 'Waiting for human transfer.' : 'Manual mode.'} Agent will not auto-reply.
               </div>
             </div>
-            <button onClick={resumeAI} style={{
+            <button onClick={resumeAgent} style={{
               padding: '8px 16px', borderRadius: '8px', border: 'none',
               background: '#10b981', color: '#fff', fontSize: '13px',
               fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap',
-            }}>Resume AI</button>
+            }}>Resume Agent</button>
           </div>
         )}
 

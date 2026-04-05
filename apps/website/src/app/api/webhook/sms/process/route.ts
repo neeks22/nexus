@@ -94,18 +94,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     {
       let isPaused = false;
 
-      // Check 1: transcript status entries (HOT_PAUSED / AI_RESUMED)
+      // Check 1: transcript status entries (HOT_PAUSED / AGENT_PAUSED / AI_RESUMED)
+      let pauseContent = '';
       try {
         const statusEntries = await supaGetData(
           `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&entry_type=eq.status&select=content,created_at&order=created_at.desc&limit=1`
         ) as { content: string; created_at: string }[];
 
-        if (statusEntries.length > 0 && statusEntries[0].content === 'HOT_PAUSED') {
+        if (statusEntries.length > 0 && ['HOT_PAUSED', 'AGENT_PAUSED'].includes(statusEntries[0].content)) {
           isPaused = true;
+          pauseContent = statusEntries[0].content;
         }
       } catch {
-        // Supabase query failed — default to paused (safe: don't risk replying to a hot lead)
-        console.error('[sms-process] HOT check failed for phone ...', fromPhone.slice(-4), '— defaulting to paused');
+        // Supabase query failed — default to paused (safe: don't risk replying)
+        console.error('[sms-process] Pause check failed for phone ...', fromPhone.slice(-4), '— defaulting to paused');
         isPaused = true;
       }
 
@@ -127,8 +129,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       if (isPaused) {
-        await slackNotify(`HOT LEAD MESSAGE (AI PAUSED)\nPhone: ***${fromPhone.slice(-4)}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nResume AI in CRM to auto-reply.`);
-        return NextResponse.json({ sent: false, paused: true, reason: 'Lead is HOT — AI paused until manually resumed' });
+        const pauseLabel = pauseContent === 'AGENT_PAUSED' ? 'MANUAL PAUSE' : 'HOT LEAD';
+        await slackNotify(`${pauseLabel} MESSAGE (AGENT PAUSED)\nPhone: ***${fromPhone.slice(-4)}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nResume Agent in CRM to auto-reply.`);
+        return NextResponse.json({ sent: false, paused: true, reason: 'Agent paused — resume in CRM' });
       }
     }
 

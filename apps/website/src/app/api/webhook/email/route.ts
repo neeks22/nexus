@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput } from '../../../../lib/security';
+import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, supaGetData, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput } from '../../../../lib/security';
 
 /* ---------- Tenant email config ---------- */
 const TENANT_EMAIL_CONFIG: Record<string, { fromName: string; gm: string; phone: string; signoff: string }> = {
@@ -87,6 +87,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       tenant_id: tenant, lead_id: senderEmail, entry_type: 'message',
       role: 'customer', content: emailBody.substring(0, 500), channel: 'email',
     });
+
+    // Check if agent is paused for this lead (manual pause or hot lead)
+    {
+      let isPaused = false;
+      try {
+        const statusEntries = await supaGetData(
+          `lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodeURIComponent(senderEmail)}&entry_type=eq.status&select=content,created_at&order=created_at.desc&limit=1`
+        ) as { content: string }[];
+        if (statusEntries.length > 0 && ['HOT_PAUSED', 'AGENT_PAUSED'].includes(statusEntries[0].content)) {
+          isPaused = true;
+        }
+      } catch (err) {
+        console.error('[email-agent] Pause check failed:', err instanceof Error ? err.message : 'unknown');
+        isPaused = true; // Safe default — don't spam
+      }
+      if (isPaused) {
+        await slackNotify(`EMAIL RECEIVED (AGENT PAUSED)\nFrom: ${senderEmail}\nSubject: ${emailSubject}\nResume Agent in CRM to auto-reply.`);
+        return NextResponse.json({ sent: false, paused: true });
+      }
+    }
 
     // Check for unsubscribe
     if (/\b(unsubscribe|stop|remove me|not interested)\b/i.test(lower)) {
