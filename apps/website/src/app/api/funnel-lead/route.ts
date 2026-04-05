@@ -3,6 +3,7 @@ import { z } from 'zod';
 import * as Sentry from '@sentry/nextjs';
 import { handleAutoResponse } from '../../../lib/auto-response';
 import { rateLimit, getClientIp } from '../../../lib/security';
+import { sendLeadEvent } from '../../../lib/meta-conversions';
 
 /**
  * POST /api/funnel-lead
@@ -218,6 +219,18 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await Promise.allSettled([
       handleAutoResponse(lead, body.tenant).catch((err) => {
         console.error('[funnel-lead] Auto-response error:', err instanceof Error ? err.message : 'unknown');
+        Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      }),
+      sendLeadEvent({
+        email: body.email,
+        phone: body.phone,
+        vehicleType: body.vehicleType,
+        creditSituation: body.creditSituation,
+        ip,
+        userAgent: sanitizeString(request.headers.get('user-agent') || '', 500),
+        sourceUrl: request.headers.get('referer') || undefined,
+      }).catch((err) => {
+        console.error('[funnel-lead] Meta CAPI error:', err instanceof Error ? err.message : 'unknown');
         Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       }),
       fetch(N8N_WEBHOOK_URL, {

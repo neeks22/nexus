@@ -28,7 +28,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https: blob:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.facebook.com https://nexusagents.app.n8n.cloud",
+              "connect-src 'self' https://www.google-analytics.com https://analytics.google.com https://www.facebook.com https://graph.facebook.com https://nexusagents.app.n8n.cloud",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

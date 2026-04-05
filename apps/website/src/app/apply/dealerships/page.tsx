@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { trackEvent } from '../../../lib/meta-pixel';
 
 /* ============================================
    TYPES
@@ -218,7 +219,7 @@ export default function DealershipFunnelPage(): React.ReactElement {
   const [submitError, setSubmitError] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // UTM capture
+  // UTM capture + ViewContent tracking
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setData((prev) => ({
@@ -227,6 +228,7 @@ export default function DealershipFunnelPage(): React.ReactElement {
       utmMedium: params.get('utm_medium') || '',
       utmCampaign: params.get('utm_campaign') || '',
     }));
+    trackEvent('ViewContent', { content_name: 'dealership_funnel', content_category: 'financing' });
   }, []);
 
   const update = useCallback((field: keyof FunnelData, value: string | boolean) => {
@@ -270,9 +272,15 @@ export default function DealershipFunnelPage(): React.ReactElement {
         body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error('Submission failed');
+      trackEvent('Lead', {
+        content_name: 'dealership_funnel',
+        vehicle_type: data.vehicleType,
+        credit_situation: data.creditSituation,
+      });
       setData((prev) => ({ ...prev, completedAt: payload.completedAt }));
       goNext();
-    } catch {
+    } catch (err) {
+      console.error('[funnel] Submit error:', err instanceof Error ? err.message : String(err));
       setSubmitError('Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);

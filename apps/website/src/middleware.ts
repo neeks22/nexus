@@ -155,8 +155,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
   response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
   const csp = process.env.NODE_ENV === 'development'
-    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.twilio.com https://*.sentry.io wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
-    : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.twilio.com https://*.sentry.io; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.twilio.com https://*.sentry.io https://www.facebook.com https://graph.facebook.com wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    : "default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.twilio.com https://*.sentry.io https://www.facebook.com https://graph.facebook.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
   response.headers.set('Content-Security-Policy', csp);
 
   // ----- CSRF: validate Origin on mutating requests to /api/* -----
