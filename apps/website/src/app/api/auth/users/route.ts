@@ -33,7 +33,8 @@ function verifySession(request: NextRequest): { user_id: string; email: string; 
     if (payload.exp < Date.now()) return null;
     if (!payload.user_id || !payload.email) return null;
     return { user_id: payload.user_id, email: payload.email, role: payload.role, tenant_id: payload.tenant_id };
-  } catch {
+  } catch (err) {
+    console.error('[users] Session parse error:', err instanceof Error ? err.message : 'unknown');
     return null;
   }
 }
@@ -60,7 +61,8 @@ function verifyAdminSession(request: NextRequest): { role: string; tenant_id: st
     if (payload.exp < Date.now()) return null;
     if (payload.role !== 'admin') return null;
     return { role: payload.role, tenant_id: payload.tenant_id };
-  } catch {
+  } catch (err) {
+    console.error('[users] Admin session parse error:', err instanceof Error ? err.message : 'unknown');
     return null;
   }
 }
@@ -193,10 +195,14 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Current password is incorrect' }, { status: 403 });
     }
 
+    if (current_password === new_password) {
+      return NextResponse.json({ error: 'New password must be different from current password' }, { status: 400 });
+    }
+
     // Hash and update
     const newHash = await hashPassword(new_password);
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/crm_users?id=eq.${user.id}`,
+      `${SUPABASE_URL}/rest/v1/crm_users?id=eq.${encodeURIComponent(user.id)}`,
       {
         method: 'PATCH',
         headers: {

@@ -98,7 +98,7 @@ export default function SettingsTab({ user }: SettingsTabProps): React.ReactElem
       </div>
 
       {/* Change Password */}
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '24px', maxWidth: '480px' }}>
+      <form onSubmit={e => { e.preventDefault(); handleChangePassword(); }} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '24px', maxWidth: '480px' }}>
         <h3 style={{ color: '#f0f0f5', fontSize: '15px', fontWeight: 600, margin: '0 0 16px' }}>Change Password</h3>
         <div style={{ display: 'grid', gap: '12px' }}>
           <div>
@@ -126,7 +126,7 @@ export default function SettingsTab({ user }: SettingsTabProps): React.ReactElem
           </div>
         )}
 
-        <button onClick={handleChangePassword} disabled={saving || !currentPw || !newPw || !confirmPw}
+        <button type="submit" disabled={saving || !currentPw || !newPw || !confirmPw}
           style={{
             marginTop: '16px', padding: '10px 20px', borderRadius: '8px', border: 'none',
             background: (!currentPw || !newPw || !confirmPw) ? '#333' : '#DC2626',
@@ -135,7 +135,7 @@ export default function SettingsTab({ user }: SettingsTabProps): React.ReactElem
           }}>
           {saving ? 'Saving...' : 'Update Password'}
         </button>
-      </div>
+      </form>
     </div>
   );
 }
