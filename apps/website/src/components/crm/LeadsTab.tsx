@@ -30,6 +30,26 @@ const STATUS_COLORS: Record<string, string> = {
   lost: '#ef4444',
 };
 
+const GRADE_COLORS: Record<string, string> = {
+  'A+': '#10b981', 'A': '#10b981', 'A-': '#34d399',
+  'B+': '#22c55e', 'B': '#22c55e', 'B-': '#86efac',
+  'C+': '#f59e0b', 'C': '#f59e0b', 'C-': '#fbbf24',
+  'D+': '#f97316', 'D': '#f97316', 'D-': '#fb923c',
+  'F': '#ef4444',
+};
+
+function parseCreditGrade(credit: string): { grade: string; detail: string } | null {
+  if (!credit) return null;
+  // Format: "B+ | FICO 680 | Moderate utilization · No missed payments"
+  const match = credit.match(/^([A-F][+-]?)\s*\|/);
+  if (match) {
+    const grade = match[1];
+    const detail = credit.substring(match[0].length).trim();
+    return { grade, detail };
+  }
+  return null;
+}
+
 export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React.ReactElement {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
@@ -267,7 +287,27 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
                 </span>
               </span>
               <span style={{ color: '#ccc', fontSize: '13px' }}>{lead.vehicle_type || '-'}</span>
-              <span style={{ color: '#ccc', fontSize: '13px' }}>{lead.credit_situation || '-'}</span>
+              <span style={{ fontSize: '13px' }}>
+                {(() => {
+                  const parsed = parseCreditGrade(lead.credit_situation);
+                  if (parsed) {
+                    return (
+                      <span title={parsed.detail} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          background: GRADE_COLORS[parsed.grade] || '#666',
+                          color: '#fff',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          letterSpacing: '0.02em',
+                        }}>{parsed.grade}</span>
+                      </span>
+                    );
+                  }
+                  return <span style={{ color: '#ccc' }}>{lead.credit_situation || '-'}</span>;
+                })()}
+              </span>
             </div>
           ))
         )}

@@ -253,6 +253,77 @@ function tierLabel(fico: number): string {
 }
 
 /* =============================================================================
+   CREDIT GRADE SYSTEM — A+ through F
+   ============================================================================= */
+
+interface CreditGrade {
+  grade: string;
+  color: string;
+  summary: string;
+}
+
+function computeCreditGrade(fico: number, situation: string, selfEmployed: boolean, income: number): CreditGrade {
+  // Base grade from FICO
+  let grade: string;
+  if (fico >= 800) grade = 'A+';
+  else if (fico >= 770) grade = 'A';
+  else if (fico >= 750) grade = 'A-';
+  else if (fico >= 720) grade = 'B+';
+  else if (fico >= 700) grade = 'B';
+  else if (fico >= 680) grade = 'B-';
+  else if (fico >= 650) grade = 'C+';
+  else if (fico >= 620) grade = 'C';
+  else if (fico >= 600) grade = 'C-';
+  else if (fico >= 560) grade = 'D+';
+  else if (fico >= 520) grade = 'D';
+  else if (fico >= 480) grade = 'D-';
+  else grade = 'F';
+
+  // Build summary based on profile
+  const parts: string[] = [];
+
+  // Credit utilization estimate from FICO range
+  if (fico >= 750) parts.push('Low utilization');
+  else if (fico >= 650) parts.push('Moderate utilization');
+  else if (fico >= 500) parts.push('High utilization');
+  else parts.push('Very high utilization');
+
+  // Trade line health
+  if (fico >= 700) parts.push('No missed payments');
+  else if (fico >= 600) parts.push('Minor delinquencies likely');
+  else if (fico >= 500) parts.push('Missed payments on file');
+  else parts.push('Multiple missed payments');
+
+  // Situation flags
+  if (situation === 'bankruptcy') parts.push('Bankruptcy on file');
+  else if (situation === 'proposal') parts.push('Consumer proposal active');
+  else if (situation === 'newcomer') parts.push('Thin file / newcomer');
+  else if (situation === 'repo') parts.push('Repossession history');
+
+  if (selfEmployed) parts.push('Self-employed');
+
+  // Income assessment
+  if (income >= 5000) parts.push('Strong income');
+  else if (income >= 3000) parts.push('Adequate income');
+  else if (income > 0) parts.push('Low income');
+
+  // Grade color
+  const gradeColors: Record<string, string> = {
+    'A+': '#10b981', 'A': '#10b981', 'A-': '#34d399',
+    'B+': '#22c55e', 'B': '#22c55e', 'B-': '#86efac',
+    'C+': '#f59e0b', 'C': '#f59e0b', 'C-': '#fbbf24',
+    'D+': '#f97316', 'D': '#f97316', 'D-': '#fb923c',
+    'F': '#ef4444',
+  };
+
+  return {
+    grade,
+    color: gradeColors[grade] || '#ef4444',
+    summary: parts.join(' · '),
+  };
+}
+
+/* =============================================================================
    COMPONENT — Styled to match the Nexus Inbox design system
    Uses CSS variables from globals.css: bg-primary, bg-secondary, bg-tertiary,
    border, text-primary, text-secondary, text-muted, accent-primary, etc.
@@ -399,6 +470,15 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
       const phone = customerInfo.phone.replace(/\D/g, '');
       const fullPhone = phone.length === 10 ? `+1${phone}` : phone.length === 11 ? `+${phone}` : phone ? `+${phone}` : 'unknown';
 
+      // Compute credit grade
+      const creditGrade = computeCreditGrade(
+        parseInt(profile.fico) || 0,
+        profile.situation,
+        profile.selfEmployed,
+        parseInt(profile.income) || 0,
+      );
+      const creditSituationValue = `${creditGrade.grade} | FICO ${profile.fico || '?'} | ${creditGrade.summary}`;
+
       // Create lead if we have customer info and no match
       if (customerInfo.first_name && customerInfo.phone && (!leadMatch || !leadMatch.found)) {
         fetch('/api/leads', {
@@ -413,7 +493,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
               last_name: customerInfo.last_name,
               phone: customerInfo.phone,
               email: customerInfo.email,
-              credit_situation: profile.fico ? `FICO ${profile.fico}` : '',
+              credit_situation: creditSituationValue,
               vehicle_type: '',
             }),
           }),
@@ -424,10 +504,25 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
         }).catch(() => {});
       }
 
+      // Update existing lead's credit_situation with grade
+      if (leadMatch?.found && fullPhone !== 'unknown') {
+        fetch('/api/leads/credit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenant,
+            phone: fullPhone,
+            credit_situation: creditSituationValue,
+          }),
+        }).catch(() => {});
+      }
+
       // Save credit routing to activity
       const routingData = {
         profile: { ...profile },
         customer: { ...customerInfo },
+        creditGrade: creditGrade.grade,
+        creditSummary: creditGrade.summary,
         topLenders: scored.slice(0, 5).map((r) => ({
           lender: r.lender,
           tier: r.tier?.tier || 'N/A',

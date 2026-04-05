@@ -395,8 +395,8 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
                       style={{
                         padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 500,
                         border: lead.status === s ? '2px solid #DC2626' : '1px solid rgba(255,255,255,0.1)',
-                        background: lead.status === s ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.03)',
-                        color: lead.status === s ? '#818cf8' : '#8888a0',
+                        background: lead.status === s ? 'rgba(220,38,38,0.2)' : 'rgba(255,255,255,0.03)',
+                        color: lead.status === s ? '#f87171' : '#8888a0',
                         cursor: 'pointer', textTransform: 'capitalize',
                       }}
                     >{s.replace('_', ' ')}</button>
@@ -406,10 +406,12 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <InfoCard label="Vehicle" value={lead.vehicle_type || 'Not specified'} />
-                <InfoCard label="Credit" value={lead.credit_situation || 'Unknown'} />
                 <InfoCard label="Budget" value={lead.budget || 'Not specified'} />
                 <InfoCard label="Since" value={new Date(lead.created_at).toLocaleDateString()} />
               </div>
+
+              {/* Credit Grade Card */}
+              <CreditGradeCard creditSituation={lead.credit_situation} />
             </div>
           )}
 
@@ -466,6 +468,94 @@ function ActionButton({ label, color, active, disabled, onClick }: {
         opacity: disabled ? 0.4 : 1,
       }}
     >{label}</button>
+  );
+}
+
+const GRADE_COLORS: Record<string, string> = {
+  'A+': '#10b981', 'A': '#10b981', 'A-': '#34d399',
+  'B+': '#22c55e', 'B': '#22c55e', 'B-': '#86efac',
+  'C+': '#f59e0b', 'C': '#f59e0b', 'C-': '#fbbf24',
+  'D+': '#f97316', 'D': '#f97316', 'D-': '#fb923c',
+  'F': '#ef4444',
+};
+
+function CreditGradeCard({ creditSituation }: { creditSituation: string }): React.ReactElement {
+  if (!creditSituation) {
+    return (
+      <div style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: '8px',
+        padding: '12px',
+        marginTop: '4px',
+      }}>
+        <div style={{ color: '#666', fontSize: '11px', textTransform: 'uppercase', marginBottom: '4px' }}>Credit</div>
+        <div style={{ color: '#8888a0', fontSize: '13px' }}>No credit data — run Credit Router</div>
+      </div>
+    );
+  }
+
+  // Parse "B+ | FICO 680 | Moderate utilization · No missed payments"
+  const gradeMatch = creditSituation.match(/^([A-F][+-]?)\s*\|/);
+  if (!gradeMatch) {
+    return (
+      <div style={{
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.06)',
+        borderRadius: '8px',
+        padding: '12px',
+        marginTop: '4px',
+      }}>
+        <div style={{ color: '#666', fontSize: '11px', textTransform: 'uppercase', marginBottom: '4px' }}>Credit</div>
+        <div style={{ color: '#ccc', fontSize: '13px' }}>{creditSituation}</div>
+      </div>
+    );
+  }
+
+  const grade = gradeMatch[1];
+  const rest = creditSituation.substring(gradeMatch[0].length).trim();
+  const parts = rest.split('|').map(s => s.trim());
+  const fico = parts[0] || '';
+  const details = parts[1] || '';
+  const detailItems = details.split('·').map(s => s.trim()).filter(Boolean);
+  const color = GRADE_COLORS[grade] || '#666';
+
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.03)',
+      border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: '10px',
+      padding: '14px',
+      marginTop: '4px',
+    }}>
+      <div style={{ color: '#666', fontSize: '11px', textTransform: 'uppercase', marginBottom: '8px' }}>Credit Score</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+        <span style={{
+          background: color,
+          color: '#fff',
+          padding: '4px 12px',
+          borderRadius: '8px',
+          fontSize: '18px',
+          fontWeight: 800,
+          letterSpacing: '0.02em',
+        }}>{grade}</span>
+        <span style={{ color: '#ccc', fontSize: '14px', fontWeight: 500 }}>{fico}</span>
+      </div>
+      {detailItems.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          {detailItems.map((item, i) => (
+            <span key={i} style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: '6px',
+              padding: '3px 8px',
+              fontSize: '11px',
+              color: '#aaa',
+            }}>{item}</span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
