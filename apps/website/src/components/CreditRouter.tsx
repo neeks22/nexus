@@ -517,7 +517,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
           if (data.success) {
             setLeadMatch({ found: true, name: `${customerInfo.first_name} ${customerInfo.last_name}`.trim(), phone: fullPhone });
           }
-        }).catch(() => {});
+        }).catch(err => console.error('[CreditRouter] Lead create error:', err instanceof Error ? err.message : 'unknown'));
       }
 
       // Update existing lead's credit_situation with grade
@@ -530,7 +530,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             phone: fullPhone,
             credit_situation: creditSituationValue,
           }),
-        }).catch(() => {});
+        }).catch(err => console.error('[CreditRouter] Credit update error:', err instanceof Error ? err.message : 'unknown'));
       }
 
       // Save credit routing to activity
@@ -560,7 +560,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
           type: 'credit_routing',
           content: JSON.stringify(routingData),
         }),
-      }).then(() => setSaved(true)).catch(() => {});
+      }).then(() => setSaved(true)).catch(err => console.error('[CreditRouter] Activity save error:', err instanceof Error ? err.message : 'unknown'));
     }
   };
 

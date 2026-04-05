@@ -184,7 +184,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     await sendTwilioSMS(fromPhone, toPhone, aiReply);
     await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: aiReply, channel: 'sms', intent });
-    slackNotify(`SMS REPLY (${tenant.name})\nTo: ***${fromPhone.slice(-4)}\nReply: ${aiReply.substring(0, 100)}...`);
+    await slackNotify(`SMS REPLY (${tenant.name})\nTo: ***${fromPhone.slice(-4)}\nReply: ${aiReply.substring(0, 100)}...`);
 
     // Update lead status to 'contacted' if still 'new' — via RPC (phone column is encrypted)
     try {

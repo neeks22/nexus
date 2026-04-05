@@ -453,13 +453,14 @@ function InboxContent(): React.ReactElement {
         console.error(`[mass] Failed to send to ${phone}:`, err instanceof Error ? err.message : 'unknown');
       }
     }
+    const totalRecipients = recipients.length;
     setSendingNew(false);
     setNewMessageText('');
     setMassRecipients(new Set());
     setShowNewMessage(false);
     setMassSent(0);
     setMassTotal(0);
-    alert(`Sent ${sent} of ${massRecipients.size} messages`);
+    alert(`Sent ${sent} of ${totalRecipients} messages`);
     fetchConversations();
   };
 

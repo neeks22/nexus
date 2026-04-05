@@ -236,11 +236,32 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
 
     const encodedPhone = encodeSupabaseParam(phone);
 
-    await Promise.all([
+    // Lookup lead ID via decrypted view (phone column is encrypted in base table)
+    let leadId: string | null = null;
+    try {
+      const lookupRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/v_funnel_submissions?phone=eq.${encodedPhone}&tenant_id=eq.${tenant}&select=id&limit=1`,
+        { headers: { ...supaHeaders() }, signal: AbortSignal.timeout(5000) }
+      );
+      if (lookupRes.ok) {
+        const leads = await lookupRes.json();
+        if (leads.length > 0) leadId = leads[0].id;
+      }
+    } catch (err) {
+      console.error('[leads] DELETE lookup error:', err instanceof Error ? err.message : 'unknown');
+    }
+
+    const deletePromises = [
       fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
-      fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?tenant_id=eq.${tenant}&phone=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
       fetch(`${SUPABASE_URL}/rest/v1/consent_records?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
-    ]);
+    ];
+    // Delete funnel_submission by ID (phone column is encrypted)
+    if (leadId) {
+      deletePromises.push(
+        fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?id=eq.${leadId}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } })
+      );
+    }
+    await Promise.all(deletePromises);
 
     return NextResponse.json({ success: true, message: 'All customer data deleted' });
   } catch (err) {

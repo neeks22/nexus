@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import LeadCard from './LeadCard';
 
@@ -30,6 +30,15 @@ const STAGES = [
   { id: 'delivered', label: 'Delivered', color: '#10b981' },
   { id: 'lost', label: 'Lost', color: '#ef4444' },
 ];
+
+function DroppableColumn({ id, children }: { id: string; children: React.ReactNode }): React.ReactElement {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} style={{ flex: 1, overflowY: 'auto', padding: '8px', background: isOver ? 'rgba(220,38,38,0.06)' : 'transparent', borderRadius: '8px', transition: 'background 0.15s' }}>
+      {children}
+    </div>
+  );
+}
 
 export default function KanbanBoard({ leads, onMoveLead, onSelectLead }: KanbanBoardProps): React.ReactElement {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -110,8 +119,8 @@ export default function KanbanBoard({ leads, onMoveLead, onSelectLead }: KanbanB
                 }}>{stageLeads.length}</span>
               </div>
 
-              {/* Cards */}
-              <div style={{ padding: '8px', flex: 1, overflowY: 'auto' }}>
+              {/* Cards — DroppableColumn enables dropping on empty columns */}
+              <DroppableColumn id={stage.id}>
                 <SortableContext items={stageLeads.map((l) => l.phone)} strategy={verticalListSortingStrategy}>
                   {stageLeads.map((lead) => {
                     const daysSince = Math.floor((Date.now() - new Date(lead.created_at).getTime()) / 86400000);
@@ -128,7 +137,7 @@ export default function KanbanBoard({ leads, onMoveLead, onSelectLead }: KanbanB
                     );
                   })}
                 </SortableContext>
-              </div>
+              </DroppableColumn>
             </div>
           );
         })}
