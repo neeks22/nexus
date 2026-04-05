@@ -809,7 +809,7 @@ function InboxContent(): React.ReactElement {
                     disabled={agentToggling}
                     style={{
                       padding: '6px 14px', borderRadius: '6px', border: 'none',
-                      background: agentPaused ? '#10b981' : '#6366f1', color: '#fff',
+                      background: agentPaused ? '#10b981' : '#DC2626', color: '#fff',
                       fontSize: '12px', fontWeight: 600, cursor: 'pointer',
                       opacity: agentToggling ? 0.6 : 1,
                     }}

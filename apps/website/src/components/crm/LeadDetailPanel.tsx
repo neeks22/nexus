@@ -299,7 +299,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
           />
           <ActionButton
             label={isAgentPaused ? 'Resume Agent' : 'Pause Agent'}
-            color={isAgentPaused ? '#10b981' : '#6366f1'}
+            color={isAgentPaused ? '#10b981' : '#DC2626'}
             onClick={isAgentPaused ? resumeAgent : pauseAgent}
           />
         </div>
