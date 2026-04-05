@@ -558,6 +558,28 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         text: emailBody,
       });
 
+      // Update lead status to 'contacted' if still 'new' — manual email send
+      const emailTenant = typeof body.tenant === 'string' ? body.tenant : 'readycar';
+      try {
+        const lookupRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/v_funnel_submissions?email=eq.${encodeURIComponent(toEmail)}&tenant_id=eq.${emailTenant}&status=eq.new&select=id&limit=1`,
+          { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(5000) }
+        );
+        if (lookupRes.ok) {
+          const leads = await lookupRes.json();
+          if (leads.length > 0 && leads[0].id) {
+            await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?id=eq.${leads[0].id}`, {
+              method: 'PATCH',
+              headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+              body: JSON.stringify({ status: 'contacted' }),
+              signal: AbortSignal.timeout(5000),
+            });
+          }
+        }
+      } catch (err) {
+        console.error('[messages] Email status update error:', err instanceof Error ? err.message : 'unknown');
+      }
+
       return NextResponse.json(
         { success: true, message: { to: toEmail, subject, body: emailBody, channel: 'email' } },
         { headers: securityHeaders(origin) }
@@ -619,6 +641,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const sentMessage = await res.json();
+
+    // Update lead status to 'contacted' if still 'new' — manual SMS send
+    const smsTenant = typeof body.tenant === 'string' ? body.tenant : 'readycar';
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_lead_status`, {
+        method: 'POST',
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_phone: toPhone, p_tenant: smsTenant, p_status: 'contacted', p_only_if_status: 'new' }),
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch (err) {
+      console.error('[messages] SMS status update error:', err instanceof Error ? err.message : 'unknown');
+    }
 
     return NextResponse.json(
       {

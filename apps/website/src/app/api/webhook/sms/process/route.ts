@@ -74,14 +74,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: msg, channel: 'sms', intent });
       // Mark as hot + paused — agent stops auto-replying until manually resumed
       await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'status', role: 'system', content: 'HOT_PAUSED', channel: 'sms' });
-      // Update lead status
+      // Update lead status via RPC (phone column is encrypted, can't PATCH by phone directly)
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeURIComponent(fromPhone)}&tenant_id=eq.${tenant.tenant}`, {
-          method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
-          body: JSON.stringify({ status: 'appointment' }), signal: AbortSignal.timeout(5000),
+        await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_lead_status`, {
+          method: 'POST', headers: { ...supaHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_phone: fromPhone, p_tenant: tenant.tenant, p_status: 'appointment', p_only_if_status: null }),
+          signal: AbortSignal.timeout(5000),
         });
       } catch (err) {
-        console.error('[sms-process] Failed to PATCH lead status to appointment:', err instanceof Error ? err.message : 'unknown');
+        console.error('[sms-process] Failed to update lead status to appointment:', err instanceof Error ? err.message : 'unknown');
         Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       }
       await slackNotify(`HOT LEAD HANDOFF — AI PAUSED\nPhone: ***${fromPhone.slice(-4)}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nAI will NOT auto-reply until manually resumed in CRM.`);
@@ -185,6 +186,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: aiReply, channel: 'sms', intent });
     slackNotify(`SMS REPLY (${tenant.name})\nTo: ***${fromPhone.slice(-4)}\nReply: ${aiReply.substring(0, 100)}...`);
 
+    // Update lead status to 'contacted' if still 'new' — via RPC (phone column is encrypted)
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_lead_status`, {
+        method: 'POST', headers: { ...supaHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_phone: fromPhone, p_tenant: tenant.tenant, p_status: 'contacted', p_only_if_status: 'new' }),
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch (err) {
+      console.error('[sms-process] Status update error:', err instanceof Error ? err.message : 'unknown');
+    }
+
     // --- FORM EXTRACTION: Fire-and-forget — moved off the hot path to avoid double Claude call ---
     // The primary SMS response is already sent above. Extraction runs async and won't block the response.
     const fullConvo = conversationHistory + '\ncustomer: ' + messageBody + '\nai: ' + aiReply;
@@ -260,10 +272,20 @@ Return ONLY the JSON, nothing else.`;
   }
   if (Object.keys(leadUpdate).length > 0) {
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeURIComponent(fromPhone)}&tenant_id=eq.${tenant.tenant}`, {
-        method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
-        body: JSON.stringify(leadUpdate), signal: AbortSignal.timeout(5000),
-      });
+      // Lookup lead by phone via decrypted view, then PATCH by id (phone column is encrypted)
+      const lookupRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/v_funnel_submissions?phone=eq.${encodeURIComponent(fromPhone)}&tenant_id=eq.${tenant.tenant}&select=id&limit=1`,
+        { headers: { ...supaHeaders() }, signal: AbortSignal.timeout(5000) }
+      );
+      if (lookupRes.ok) {
+        const leads = await lookupRes.json() as { id: string }[];
+        if (leads.length > 0 && leads[0].id) {
+          await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?id=eq.${leads[0].id}`, {
+            method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
+            body: JSON.stringify(leadUpdate), signal: AbortSignal.timeout(5000),
+          });
+        }
+      }
     } catch (err) {
       console.error('[sms-process] Failed to update lead with extracted data:', err instanceof Error ? err.message : 'unknown');
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
@@ -309,9 +331,10 @@ ${fullConvo.split('\n').slice(-10).join('\n')}`;
     await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'status', role: 'system', content: 'HOT_PAUSED', channel: 'sms' });
 
     try {
-      await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeURIComponent(fromPhone)}&tenant_id=eq.${tenant.tenant}`, {
-        method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' },
-        body: JSON.stringify({ status: 'credit_app' }), signal: AbortSignal.timeout(5000),
+      await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_lead_status`, {
+        method: 'POST', headers: { ...supaHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_phone: fromPhone, p_tenant: tenant.tenant, p_status: 'credit_app', p_only_if_status: null }),
+        signal: AbortSignal.timeout(5000),
       });
     } catch (err) {
       console.error('[sms-process] Failed to update lead status:', err instanceof Error ? err.message : 'unknown');

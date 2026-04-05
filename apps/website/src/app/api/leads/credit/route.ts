@@ -30,8 +30,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
+    // Lookup lead by phone via decrypted view, then PATCH by id (phone column is encrypted)
+    const lookupRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/v_funnel_submissions?phone=eq.${encodeSupabaseParam(phone)}&tenant_id=eq.${tenant}&select=id&limit=1`,
+      { headers: { ...supaHeaders() }, signal: AbortSignal.timeout(5000) }
+    );
+    if (!lookupRes.ok) return NextResponse.json({ error: 'Failed to find lead' }, { status: 500 });
+    const leads = await lookupRes.json();
+    if (!leads.length || !leads[0].id) return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeSupabaseParam(phone)}&tenant_id=eq.${tenant}`,
+      `${SUPABASE_URL}/rest/v1/funnel_submissions?id=eq.${leads[0].id}`,
       {
         method: 'PATCH',
         headers: { ...supaHeaders(), Prefer: 'return=minimal' },

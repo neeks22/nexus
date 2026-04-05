@@ -120,10 +120,13 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Valid phone and status required' }, { status: 400 });
     }
 
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/funnel_submissions?phone=eq.${encodeSupabaseParam(phone)}&tenant_id=eq.${tenant}`,
-      { method: 'PATCH', headers: { ...supaHeaders(), Prefer: 'return=minimal' }, body: JSON.stringify({ status }), signal: AbortSignal.timeout(10000) }
-    );
+    // Use RPC to update status — phone column is encrypted, can't PATCH by phone directly
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_lead_status`, {
+      method: 'POST',
+      headers: { ...supaHeaders(), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_phone: phone, p_tenant: tenant, p_status: status, p_only_if_status: null }),
+      signal: AbortSignal.timeout(10000),
+    });
     if (!res.ok) return NextResponse.json({ error: 'Failed to update' }, { status: 500 });
 
     return NextResponse.json({ success: true });

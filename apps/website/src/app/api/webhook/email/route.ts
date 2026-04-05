@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, supaGetData, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput } from '../../../../lib/security';
+import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, supaGetData, supaHeaders, SUPABASE_URL, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput } from '../../../../lib/security';
 
 /* ---------- Tenant email config ---------- */
 const TENANT_EMAIL_CONFIG: Record<string, { fromName: string; gm: string; phone: string; signoff: string }> = {
@@ -150,6 +150,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     await supaPost('lead_transcripts', { tenant_id: tenant, lead_id: senderEmail, entry_type: 'message', role: 'ai', content: aiReply, channel: 'email', intent });
     await slackNotify(`EMAIL REPLY SENT\nTo: ${senderEmail}\nIntent: ${intent}\nHandoff: ${shouldHandoff}`);
+
+    // Update lead status to 'contacted' if still 'new' — look up by email via view, patch by id
+    try {
+      const lookupRes = await fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?email=eq.${encodeURIComponent(senderEmail)}&tenant_id=eq.${tenant}&status=eq.new&select=id&limit=1`, {
+        headers: { ...supaHeaders() },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (lookupRes.ok) {
+        const leads = await lookupRes.json();
+        if (leads.length > 0 && leads[0].id) {
+          await fetch(`${SUPABASE_URL}/rest/v1/funnel_submissions?id=eq.${leads[0].id}`, {
+            method: 'PATCH',
+            headers: { ...supaHeaders(), Prefer: 'return=minimal' },
+            body: JSON.stringify({ status: 'contacted' }),
+            signal: AbortSignal.timeout(5000),
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[email-agent] Status update error:', err instanceof Error ? err.message : 'unknown');
+    }
 
     return NextResponse.json({ action: 'sent', intent, shouldHandoff });
   } catch (error) {
