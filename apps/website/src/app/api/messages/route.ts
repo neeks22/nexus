@@ -223,15 +223,17 @@ async function fetchLeads(tenant?: string): Promise<Map<string, SupabaseLead>> {
   const leadMap = new Map<string, SupabaseLead>();
 
   try {
-    let query = `${SUPABASE_URL}/rest/v1/v_funnel_submissions?select=first_name,last_name,phone,status,vehicle_type,budget,credit_situation`;
-    if (tenant) query += `&tenant_id=eq.${tenant}`;
-
-    const res = await fetch(query, {
+    // Use RPC to batch-decrypt only recent leads with phones (avoids decrypting 3000+ rows)
+    const rpcQuery = `${SUPABASE_URL}/rest/v1/rpc/get_recent_leads_with_phone`;
+    const res = await fetch(rpcQuery, {
+      method: 'POST',
       headers: {
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
       },
-      signal: AbortSignal.timeout(10000),
+      body: JSON.stringify({ p_tenant: tenant || '', p_limit: 500 }),
+      signal: AbortSignal.timeout(12000),
     });
 
     if (res.ok) {
@@ -240,15 +242,44 @@ async function fetchLeads(tenant?: string): Promise<Map<string, SupabaseLead>> {
         if (lead.phone) {
           const normalized = normalizePhone(lead.phone);
           leadMap.set(normalized, lead);
-          // Also store with raw phone in case formats differ
+          leadMap.set(lead.phone, lead);
+        }
+      }
+      return leadMap;
+    }
+    // RPC not found — fall back to view query
+    console.error(`[messages] RPC failed (${res.status}), falling back to view`);
+  } catch (err) {
+    console.error('[messages] RPC error, falling back:', err instanceof Error ? err.message : 'unknown');
+  }
+
+  // Fallback: query view directly with limit
+  try {
+    let query = `${SUPABASE_URL}/rest/v1/v_funnel_submissions?select=first_name,last_name,phone,status,vehicle_type,budget,credit_situation&order=created_at.desc&limit=500`;
+    if (tenant) query += `&tenant_id=eq.${tenant}`;
+
+    const res = await fetch(query, {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (res.ok) {
+      const leads = (await res.json()) as SupabaseLead[];
+      for (const lead of leads) {
+        if (lead.phone) {
+          const normalized = normalizePhone(lead.phone);
+          leadMap.set(normalized, lead);
           leadMap.set(lead.phone, lead);
         }
       }
     } else {
-      console.error(`[messages] Supabase error: ${res.status}`);
+      console.error(`[messages] Supabase view error: ${res.status} ${await res.text().catch(() => '')}`);
     }
   } catch (err) {
-    console.error('[messages] Failed to fetch leads from Supabase:', err);
+    console.error('[messages] Failed to fetch leads:', err instanceof Error ? err.message : 'unknown');
   }
 
   return leadMap;
