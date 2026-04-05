@@ -266,32 +266,32 @@ function computeCreditGrade(fico: number, situation: string, selfEmployed: boole
   // Base grade from FICO
   let grade: string;
   if (fico >= 800) grade = 'A+';
-  else if (fico >= 770) grade = 'A';
-  else if (fico >= 750) grade = 'A-';
-  else if (fico >= 720) grade = 'B+';
-  else if (fico >= 700) grade = 'B';
-  else if (fico >= 680) grade = 'B-';
-  else if (fico >= 650) grade = 'C+';
-  else if (fico >= 620) grade = 'C';
-  else if (fico >= 600) grade = 'C-';
-  else if (fico >= 560) grade = 'D+';
-  else if (fico >= 520) grade = 'D';
-  else if (fico >= 480) grade = 'D-';
+  else if (fico >= 760) grade = 'A';
+  else if (fico >= 730) grade = 'A-';
+  else if (fico >= 700) grade = 'B+';
+  else if (fico >= 660) grade = 'B';
+  else if (fico >= 620) grade = 'B-';
+  else if (fico >= 580) grade = 'C+';
+  else if (fico >= 540) grade = 'C';
+  else if (fico >= 500) grade = 'C-';
+  else if (fico >= 480) grade = 'D+';
+  else if (fico >= 450) grade = 'D';
+  else if (fico >= 400) grade = 'D-';
   else grade = 'F';
 
   // Build summary based on profile
   const parts: string[] = [];
 
   // Credit utilization estimate from FICO range
-  if (fico >= 750) parts.push('Low utilization');
-  else if (fico >= 650) parts.push('Moderate utilization');
+  if (fico >= 730) parts.push('Low utilization');
+  else if (fico >= 620) parts.push('Moderate utilization');
   else if (fico >= 500) parts.push('High utilization');
   else parts.push('Very high utilization');
 
   // Trade line health
   if (fico >= 700) parts.push('No missed payments');
-  else if (fico >= 600) parts.push('Minor delinquencies likely');
-  else if (fico >= 500) parts.push('Missed payments on file');
+  else if (fico >= 580) parts.push('Minor delinquencies likely');
+  else if (fico >= 450) parts.push('Missed payments on file');
   else parts.push('Multiple missed payments');
 
   // Situation flags
