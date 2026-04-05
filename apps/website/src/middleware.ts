@@ -66,6 +66,8 @@ async function verifySession(cookie: string): Promise<SessionPayload | null> {
     const decoded = atob(payloadB64.replace(/-/g, '+').replace(/_/g, '/'));
     const payload = JSON.parse(decoded) as SessionPayload;
     if (payload.exp < Date.now()) return null;
+    // Validate required fields — reject old/malformed session cookies
+    if (!payload.user_id || !payload.email || !payload.tenant_id || !payload.role) return null;
     return payload;
   } catch (err) {
     console.error('[middleware] Session decode error:', err instanceof Error ? err.message : String(err));

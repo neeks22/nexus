@@ -73,7 +73,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     response.cookies.set('nexus_session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       path: '/',
       maxAge: 86400,
     });
@@ -116,6 +116,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
     if (payload.exp < Date.now()) {
       const res = NextResponse.json({ authenticated: false, reason: 'expired' }, { status: 401 });
+      res.cookies.delete('nexus_session');
+      return res;
+    }
+    // Reject old/malformed session cookies missing required fields
+    if (!payload.user_id || !payload.email || !payload.tenant_id || !payload.role) {
+      const res = NextResponse.json({ authenticated: false, reason: 'invalid_session' }, { status: 401 });
       res.cookies.delete('nexus_session');
       return res;
     }
