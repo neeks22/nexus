@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireApiKey, rateLimit as sharedRateLimit, getClientIp } from '../../../lib/security';
+import { requireApiKey, rateLimit as sharedRateLimit, getClientIp, validateTenant } from '../../../lib/security';
 
 /* =============================================================================
    ENVIRONMENT VARIABLES — never hardcode credentials
@@ -559,7 +559,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
 
       // Update lead status to 'contacted' if still 'new' — manual email send
-      const emailTenant = typeof body.tenant === 'string' ? body.tenant : 'readycar';
+      const emailTenant = validateTenant(typeof body.tenant === 'string' ? body.tenant : null);
       try {
         const lookupRes = await fetch(
           `${SUPABASE_URL}/rest/v1/v_funnel_submissions?email=eq.${encodeURIComponent(toEmail)}&tenant_id=eq.${emailTenant}&status=eq.new&select=id&limit=1`,
@@ -643,7 +643,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const sentMessage = await res.json();
 
     // Update lead status to 'contacted' if still 'new' — manual SMS send
-    const smsTenant = typeof body.tenant === 'string' ? body.tenant : 'readycar';
+    const smsTenant = validateTenant(typeof body.tenant === 'string' ? body.tenant : null);
     try {
       await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_lead_status`, {
         method: 'POST',

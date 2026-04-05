@@ -82,6 +82,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (type === 'pdf' && !pdfBase64) {
       return NextResponse.json({ error: 'Missing pdfBase64 field' }, { status: 400 });
     }
+    if (type === 'pdf' && pdfBase64) {
+      const sizeBytes = Math.ceil(pdfBase64.length * 0.75);
+      if (sizeBytes > 32 * 1024 * 1024) {
+        return NextResponse.json({ error: 'PDF too large — max 32MB' }, { status: 400 });
+      }
+    }
 
     let messages;
 
@@ -111,13 +117,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ];
     }
 
-    // 8s timeout to stay within Vercel's 10s function limit
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
+        'anthropic-version': '2024-10-22',
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
