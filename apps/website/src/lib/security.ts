@@ -298,12 +298,13 @@ export async function callClaude(system: string, userMsg: string, maxTokens: num
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: maxTokens,
+        model: 'claude-opus-4-6',
+        max_tokens: maxTokens + 4000,
+        thinking: { type: 'enabled', budget_tokens: 4000 },
         system,
         messages: [{ role: 'user', content: userMsg }],
       }),
-      signal: AbortSignal.timeout(8000), // Vercel Hobby has 10s limit — 15s guaranteed failure
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!res.ok) {
@@ -311,7 +312,8 @@ export async function callClaude(system: string, userMsg: string, maxTokens: num
       return '';
     }
     const data = await res.json();
-    return data.content?.[0]?.text || '';
+    const textBlock = (data.content || []).find((b: { type: string }) => b.type === 'text');
+    return textBlock?.text || '';
   } catch (err) {
     console.error('[callClaude] Error:', err instanceof Error ? err.message : 'unknown');
     return '';

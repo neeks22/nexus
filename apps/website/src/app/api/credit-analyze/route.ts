@@ -125,8 +125,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: type === 'pdf' ? 1500 : 1000,
+        model: 'claude-opus-4-6',
+        max_tokens: type === 'pdf' ? 16000 : 8000,
+        thinking: {
+          type: 'enabled',
+          budget_tokens: type === 'pdf' ? 10000 : 5000,
+        },
         messages,
       }),
       signal: AbortSignal.timeout(55000),
@@ -135,14 +139,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!res.ok) {
       const err = await res.text();
       console.error('Anthropic API error:', err);
+      let detail = 'AI analysis failed';
+      try {
+        const parsed = JSON.parse(err);
+        detail = parsed?.error?.message || detail;
+      } catch {
+        console.error('[credit-analyze] Could not parse error response');
+      }
       return NextResponse.json(
-        { error: 'AI analysis failed' },
+        { error: detail },
         { status: res.status }
       );
     }
 
     const data = await res.json();
     const rawAnalysis = (data.content || [])
+      .filter((item: { type: string }) => item.type === 'text')
       .map((item: { text?: string }) => item.text || '')
       .join('\n');
 

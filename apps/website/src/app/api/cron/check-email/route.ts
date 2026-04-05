@@ -108,12 +108,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       const res = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 500, system: systemPrompt, messages: [{ role: 'user', content: userMsg }] }),
-        signal: AbortSignal.timeout(8000),
+        body: JSON.stringify({ model: 'claude-opus-4-6', max_tokens: 4500, thinking: { type: 'enabled', budget_tokens: 4000 }, system: systemPrompt, messages: [{ role: 'user', content: userMsg }] }),
+        signal: AbortSignal.timeout(30000),
       });
       if (res.ok) {
         const data = await res.json();
-        aiReply = data.content?.[0]?.text || '';
+        const textBlock = (data.content || []).find((b: { type: string }) => b.type === 'text');
+        aiReply = textBlock?.text || '';
       }
     } catch (err) { console.error('[check-email] Claude API call failed:', err instanceof Error ? err.message : 'unknown'); Sentry.captureException(err instanceof Error ? err : new Error(String(err))); }
 
