@@ -398,21 +398,51 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'text', text }),
       });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
+        console.error('[CreditRouter] AI text analysis HTTP error:', res.status, errData);
+        setAiInsight(`Analysis failed (${res.status}): ${errData.error || 'Unknown error'}. Enter credit details manually below.`);
+        setAnalyzing(false);
+        return;
+      }
       const data = await res.json();
-      setAiInsight(data.analysis || 'AI analysis unavailable.');
+      setAiInsight(data.analysis || 'AI returned empty analysis. Enter credit details manually below.');
       if (data.clientInfo) fillFromClientInfo(data.clientInfo);
     } catch (err) {
       console.error('[CreditRouter] AI text analysis error:', err instanceof Error ? err.message : 'unknown');
-      setAiInsight('AI analysis unavailable. Enter credit details manually below.');
+      setAiInsight('AI analysis unavailable — network error. Enter credit details manually below.');
     }
     setAnalyzing(false);
   };
 
+  const isPdfFile = (file: File): boolean => {
+    if (file.type === 'application/pdf') return true;
+    if (file.name.toLowerCase().endsWith('.pdf')) return true;
+    return false;
+  };
+
   const processFile = async (file: File): Promise<void> => {
-    if (file.type === 'application/pdf') {
+    if (isPdfFile(file)) {
       const reader = new FileReader();
+      reader.onerror = () => {
+        console.error('[CreditRouter] FileReader error reading PDF');
+        setAiInsight('Could not read PDF file. Try a different file or paste bureau text.');
+        setAnalyzing(false);
+      };
       reader.onload = async (ev) => {
         const base64 = (ev.target?.result as string).split(',')[1];
+        if (!base64) {
+          setAiInsight('Could not read PDF file. Try a different file.');
+          setAnalyzing(false);
+          return;
+        }
+        // Check base64 size — Vercel has 4.5MB request body limit
+        const approxSizeBytes = Math.ceil(base64.length * 0.75);
+        if (approxSizeBytes > 30 * 1024 * 1024) {
+          setAiInsight('PDF too large (max 30MB). Try a smaller file or paste the bureau text directly.');
+          setAnalyzing(false);
+          return;
+        }
         setAnalyzing(true);
         try {
           const res = await fetch('/api/credit-analyze', {
@@ -420,9 +450,16 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'pdf', pdfBase64: base64 }),
           });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({ error: `Server error ${res.status}` }));
+            console.error('[CreditRouter] PDF analysis HTTP error:', res.status, errData);
+            setAiInsight(`PDF analysis failed (${res.status}): ${errData.error || 'Unknown error'}. Try pasting the bureau text instead.`);
+            setAnalyzing(false);
+            return;
+          }
           const data = await res.json();
           const analysis = data.analysis || '';
-          setAiInsight(analysis);
+          setAiInsight(analysis || 'AI returned empty analysis. Enter credit details manually.');
           if (data.clientInfo) {
             fillFromClientInfo(data.clientInfo);
           } else {
@@ -433,15 +470,24 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
           }
         } catch (err) {
           console.error('[CreditRouter] PDF analysis error:', err instanceof Error ? err.message : 'unknown');
-          setAiInsight('Could not analyze PDF. Please enter details manually.');
+          setAiInsight('Could not analyze PDF — network error. Try pasting the bureau text instead.');
         }
         setAnalyzing(false);
       };
       reader.readAsDataURL(file);
     } else {
       const reader = new FileReader();
+      reader.onerror = () => {
+        console.error('[CreditRouter] FileReader error reading text file');
+        setAiInsight('Could not read file. Try a different file or paste bureau text.');
+        setAnalyzing(false);
+      };
       reader.onload = (ev) => {
         const text = ev.target?.result as string;
+        if (!text || text.trim().length === 0) {
+          setAiInsight('File appears empty. Paste bureau text manually.');
+          return;
+        }
         analyzeWithAI(text);
       };
       reader.readAsText(file);
@@ -792,6 +838,29 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 <div style={{ fontSize: 12, color: '#55556a', marginTop: 4 }}>AI will extract score, trades, collections &amp; auto-fill client info</div>
               </div>
               <input ref={fileRef} type="file" accept=".pdf,.txt,.csv" onChange={handleFileUpload} style={{ display: 'none' }} />
+
+              {/* Paste bureau text fallback */}
+              {bureauConsent && !analyzing && !aiInsight && (
+                <div style={{ marginTop: 12 }}>
+                  <div style={{ fontSize: 11, color: '#55556a', textAlign: 'center', marginBottom: 6 }}>or paste bureau text below</div>
+                  <textarea
+                    placeholder="Paste raw credit bureau text here..."
+                    className="cr-input"
+                    style={{ ...s.input, height: 80, resize: 'vertical', fontSize: 12, fontWeight: 400, lineHeight: 1.5 }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.ctrlKey) {
+                        const text = (e.target as HTMLTextAreaElement).value.trim();
+                        if (text.length > 20) analyzeWithAI(text);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const text = e.target.value.trim();
+                      if (text.length > 50) analyzeWithAI(text);
+                    }}
+                  />
+                  <div style={{ fontSize: 10, color: '#55556a', marginTop: 4 }}>Ctrl+Enter or click away to analyze</div>
+                </div>
+              )}
 
               {analyzing && (
                 <div style={{ marginTop: 16, padding: 16, background: 'rgba(99,102,241,0.08)', borderRadius: 12, border: '1px solid rgba(99,102,241,0.15)', animation: 'crPulse 1.5s infinite', display: 'flex', alignItems: 'center', gap: 10 }}>
