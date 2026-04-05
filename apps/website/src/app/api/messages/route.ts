@@ -242,12 +242,16 @@ async function fetchLeads(tenant?: string): Promise<Map<string, SupabaseLead>> {
         if (lead.phone) {
           const normalized = normalizePhone(lead.phone);
           const digitsOnly = lead.phone.replace(/\D/g, '');
-          leadMap.set(normalized, lead);
-          leadMap.set(lead.phone, lead);
-          leadMap.set(digitsOnly, lead);
-          // Also store without country code for 11-digit numbers
+          leadMap.set(normalized, lead);          // +16131234567
+          leadMap.set(lead.phone, lead);           // raw from DB
+          leadMap.set(digitsOnly, lead);            // 16131234567
           if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
-            leadMap.set(digitsOnly.substring(1), lead);
+            leadMap.set(digitsOnly.substring(1), lead);  // 6131234567
+            leadMap.set('+1' + digitsOnly.substring(1), lead); // +16131234567 (redundant but safe)
+          }
+          if (digitsOnly.length === 10) {
+            leadMap.set('+1' + digitsOnly, lead);  // +16131234567
+            leadMap.set('1' + digitsOnly, lead);   // 16131234567
           }
         }
       }
@@ -278,12 +282,16 @@ async function fetchLeads(tenant?: string): Promise<Map<string, SupabaseLead>> {
         if (lead.phone) {
           const normalized = normalizePhone(lead.phone);
           const digitsOnly = lead.phone.replace(/\D/g, '');
-          leadMap.set(normalized, lead);
-          leadMap.set(lead.phone, lead);
-          leadMap.set(digitsOnly, lead);
-          // Also store without country code for 11-digit numbers
+          leadMap.set(normalized, lead);          // +16131234567
+          leadMap.set(lead.phone, lead);           // raw from DB
+          leadMap.set(digitsOnly, lead);            // 16131234567
           if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
-            leadMap.set(digitsOnly.substring(1), lead);
+            leadMap.set(digitsOnly.substring(1), lead);  // 6131234567
+            leadMap.set('+1' + digitsOnly.substring(1), lead); // +16131234567 (redundant but safe)
+          }
+          if (digitsOnly.length === 10) {
+            leadMap.set('+1' + digitsOnly, lead);  // +16131234567
+            leadMap.set('1' + digitsOnly, lead);   // 16131234567
           }
         }
       }
@@ -341,7 +349,8 @@ function groupIntoConversations(
     msgs.sort((a, b) => new Date(a.dateSent).getTime() - new Date(b.dateSent).getTime());
 
     const digitsOnly = phone.replace(/\D/g, '');
-    const lead = leads.get(phone) || leads.get(digitsOnly) || leads.get(digitsOnly.length === 11 && digitsOnly.startsWith('1') ? digitsOnly.substring(1) : '') || null;
+    const withPlus1 = digitsOnly.length === 10 ? `+1${digitsOnly}` : `+${digitsOnly}`;
+    const lead = leads.get(phone) || leads.get(withPlus1) || leads.get(digitsOnly) || leads.get(digitsOnly.length === 11 && digitsOnly.startsWith('1') ? digitsOnly.substring(1) : '') || null;
     const lastMsg = msgs[msgs.length - 1];
 
     let unreadCount = 0;
