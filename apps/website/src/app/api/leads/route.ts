@@ -28,6 +28,24 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Server config error' }, { status: 500 });
   }
 
+  const statusOnly = request.nextUrl.searchParams.get('status_only');
+
+  // Quick pause-status check for inbox agent toggle
+  if (statusOnly === 'true' && phone) {
+    try {
+      const encodedPhone = encodeSupabaseParam(phone);
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}&entry_type=eq.status&select=content,created_at&order=created_at.desc&limit=1`,
+        { headers: supaAnonHeaders(tenant), signal: AbortSignal.timeout(5000) }
+      );
+      const statuses = res.ok ? await res.json() : [];
+      return NextResponse.json({ statuses }, { headers: { 'Cache-Control': 'no-store' } });
+    } catch (err) {
+      console.error('[leads] Status check error:', err instanceof Error ? err.message : 'unknown');
+      return NextResponse.json({ statuses: [] });
+    }
+  }
+
   // Activity endpoint — CRM notes + all status entries (HOT_PAUSED, AI_RESUMED, etc.)
   if (activity === 'true' && phone) {
     try {

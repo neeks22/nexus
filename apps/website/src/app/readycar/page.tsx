@@ -187,6 +187,8 @@ function InboxContent(): React.ReactElement {
   const [newMessagePhone, setNewMessagePhone] = useState('');
   const [newMessageText, setNewMessageText] = useState('');
   const [sendingNew, setSendingNew] = useState(false);
+  const [agentPaused, setAgentPaused] = useState(false);
+  const [agentToggling, setAgentToggling] = useState(false);
 
   const threadEndRef = useRef<HTMLDivElement>(null);
   const composeRef = useRef<HTMLInputElement>(null);
@@ -222,6 +224,46 @@ function InboxContent(): React.ReactElement {
     const interval = setInterval(fetchConversations, 10000);
     return () => clearInterval(interval);
   }, [fetchConversations]);
+
+  /* ---- Check agent pause status when conversation changes ---- */
+  useEffect(() => {
+    if (!activeConversation?.phone) { setAgentPaused(false); return; }
+    (async () => {
+      try {
+        const res = await fetch(`/api/leads?tenant=${TENANT}&phone=${encodeURIComponent(activeConversation.phone)}&status_only=true`);
+        if (res.ok) {
+          const data = await res.json();
+          const latest = data.statuses?.[0]?.content;
+          setAgentPaused(latest === 'HOT_PAUSED' || latest === 'AGENT_PAUSED');
+        }
+      } catch (err) {
+        console.error('[readycar] Agent status check error:', err instanceof Error ? err.message : 'unknown');
+      }
+    })();
+  }, [activeConversation?.phone]);
+
+  async function toggleAgent(): Promise<void> {
+    if (!activeConversation || agentToggling) return;
+    setAgentToggling(true);
+    try {
+      const newContent = agentPaused ? 'AI_RESUMED' : 'AGENT_PAUSED';
+      await fetch('/api/leads', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tenant: TENANT, phone: activeConversation.phone, type: 'status', content: newContent }),
+      });
+      if (agentPaused) {
+        // Resuming — also reset lead status so funnel check passes
+        await fetch('/api/leads', {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tenant: TENANT, phone: activeConversation.phone, status: 'contacted' }),
+        });
+      }
+      setAgentPaused(!agentPaused);
+    } catch (err) {
+      console.error('[readycar] Agent toggle error:', err instanceof Error ? err.message : 'unknown');
+    }
+    setAgentToggling(false);
+  }
 
   /* ---- Auto-scroll to bottom ---- */
   useEffect(() => {
@@ -745,47 +787,34 @@ function InboxContent(): React.ReactElement {
                   <div ref={threadEndRef} />
                 </div>
 
-                {/* HOT Lead Pause Banner */}
-                {(() => {
-                  const allText = activeConversation.messages.map((m: Message) => m.body).join(' ');
-                  const hotKeywords = /\b(yes|yeah|interested|ready|come in|test drive|appointment|schedule|book|buy|approved|check|let.s do it|sign me up|i.m in|deal)\b/i;
-                  const isConvHot = activeConversation.messages.some((m: Message) => m.direction === 'inbound' && hotKeywords.test(m.body));
-
-                  if (isConvHot) {
-                    return (
-                      <div style={{
-                        padding: '12px 16px', background: 'rgba(239,68,68,0.1)',
-                        borderTop: '2px solid #ef4444', display: 'flex',
-                        alignItems: 'center', justifyContent: 'space-between',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ background: '#ef4444', color: '#fff', padding: '2px 8px', borderRadius: '8px', fontSize: '11px', fontWeight: 700 }}>HOT LEAD</span>
-                          <span style={{ color: '#ef4444', fontSize: '13px' }}>AI paused — waiting for human transfer</span>
-                        </div>
-                        <button
-                          onClick={async () => {
-                            if (!window.confirm('Resume AI auto-replies for this lead?')) return;
-                            try {
-                              await fetch('/api/leads', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ tenant: TENANT, phone: activeConversation.phone, type: 'status', content: 'AI_RESUMED' }),
-                              });
-                              // Delete the HOT_PAUSED flag by posting a resume status
-                              alert('AI auto-replies resumed for this lead.');
-                            } catch (err) { console.error('[readycar] Resume AI error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to resume.'); }
-                          }}
-                          style={{
-                            padding: '6px 14px', borderRadius: '6px', border: 'none',
-                            background: '#ef4444', color: '#fff', fontSize: '12px',
-                            fontWeight: 600, cursor: 'pointer',
-                          }}
-                        >Continue AI? Yes</button>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                {/* Agent Pause/Resume Bar */}
+                <div style={{
+                  padding: '10px 16px',
+                  background: agentPaused ? 'rgba(245,158,11,0.1)' : 'rgba(99,102,241,0.06)',
+                  borderTop: `2px solid ${agentPaused ? '#f59e0b' : 'rgba(99,102,241,0.2)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      background: agentPaused ? '#f59e0b' : '#10b981',
+                      display: 'inline-block',
+                    }} />
+                    <span style={{ color: agentPaused ? '#f59e0b' : '#8888a0', fontSize: '13px', fontWeight: 500 }}>
+                      {agentPaused ? 'Agent paused — manual mode' : 'Agent active'}
+                    </span>
+                  </div>
+                  <button
+                    onClick={toggleAgent}
+                    disabled={agentToggling}
+                    style={{
+                      padding: '6px 14px', borderRadius: '6px', border: 'none',
+                      background: agentPaused ? '#10b981' : '#6366f1', color: '#fff',
+                      fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                      opacity: agentToggling ? 0.6 : 1,
+                    }}
+                  >{agentPaused ? 'Resume Agent' : 'Pause Agent'}</button>
+                </div>
 
                 {/* Compose */}
                 <div className={styles.composeBar}>
