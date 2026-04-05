@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireApiKey, rateLimit, getClientIp } from '@/lib/security';
 
+export const maxDuration = 60;
+
 const ANTHROPIC_API_KEY = (process.env.ANTHROPIC_API_KEY ?? '').trim();
 
 const CLIENT_INFO_BLOCK = `
@@ -122,7 +124,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         max_tokens: type === 'pdf' ? 1500 : 1000,
         messages,
       }),
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(55000),
     });
 
     if (!res.ok) {

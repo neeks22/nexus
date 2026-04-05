@@ -342,6 +342,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
   const [searchingLead, setSearchingLead] = useState(false);
   const [notes, setNotes] = useState('');
   const [bureauConsent, setBureauConsent] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const [results, setResults] = useState<ScoredResult[]>([]);
   const [aiInsight, setAiInsight] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
@@ -407,10 +408,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
     setAnalyzing(false);
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const processFile = async (file: File): Promise<void> => {
     if (file.type === 'application/pdf') {
       const reader = new FileReader();
       reader.onload = async (ev) => {
@@ -448,6 +446,24 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
       };
       reader.readAsText(file);
     }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await processFile(file);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>): Promise<void> => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    if (!bureauConsent) return;
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    const ext = file.name.toLowerCase();
+    if (!ext.endsWith('.pdf') && !ext.endsWith('.txt') && !ext.endsWith('.csv')) return;
+    await processFile(file);
   };
 
   const runRouting = (): void => {
@@ -743,20 +759,26 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
 
               <div
                 onClick={() => { if (bureauConsent) fileRef.current?.click(); }}
+                onDrop={handleDrop}
+                onDragOver={(e) => { e.preventDefault(); if (bureauConsent) setDragOver(true); }}
+                onDragEnter={(e) => { e.preventDefault(); if (bureauConsent) setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
                 style={{
-                  border: '2px dashed rgba(255,255,255,0.08)', borderRadius: 12,
+                  border: `2px dashed ${dragOver ? 'rgba(220,38,38,0.6)' : 'rgba(255,255,255,0.08)'}`,
+                  borderRadius: 12,
                   padding: '36px 24px', textAlign: 'center',
                   cursor: bureauConsent ? 'pointer' : 'not-allowed',
                   transition: '200ms cubic-bezier(0.4, 0, 0.2, 1)',
-                  background: 'rgba(255,255,255,0.02)',
+                  background: dragOver ? 'rgba(220,38,38,0.06)' : 'rgba(255,255,255,0.02)',
                   opacity: bureauConsent ? 1 : 0.4,
                 }}
                 onMouseEnter={(e) => {
-                  if (!bureauConsent) return;
+                  if (!bureauConsent || dragOver) return;
                   e.currentTarget.style.borderColor = 'rgba(99,102,241,0.4)';
                   e.currentTarget.style.background = 'rgba(99,102,241,0.04)';
                 }}
                 onMouseLeave={(e) => {
+                  if (dragOver) return;
                   e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
                   e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
                 }}
