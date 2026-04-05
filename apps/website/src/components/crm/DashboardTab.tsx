@@ -162,7 +162,7 @@ export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps
           <div style={{ color: '#666', fontSize: '13px' }}>No activity yet today</div>
         ) : d.recentActivity.slice(0, 10).map((item, i) => (
           <div key={i} onClick={() => onSelectLead(item.phone)} style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }}>
-            <div style={{ color: '#8888a0', fontSize: '11px' }}>{item.time}</div>
+            <div style={{ color: '#8888a0', fontSize: '11px' }}>{new Date(item.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</div>
             <div style={{ color: '#ccc', fontSize: '13px', marginTop: '2px' }}>
               {item.content.substring(0, 80)}{item.content.length > 80 ? '...' : ''}
             </div>

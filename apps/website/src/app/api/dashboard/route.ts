@@ -12,17 +12,27 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!SUPABASE_URL) return NextResponse.json({ error: 'Config error' }, { status: 500 });
 
   try {
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayISO = todayStart.toISOString();
+    // Compute "today" in Eastern Time (ReadyCar/ReadyRide are in Ontario)
+    // Get current date in ET using Intl, then compute midnight ET as UTC
+    const etNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Toronto' }));
+    const etMidnight = new Date(etNow);
+    etMidnight.setHours(0, 0, 0, 0);
+    // Offset between server time and ET (ms)
+    const serverNow = new Date();
+    const etOffset = serverNow.getTime() - etNow.getTime();
+    // Midnight ET as UTC timestamp
+    const todayISO = new Date(etMidnight.getTime() + etOffset).toISOString();
 
     // Pagination for allLeads query
     const page = Math.max(1, parseInt(request.nextUrl.searchParams.get('page') || '1'));
     const limit = Math.min(Math.max(1, parseInt(request.nextUrl.searchParams.get('limit') || '50')), 200);
     const offset = (page - 1) * limit;
 
-    const tomorrowISO = new Date(todayStart.getTime() + 86400000).toISOString();
-    const monthStartISO = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1).toISOString();
+    const tomorrowET = new Date(etMidnight);
+    tomorrowET.setDate(tomorrowET.getDate() + 1);
+    const tomorrowISO = new Date(tomorrowET.getTime() + etOffset).toISOString();
+    const monthStartET = new Date(etMidnight.getFullYear(), etMidnight.getMonth(), 1);
+    const monthStartISO = new Date(monthStartET.getTime() + etOffset).toISOString();
 
     const anonH = supaAnonHeaders(tenant);
     const paginatedHeaders = { ...anonH, Range: `${offset}-${offset + limit - 1}`, Prefer: 'count=exact' };
@@ -32,7 +42,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&created_at=gte.${todayISO}&select=lead_id`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&select=phone,first_name,last_name,status&order=created_at.desc`, { headers: paginatedHeaders }),
       fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&select=lead_id,content,role,channel,created_at&order=created_at.desc&limit=20`, { headers: anonH }).then(r => r.ok ? r.json() : []),
-      fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&status=in.(appointment,showed)&select=phone,first_name,last_name,status,created_at&order=created_at.desc`, { headers: anonH }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&status=in.(appointment,showed)&select=phone,first_name,last_name,status,created_at&order=created_at.desc&limit=20`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/appointments?tenant_id=eq.${tenant}&scheduled_at=gte.${todayISO}&scheduled_at=lt.${tomorrowISO}&status=in.(scheduled,confirmed)&select=id,lead_phone,lead_name,appointment_type,scheduled_at,status,reminder_sent&order=scheduled_at.asc&limit=50`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/deals?tenant_id=eq.${tenant}&status=in.(negotiating,approved,funded)&select=id,lead_phone,lead_name,vehicle_description,sale_price,status&order=created_at.desc&limit=100`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/deals?tenant_id=eq.${tenant}&status=in.(funded,delivered)&created_at=gte.${monthStartISO}&select=sale_price,status&limit=500`, { headers: anonH }).then(r => r.ok ? r.json() : []),
@@ -48,8 +58,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     for (const lead of allLeads) { const s = lead.status || 'new'; pipelineCounts[s] = (pipelineCounts[s] || 0) + 1; }
 
     const recentActivity = recentMessages.slice(0, 10).map((msg: Record<string, unknown>) => ({
-      time: new Date(msg.created_at as string).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }),
-      type: msg.channel || 'sms', content: (msg.content as string) || '', phone: (msg.lead_id as string) || '',
+      time: msg.created_at as string,
+      type: msg.channel || 'sms',
+      content: ((msg.content as string) || '').substring(0, 100),
+      phone: (msg.lead_id as string) || '',
     }));
 
     // Build hot leads list from appointment/showed status leads
