@@ -117,6 +117,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ];
     }
 
+    // Build request body — extended thinking for text, standard for PDFs
+    // (document content blocks may not support thinking parameter)
+    const requestBody: Record<string, unknown> = {
+      model: 'claude-opus-4-6',
+      max_tokens: type === 'pdf' ? 16000 : 8000,
+      messages,
+    };
+    if (type !== 'pdf') {
+      requestBody.thinking = {
+        type: 'enabled',
+        budget_tokens: 5000,
+      };
+    }
+
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -124,27 +138,19 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         'x-api-key': ANTHROPIC_API_KEY,
         'anthropic-version': '2023-06-01',
       },
-      body: JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: type === 'pdf' ? 16000 : 8000,
-        thinking: {
-          type: 'enabled',
-          budget_tokens: type === 'pdf' ? 10000 : 5000,
-        },
-        messages,
-      }),
+      body: JSON.stringify(requestBody),
       signal: AbortSignal.timeout(55000),
     });
 
     if (!res.ok) {
-      const err = await res.text();
-      console.error('Anthropic API error:', err);
-      let detail = 'AI analysis failed';
+      const errText = await res.text();
+      console.error('Anthropic API error:', res.status, errText);
+      let detail = `API error ${res.status}`;
       try {
-        const parsed = JSON.parse(err);
-        detail = parsed?.error?.message || detail;
+        const parsed = JSON.parse(errText);
+        detail = parsed?.error?.message || parsed?.message || detail;
       } catch {
-        console.error('[credit-analyze] Could not parse error response');
+        detail = errText.slice(0, 200) || detail;
       }
       return NextResponse.json(
         { error: detail },
