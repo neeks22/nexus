@@ -232,8 +232,6 @@ export default function CaseStudiesPage() {
         subline="Book a free audit call. We'll show you exactly what's possible for your business."
         ctaText="Book a Free Audit"
         ctaHref="/contact"
-        secondaryText="View pricing"
-        secondaryHref="/pricing"
       />
     </>
   );

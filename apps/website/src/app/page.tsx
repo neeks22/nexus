@@ -389,8 +389,6 @@ export default function HomePage() {
         subline="Book a free 30-minute audit call. We'll map your biggest AI opportunities and show you exactly what self-healing would mean for your business — no commitment required."
         ctaText="Book Your Free Audit"
         ctaHref="/contact"
-        secondaryText="View pricing"
-        secondaryHref="/pricing"
       />
     </>
   );
