@@ -464,7 +464,7 @@
    ============================================ */
 
 .testimonials {
-  padding: 120px 24px;
+  padding: 140px 24px;
   position: relative;
 }
 
@@ -472,7 +472,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+  background: linear-gradient(180deg, #050505 0%, #000000 100%);
   z-index: -1;
 }
 
