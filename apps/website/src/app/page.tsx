@@ -106,7 +106,7 @@ export default function HomePage() {
           </div>
           <div className={styles.servicesGrid}>
             <ServiceCard
-              icon="&#128269;"
+              number="01"
               title="AI Agent Audit"
               priceRange="$5,000 - $15,000"
               description="We study your business, find automation opportunities, and build an ROI projection. You leave with a clear picture of what AI agents can do for you — and what it will cost."
@@ -120,7 +120,7 @@ export default function HomePage() {
               cta="Start with an Audit"
             />
             <ServiceCard
-              icon="&#9889;"
+              number="02"
               title="Custom Agent Build"
               priceRange="$15,000 - $50,000"
               description="We design, build, and deploy a self-healing multi-agent system custom to your business. Every agent has a circuit breaker, health score, and automatic recovery built in."
@@ -135,7 +135,7 @@ export default function HomePage() {
               cta="Start a Custom Build"
             />
             <ServiceCard
-              icon="&#128737;"
+              number="03"
               title="Managed Operations"
               priceRange="$5,000 - $25,000/mo"
               description="We run your agents 24/7. Self-healing keeps them alive. Monthly reports prove the value. You focus on your business — we keep your AI running."

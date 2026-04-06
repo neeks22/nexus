@@ -1,7 +1,7 @@
 import styles from './ServiceCard.module.css';
 
 interface ServiceCardProps {
-  icon: string;
+  number: string;
   title: string;
   priceRange: string;
   description: string;
@@ -12,7 +12,7 @@ interface ServiceCardProps {
 }
 
 export function ServiceCard({
-  icon,
+  number,
   title,
   priceRange,
   description,
@@ -23,22 +23,19 @@ export function ServiceCard({
 }: ServiceCardProps) {
   return (
     <div className={`${styles.card} ${featured ? styles.featured : ''}`}>
-      {featured && <div className={styles.featuredBadge}>Most Popular</div>}
-      <div className={styles.icon}>{icon}</div>
-      <div className={styles.priceRange}>{priceRange}</div>
+      <div className={styles.number}>{number}</div>
       <h3 className={styles.title}>{title}</h3>
+      <p className={styles.price}>{priceRange}</p>
       <p className={styles.description}>{description}</p>
       <ul className={styles.deliverables}>
-        {deliverables.map((item, i) => (
-          <li key={i} className={styles.deliverable}>
-            <span className={styles.check}>✓</span>
-            {item}
+        {deliverables.map((d) => (
+          <li key={d} className={styles.deliverable}>
+            <span className={styles.check}>&#10003;</span>
+            {d}
           </li>
         ))}
       </ul>
-      <a href={href} className={`${styles.cta} ${featured ? styles.ctaFeatured : ''}`}>
-        {cta}
-      </a>
+      <a href={href} className={styles.cta}>{cta}</a>
     </div>
   );
 }

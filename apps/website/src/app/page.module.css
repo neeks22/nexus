@@ -259,7 +259,7 @@
    ============================================ */
 
 .services {
-  padding: 120px 24px;
+  padding: 140px 24px;
 }
 
 .servicesGrid {
@@ -276,27 +276,12 @@
 .servicesLink {
   font-size: 14px;
   font-weight: 600;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  transition: opacity var(--transition);
-  position: relative;
+  color: rgba(255,255,255,0.45);
+  transition: color 200ms ease;
 }
 
-.servicesLink::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 1px;
-  background: var(--accent-gradient);
-  transition: width var(--transition);
-}
-
-.servicesLink:hover::after {
-  width: 100%;
+.servicesLink:hover {
+  color: #ffffff;
 }
 
 /* ============================================
