@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ServiceCard } from '@/components/ServiceCard';
 import { TestimonialCard } from '@/components/TestimonialCard';
 import { CTABanner } from '@/components/CTABanner';
+import { LogoSlider } from '@/components/LogoSlider';
 import styles from './page.module.css';
 
 export default function HomePage() {
@@ -9,48 +10,23 @@ export default function HomePage() {
     <>
       {/* ── HERO ─────────────────────────────────── */}
       <section className={styles.hero}>
-        <div className={styles.heroGrid} />
-        <div className={styles.heroOrb} />
-        <div className={styles.heroOrbSecondary} />
+        <div className={styles.heroGlow} />
         <div className={styles.heroInner}>
-          <div className={styles.heroBadge}>
-            <span className={styles.heroBadgeDot} />
-            Ottawa&rsquo;s AI Agent Agency
-          </div>
+          <p className={styles.heroLabel}>SELF-HEALING AI AGENTS</p>
           <h1 className={styles.heroHeadline}>
             Your AI Agents Break.<br />
-            <span className={styles.heroAccent}>Ours Heal Themselves.</span>
+            Ours Heal Themselves.
           </h1>
           <p className={styles.heroSubline}>
-            We build self-healing AI agent systems that run 24/7 without babysitting.
-            While your competitors scramble to fix their AI at 2am, yours is already healing itself.
+            We build self-healing AI agent systems that run 24/7 without babysitting — so you can scale without hiring more engineers.
           </p>
           <div className={styles.heroActions}>
-            <Link href="/contact" className={styles.heroPrimary}>
-              Book a Free Audit <span>&#8594;</span>
-            </Link>
-            <Link href="/services" className={styles.heroSecondary}>
-              See How It Works
-            </Link>
-          </div>
-          <div className={styles.heroStats}>
-            <div className={styles.heroStat}>
-              <div className={styles.heroStatValue}>$47K</div>
-              <div className={styles.heroStatLabel}>avg. annual savings per client</div>
-            </div>
-            <div className={styles.heroStatDivider} />
-            <div className={styles.heroStat}>
-              <div className={styles.heroStatValue}>89%</div>
-              <div className={styles.heroStatLabel}>agent failures recovered automatically</div>
-            </div>
-            <div className={styles.heroStatDivider} />
-            <div className={styles.heroStat}>
-              <div className={styles.heroStatValue}>171%</div>
-              <div className={styles.heroStatLabel}>avg. ROI on agent deployments</div>
-            </div>
+            <Link href="/contact" className={styles.heroPrimary}>Book a Free Audit</Link>
           </div>
         </div>
       </section>
+
+      <LogoSlider />
 
       {/* ── PROBLEM / SOLUTION ───────────────────── */}
       <section className={styles.problems}>
