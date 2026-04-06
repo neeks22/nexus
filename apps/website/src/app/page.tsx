@@ -29,7 +29,7 @@ export default function HomePage() {
       <LogoSlider />
 
       {/* ── PROBLEM / SOLUTION ───────────────────── */}
-      <section className={styles.problems}>
+      <section className={styles.problems} data-animate>
         <div className={styles.container}>
           <div className={styles.problemsHeader}>
             <div className={styles.labelPill}>
@@ -91,7 +91,7 @@ export default function HomePage() {
       </section>
 
       {/* ── SERVICES PREVIEW ─────────────────────── */}
-      <section className={styles.services}>
+      <section className={styles.services} data-animate>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <div className={styles.labelPill}>
@@ -158,7 +158,7 @@ export default function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────── */}
-      <section className={styles.howItWorks}>
+      <section className={styles.howItWorks} data-animate>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <div className={styles.labelPill}>
@@ -204,7 +204,7 @@ export default function HomePage() {
       </section>
 
       {/* ── SELF-HEALING DEMO ────────────────────── */}
-      <section className={styles.healingDemo}>
+      <section className={styles.healingDemo} data-animate>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <div className={styles.labelPill}>
@@ -276,7 +276,7 @@ export default function HomePage() {
       </section>
 
       {/* ── SOCIAL PROOF ─────────────────────────── */}
-      <section className={styles.testimonials}>
+      <section className={styles.testimonials} data-animate>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <div className={styles.labelPill}>
@@ -312,7 +312,7 @@ export default function HomePage() {
       </section>
 
       {/* ── ROI SECTION ──────────────────────────── */}
-      <section className={styles.roi}>
+      <section className={styles.roi} data-animate>
         <div className={styles.container}>
           <div className={styles.roiInner}>
             <div className={styles.roiLeft}>
@@ -389,6 +389,13 @@ export default function HomePage() {
         subline="Book a free 30-minute audit call. We'll map your biggest AI opportunities and show you exactly what self-healing would mean for your business — no commitment required."
         ctaText="Book Your Free Audit"
         ctaHref="/contact"
+      />
+
+      <script
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: '(function(){var o=new IntersectionObserver(function(e){e.forEach(function(n){if(n.isIntersecting){n.target.classList.add("visible");o.unobserve(n.target)}})},{threshold:0.1});document.querySelectorAll("[data-animate]").forEach(function(el){o.observe(el)})})();',
+        }}
       />
     </>
   );
