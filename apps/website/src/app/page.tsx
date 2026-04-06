@@ -272,27 +272,6 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div className={styles.healingSteps}>
-            <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="fail">&#10005;</div>
-              <div className={styles.healingStepLabel}>Agent Fails</div>
-            </div>
-            <div className={styles.healingArrow}>&#8594;</div>
-            <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="diagnose">&#9889;</div>
-              <div className={styles.healingStepLabel}>Self-Healing Kicks In</div>
-            </div>
-            <div className={styles.healingArrow}>&#8594;</div>
-            <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="recover">&#8634;</div>
-              <div className={styles.healingStepLabel}>Agent Recovers</div>
-            </div>
-            <div className={styles.healingArrow}>&#8594;</div>
-            <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="continue">&#10003;</div>
-              <div className={styles.healingStepLabel}>Pipeline Continues</div>
-            </div>
-          </div>
         </div>
       </section>
 

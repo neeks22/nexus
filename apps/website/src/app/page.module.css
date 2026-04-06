@@ -364,16 +364,15 @@
    ============================================ */
 
 .healingDemo {
-  padding: 120px 24px;
+  padding: 140px 24px;
 }
 
 .terminalWindow {
-  background: rgba(10,10,15,0.9);
-  border: 1px solid var(--border-subtle);
+  background: #000000;
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: var(--radius-xl);
   overflow: hidden;
-  margin-bottom: 48px;
-  box-shadow: 0 16px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+  box-shadow: 0 16px 64px rgba(0,0,0,0.5);
 }
 
 .terminalBar {
@@ -381,8 +380,8 @@
   align-items: center;
   gap: 12px;
   padding: 14px 20px;
-  background: rgba(255,255,255,0.03);
-  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 .terminalDots {
@@ -390,13 +389,13 @@
   gap: 6px;
 }
 
-.dotRed { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; }
-.dotYellow { width: 12px; height: 12px; border-radius: 50%; background: #ffbd2e; }
-.dotGreen { width: 12px; height: 12px; border-radius: 50%; background: #28c840; }
+.dotRed { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.dotYellow { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.15); }
+.dotGreen { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.1); }
 
 .terminalTitle {
   font-size: 12px;
-  color: var(--text-muted);
+  color: rgba(255,255,255,0.25);
   font-family: var(--font-mono);
   margin-left: auto;
   margin-right: auto;
@@ -434,20 +433,15 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-.lineTime {
-  color: var(--text-muted);
-  font-size: 12px;
-  flex-shrink: 0;
-}
-
-.lineDim { color: var(--text-muted); flex-shrink: 0; }
-.lineGreen { color: var(--accent-green); flex-shrink: 0; font-weight: 700; }
-.lineRed { color: var(--red); flex-shrink: 0; font-weight: 700; }
-.lineYellow { color: var(--accent-amber); flex-shrink: 0; font-weight: 700; }
-.lineNormal { color: var(--text-secondary); }
-.lineError { color: var(--text-primary); }
-.lineWarning { color: var(--text-secondary); }
-.lineSuccess { color: var(--text-primary); }
+.lineTime { color: rgba(255,255,255,0.25); font-size: 12px; flex-shrink: 0; }
+.lineDim { color: rgba(255,255,255,0.25); flex-shrink: 0; }
+.lineGreen { color: #ffffff; flex-shrink: 0; font-weight: 700; }
+.lineRed { color: rgba(255,255,255,0.5); flex-shrink: 0; font-weight: 700; }
+.lineYellow { color: rgba(255,255,255,0.4); flex-shrink: 0; font-weight: 700; }
+.lineNormal { color: rgba(255,255,255,0.45); }
+.lineError { color: #ffffff; }
+.lineWarning { color: rgba(255,255,255,0.45); }
+.lineSuccess { color: #ffffff; }
 
 .terminalCursor {
   padding-top: 4px;
@@ -456,83 +450,13 @@
 }
 
 .cursor {
-  color: var(--accent-primary);
+  color: #ffffff;
   animation: blink 1s step-end infinite 4s;
 }
 
 @keyframes blink {
   0%, 100% { opacity: 1; }
   50% { opacity: 0; }
-}
-
-.healingSteps {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.healingStep {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-}
-
-.healingStepIcon {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 700;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: transform var(--transition), box-shadow var(--transition);
-}
-
-.healingStepIcon:hover {
-  transform: scale(1.1);
-}
-
-.healingStepIcon[data-state="fail"] {
-  background: var(--red-dim);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  color: var(--red);
-}
-
-.healingStepIcon[data-state="diagnose"] {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  color: var(--accent-amber);
-}
-
-.healingStepIcon[data-state="recover"] {
-  background: rgba(99, 102, 241, 0.12);
-  border: 1px solid rgba(99, 102, 241, 0.3);
-  color: var(--accent-primary);
-}
-
-.healingStepIcon[data-state="continue"] {
-  background: var(--accent-green-dim);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  color: var(--accent-green);
-}
-
-.healingStepLabel {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.healingArrow {
-  color: var(--text-muted);
-  font-size: 18px;
-  padding: 0 4px;
-  padding-bottom: 22px;
 }
 
 /* ============================================
@@ -767,5 +691,4 @@
   .testimonialsGrid { grid-template-columns: 1fr; }
   .roiInner { grid-template-columns: 1fr; }
   .roiMetrics { grid-template-columns: repeat(3, 1fr); }
-  .healingSteps { flex-wrap: wrap; justify-content: center; }
 }
