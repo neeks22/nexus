@@ -514,8 +514,8 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
 
   const runRouting = (): void => {
     const p: ScoringProfile = {
-      fico: parseInt(profile.fico) || 0,
-      income: parseInt(profile.income) || 0,
+      fico: parseInt(profile.fico, 10) || 0,
+      income: parseInt(profile.income, 10) || 0,
       situation: profile.situation,
       selfEmployed: profile.selfEmployed,
     };
@@ -534,52 +534,13 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
 
       // Compute credit grade
       const creditGrade = computeCreditGrade(
-        parseInt(profile.fico) || 0,
+        parseInt(profile.fico, 10) || 0,
         profile.situation,
         profile.selfEmployed,
-        parseInt(profile.income) || 0,
+        parseInt(profile.income, 10) || 0,
       );
       const creditSituationValue = `${creditGrade.grade} | FICO ${profile.fico || '?'} | ${creditGrade.summary}`;
 
-      // Create lead if we have customer info and no match
-      if (customerInfo.first_name && customerInfo.phone && (!leadMatch || !leadMatch.found)) {
-        fetch('/api/leads', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tenant,
-            type: 'create_lead',
-            phone: fullPhone,
-            content: JSON.stringify({
-              first_name: customerInfo.first_name,
-              last_name: customerInfo.last_name,
-              phone: customerInfo.phone,
-              email: customerInfo.email,
-              credit_situation: creditSituationValue,
-              vehicle_type: '',
-            }),
-          }),
-        }).then(r => r.json()).then(data => {
-          if (data.success) {
-            setLeadMatch({ found: true, name: `${customerInfo.first_name} ${customerInfo.last_name}`.trim(), phone: fullPhone });
-          }
-        }).catch(err => console.error('[CreditRouter] Lead create error:', err instanceof Error ? err.message : 'unknown'));
-      }
-
-      // Update existing lead's credit_situation with grade
-      if (leadMatch?.found && fullPhone !== 'unknown') {
-        fetch('/api/leads/credit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tenant,
-            phone: fullPhone,
-            credit_situation: creditSituationValue,
-          }),
-        }).catch(err => console.error('[CreditRouter] Credit update error:', err instanceof Error ? err.message : 'unknown'));
-      }
-
-      // Save credit routing to activity
       const routingData = {
         profile: { ...profile },
         customer: { ...customerInfo },
@@ -597,16 +558,64 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
         routedAt: new Date().toISOString(),
       };
 
-      fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant,
-          phone: fullPhone,
-          type: 'credit_routing',
-          content: JSON.stringify(routingData),
-        }),
-      }).then(() => setSaved(true)).catch(err => console.error('[CreditRouter] Activity save error:', err instanceof Error ? err.message : 'unknown'));
+      // Chain: create/update lead first, then save activity
+      const saveActivity = async (): Promise<void> => {
+        try {
+          await fetch('/api/leads', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tenant,
+              phone: fullPhone,
+              type: 'credit_routing',
+              content: JSON.stringify(routingData),
+            }),
+          });
+          setSaved(true);
+        } catch (err) { console.error('[CreditRouter] Activity save error:', err instanceof Error ? err.message : 'unknown'); }
+      };
+
+      (async () => {
+        try {
+          // Create lead if new, or update credit if existing
+          if (customerInfo.first_name && customerInfo.phone && (!leadMatch || !leadMatch.found)) {
+            const res = await fetch('/api/leads', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                tenant,
+                type: 'create_lead',
+                phone: fullPhone,
+                content: JSON.stringify({
+                  first_name: customerInfo.first_name,
+                  last_name: customerInfo.last_name,
+                  phone: customerInfo.phone,
+                  email: customerInfo.email,
+                  credit_situation: creditSituationValue,
+                  vehicle_type: '',
+                }),
+              }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              setLeadMatch({ found: true, name: `${customerInfo.first_name} ${customerInfo.last_name}`.trim(), phone: fullPhone });
+            }
+          } else if (leadMatch?.found && fullPhone !== 'unknown') {
+            await fetch('/api/leads/credit', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                tenant,
+                phone: fullPhone,
+                credit_situation: creditSituationValue,
+              }),
+            });
+          }
+        } catch (err) { console.error('[CreditRouter] Lead create/update error:', err instanceof Error ? err.message : 'unknown'); }
+
+        // Always save activity after lead is ready
+        await saveActivity();
+      })();
     }
   };
 
@@ -938,8 +947,8 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                     placeholder="e.g. 580" className="cr-input" style={s.input}
                   />
                   {profile.fico && (
-                    <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: tierColor(parseInt(profile.fico)), letterSpacing: '0.05em' }}>
-                      {tierLabel(parseInt(profile.fico))}
+                    <div style={{ marginTop: 6, fontSize: 11, fontWeight: 600, color: tierColor(parseInt(profile.fico, 10)), letterSpacing: '0.05em' }}>
+                      {tierLabel(parseInt(profile.fico, 10))}
                     </div>
                   )}
                 </div>
@@ -1033,7 +1042,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
      RESULTS VIEW
      --------------------------------------------------------------------------- */
 
-  const ficoNum = parseInt(profile.fico);
+  const ficoNum = parseInt(profile.fico, 10);
 
   return (
     <div style={s.page}>
@@ -1062,7 +1071,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
 
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', color: tierColor(ficoNum), textTransform: 'uppercase' }}>{tierLabel(ficoNum)}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#f0f0f5', letterSpacing: '-0.02em', marginTop: 2 }}>${parseInt(profile.income).toLocaleString()}<span style={{ fontSize: 13, color: '#55556a', fontWeight: 400 }}>/mo</span></div>
+            <div style={{ fontSize: 24, fontWeight: 700, color: '#f0f0f5', letterSpacing: '-0.02em', marginTop: 2 }}>${parseInt(profile.income, 10).toLocaleString()}<span style={{ fontSize: 13, color: '#55556a', fontWeight: 400 }}>/mo</span></div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               {profile.situation !== 'standard' && (
                 <span style={s.badge('rgba(245,158,11,0.12)', '#f59e0b')}>{profile.situation.toUpperCase()}</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import ActivityTimeline from './ActivityTimeline';
 
 interface LeadDetailPanelProps {
@@ -44,9 +44,19 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
   const [sendSuccess, setSendSuccess] = useState('');
   const [statusUpdating, setStatusUpdating] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showSuccess = useCallback((msg: string) => {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    setSendSuccess(msg);
+    successTimerRef.current = setTimeout(() => setSendSuccess(''), 3000);
+  }, []);
 
   useEffect(() => {
     fetchData();
+    return () => {
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    };
   }, [tenant, phone]);
 
   async function fetchData(): Promise<void> {
@@ -127,10 +137,9 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
         body: JSON.stringify({ to: phone, body: messageText.trim(), tenant }),
       });
       if (res.ok) {
-        setSendSuccess('SMS sent!');
+        showSuccess('SMS sent!');
         setMessageText('');
         setActiveAction('none');
-        setTimeout(() => setSendSuccess(''), 3000);
         fetchData();
       } else {
         alert('Failed to send SMS');
@@ -155,11 +164,10 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
         }),
       });
       if (res.ok) {
-        setSendSuccess('Email sent!');
+        showSuccess('Email sent!');
         setEmailSubject('');
         setEmailBody('');
         setActiveAction('none');
-        setTimeout(() => setSendSuccess(''), 3000);
         fetchData();
       } else {
         const data = await res.json().catch(() => ({ error: 'Unknown error' }));
@@ -209,8 +217,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
         }));
       }
       await Promise.all(promises);
-      setSendSuccess('Agent paused — manual mode');
-      setTimeout(() => setSendSuccess(''), 3000);
+      showSuccess('Agent paused — manual mode');
       fetchData();
     } catch (err) {
       console.error('[LeadDetail] Pause Agent error:', err instanceof Error ? err.message : 'unknown');
@@ -238,8 +245,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
       }
       await Promise.all(promises);
       if (lead) setLead({ ...lead, status: 'contacted' });
-      setSendSuccess('Agent resumed — auto-replies are back on');
-      setTimeout(() => setSendSuccess(''), 3000);
+      showSuccess('Agent resumed — auto-replies are back on');
       fetchData();
     } catch (err) {
       console.error('[LeadDetail] Resume Agent error:', err instanceof Error ? err.message : 'unknown');

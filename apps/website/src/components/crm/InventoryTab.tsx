@@ -73,7 +73,7 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
       const res = await fetch('/api/inventory', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, ...newV, year: parseInt(newV.year), price: newV.price || undefined, mileage: newV.mileage || undefined }),
+        body: JSON.stringify({ tenant, ...newV, year: parseInt(newV.year, 10), price: newV.price || undefined, mileage: newV.mileage || undefined }),
       });
       if (res.ok) {
         setShowCreate(false);

@@ -105,9 +105,9 @@ function CreditRoutingCard({ data }: { data: { profile: Record<string, string>; 
           {/* Profile summary */}
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '10px' }}>
             {data.profile.vehicleYear && <Tag label="Year" value={data.profile.vehicleYear} />}
-            {data.profile.vehiclePrice && <Tag label="Price" value={`$${parseInt(data.profile.vehiclePrice).toLocaleString()}`} />}
-            {data.profile.vehicleKm && <Tag label="KM" value={`${parseInt(data.profile.vehicleKm).toLocaleString()}`} />}
-            {data.profile.downPayment && <Tag label="Down" value={`$${parseInt(data.profile.downPayment).toLocaleString()}`} />}
+            {data.profile.vehiclePrice && <Tag label="Price" value={`$${parseInt(data.profile.vehiclePrice, 10).toLocaleString()}`} />}
+            {data.profile.vehicleKm && <Tag label="KM" value={`${parseInt(data.profile.vehicleKm, 10).toLocaleString()}`} />}
+            {data.profile.downPayment && <Tag label="Down" value={`$${parseInt(data.profile.downPayment, 10).toLocaleString()}`} />}
             {data.profile.situation && data.profile.situation !== 'standard' && <Tag label="Situation" value={data.profile.situation} />}
           </div>
 
