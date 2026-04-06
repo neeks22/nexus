@@ -17,7 +17,7 @@ function cleanEnv(val: string | undefined): string {
   return val.replace(/\\n$/g, '').replace(/\n$/g, '').trim();
 }
 
-const AUTH_SECRET = (cleanEnv(process.env.AUTH_SECRET) || cleanEnv(process.env.CSRF_SECRET) || '').trim();
+const AUTH_SECRET = cleanEnv(process.env.AUTH_SECRET).trim();
 
 /* ----- Session verification using Web Crypto API (Edge Runtime compatible) ----- */
 
@@ -100,6 +100,29 @@ function unauthorizedResponse(path: string, request: NextRequest, message: strin
   return res;
 }
 
+function setSecurityHeaders(response: NextResponse, path: string, request: NextRequest, verifiedTenant: string | null): void {
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
+  const csp = process.env.NODE_ENV === 'development'
+    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.twilio.com https://*.sentry.io https://www.facebook.com https://graph.facebook.com wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    : "default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.twilio.com https://*.sentry.io https://www.facebook.com https://graph.facebook.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
+  response.headers.set('Content-Security-Policy', csp);
+
+  if (path.startsWith('/api/')) {
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+  }
+
+  if (verifiedTenant) {
+    response.headers.set('x-session-tenant', verifiedTenant);
+  }
+}
+
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const path = request.nextUrl.pathname;
 
@@ -149,21 +172,37 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       if (path.startsWith('/readycar')) verifiedTenant = 'readycar';
       else if (path.startsWith('/readyride')) verifiedTenant = 'readyride';
     }
+
+    // Sliding session renewal: re-issue cookie when <12h remaining
+    const timeLeft = session.exp - Date.now();
+    if (timeLeft > 0 && timeLeft < 43200000) {
+      const renewed = {
+        user_id: session.user_id,
+        email: session.email,
+        name: session.name,
+        tenant_id: session.tenant_id,
+        role: session.role,
+        exp: Date.now() + 86400000,
+      };
+      const renewedB64 = btoa(JSON.stringify(renewed))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      const renewedSig = await computeHmac(AUTH_SECRET, renewedB64);
+      const renewedToken = `${renewedB64}.${renewedSig}`;
+
+      const res = NextResponse.next();
+      res.cookies.set('nexus_session', renewedToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 86400,
+      });
+
+      // Still set security headers and tenant below
+      setSecurityHeaders(res, path, request, verifiedTenant);
+      return res;
+    }
   }
-
-  const response = NextResponse.next();
-
-  // ----- Global security headers -----
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('X-XSS-Protection', '1; mode=block');
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-  const csp = process.env.NODE_ENV === 'development'
-    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.twilio.com https://*.sentry.io https://www.facebook.com https://graph.facebook.com wss:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
-    : "default-src 'self'; script-src 'self' 'unsafe-inline' https://connect.facebook.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co https://api.anthropic.com https://api.twilio.com https://*.sentry.io https://www.facebook.com https://graph.facebook.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'";
-  response.headers.set('Content-Security-Policy', csp);
 
   // ----- CSRF: validate Origin on mutating requests to /api/* -----
   if (path.startsWith('/api/')) {
@@ -176,8 +215,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       // Exempt webhook and cron endpoints from CSRF (they have their own auth: Twilio signature, API keys, secrets)
       const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/') || path.startsWith('/api/auth') || path === '/api/campaign';
 
-      // Reject mutating requests with no origin AND no referer (CSRF protection)
-      // But allow webhooks/crons since external services (Twilio, Gmail) don't send origin headers
       if (!origin && !referer && !isDev && !isWebhookOrCron) {
         return NextResponse.json(
           { error: 'Forbidden — missing origin' },
@@ -202,18 +239,10 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         );
       }
     }
-
-    // No-cache for all API responses (PII protection)
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
   }
 
-  // Inject verified tenant header for API route handlers (cross-tenant data access prevention)
-  if (verifiedTenant) {
-    response.headers.set('x-session-tenant', verifiedTenant);
-  }
-
+  const response = NextResponse.next();
+  setSecurityHeaders(response, path, request, verifiedTenant);
   return response;
 }
 

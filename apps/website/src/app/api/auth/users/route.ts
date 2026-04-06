@@ -9,7 +9,7 @@ function cleanEnv(val: string | undefined): string {
   return val.replace(/\\n$/g, '').replace(/\n$/g, '').trim();
 }
 
-const AUTH_SECRET = (cleanEnv(process.env.AUTH_SECRET) || cleanEnv(process.env.CSRF_SECRET) || '').trim();
+const AUTH_SECRET = cleanEnv(process.env.AUTH_SECRET).trim();
 
 function verifySession(request: NextRequest): { user_id: string; email: string; role: string; tenant_id: string } | null {
   const sessionCookie = request.cookies.get('nexus_session')?.value;

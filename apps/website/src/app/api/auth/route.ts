@@ -13,7 +13,7 @@ function cleanEnv(val: string | undefined): string {
   return val.replace(/\\n$/g, '').replace(/\n$/g, '').trim();
 }
 
-const AUTH_SECRET = (cleanEnv(process.env.AUTH_SECRET) || cleanEnv(process.env.CSRF_SECRET) || '').trim();
+const AUTH_SECRET = cleanEnv(process.env.AUTH_SECRET).trim();
 
 function signPayload(payloadB64: string): string {
   return crypto.createHmac('sha256', AUTH_SECRET).update(payloadB64).digest('hex');
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const response = NextResponse.json({ authenticated: true });
     response.cookies.set('nexus_session', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       sameSite: 'lax',
       path: '/',
       maxAge: 86400,
