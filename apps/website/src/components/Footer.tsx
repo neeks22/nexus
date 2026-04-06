@@ -57,8 +57,8 @@ export function Footer() {
         </div>
 
         <div className={styles.bottom}>
-          <p className={styles.copy}>&copy; 2026 Nexus AI Inc. All rights reserved.</p>
-          <p className={styles.built}>
+          <p className={styles.copyright}>&copy; 2026 Nexus AI Inc. All rights reserved.</p>
+          <p className={styles.builtWith}>
             Built with{' '}
             <code className={styles.code}>nexus-core</code>
             {' '}&mdash; self-healing, always.
