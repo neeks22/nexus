@@ -39,10 +39,10 @@ export function Navbar() {
           Book a Call
         </Link>
 
-        <button className={styles.mobileToggle} aria-label="Menu">
-          <span />
-          <span />
-          <span />
+        <button className={styles.toggle} aria-label="Menu">
+          <span className={styles.toggleBar} />
+          <span className={styles.toggleBar} />
+          <span className={styles.toggleBar} />
         </button>
       </nav>
     </header>
