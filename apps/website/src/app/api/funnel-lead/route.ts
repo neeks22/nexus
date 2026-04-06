@@ -82,9 +82,7 @@ const FunnelLeadSchema = z.object({
   phone: phoneSchema,
   email: emailSchema,
   preferredContact: z.string().max(50).optional().default(''),
-  caslConsent: z.literal(true, {
-    errorMap: () => ({ message: 'CASL consent is required' }),
-  }),
+  caslConsent: z.literal(true, { message: 'CASL consent is required' }),
   utmSource: z.string().max(200).optional().default(''),
   utmMedium: z.string().max(200).optional().default(''),
   utmCampaign: z.string().max(200).optional().default(''),

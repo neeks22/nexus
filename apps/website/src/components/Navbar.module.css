@@ -2,157 +2,107 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(10, 10, 15, 0.7);
-  backdrop-filter: blur(20px) saturate(1.4);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4);
-  border-bottom: 1px solid transparent;
-  transition: background var(--transition), border-color var(--transition);
-}
-
-/* On-scroll state handled by CSS — when content scrolls behind, the
-   glassmorphism naturally reveals the border via compositing */
-.header:hover {
-  border-bottom-color: var(--border-subtle);
+  background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 .nav {
-  max-width: var(--max-width);
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
   height: 64px;
   display: flex;
   align-items: center;
-  gap: 40px;
+  justify-content: space-between;
 }
 
 .logo {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex-shrink: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
 }
 
 .logoMark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 30px;
   height: 30px;
-  background: var(--accent-gradient);
-  color: #ffffff;
-  font-weight: 900;
-  font-size: 14px;
   border-radius: 8px;
-  line-height: 1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: #000000;
 }
 
 .logoText {
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  color: var(--text-primary);
+  color: #ffffff;
 }
 
 .links {
   display: flex;
-  list-style: none;
-  gap: 4px;
-  margin-left: auto;
+  align-items: center;
+  gap: 32px;
 }
 
 .link {
-  position: relative;
-  padding: 6px 14px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--text-secondary);
-  border-radius: 8px;
-  transition: color var(--transition), background var(--transition);
+  color: rgba(255,255,255,0.45);
+  transition: color 200ms ease;
+  position: relative;
 }
 
-.link::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 0;
-  height: 2px;
-  background: var(--accent-gradient);
-  border-radius: 1px;
-  transition: width var(--transition), left var(--transition);
-}
-
-.link:hover {
-  color: var(--text-primary);
-}
-
-.link:hover::after {
-  width: 60%;
-  left: 20%;
-}
-
+.link:hover,
 .link.active {
-  color: var(--text-primary);
-}
-
-.link.active::after {
-  width: 60%;
-  left: 20%;
+  color: #ffffff;
 }
 
 .cta {
-  padding: 8px 20px;
-  background: var(--accent-gradient);
-  color: #ffffff;
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 24px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 14px;
   font-weight: 600;
-  border-radius: 10px;
-  transition: transform var(--transition), box-shadow var(--transition);
-  white-space: nowrap;
-  flex-shrink: 0;
-  box-shadow: 0 0 16px rgba(99,102,241,0.2);
+  border-radius: 100px;
+  transition: opacity 200ms ease;
 }
 
 .cta:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(99,102,241,0.35);
+  opacity: 0.85;
 }
 
-.cta:active {
-  transform: scale(0.98);
-}
-
-.mobileToggle {
+.toggle {
   display: none;
   flex-direction: column;
   gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
   padding: 4px;
-  margin-left: auto;
 }
 
-.mobileToggle span {
-  display: block;
-  width: 22px;
+.toggleBar {
+  width: 20px;
   height: 2px;
-  background: var(--text-secondary);
-  border-radius: 2px;
-  transition: background var(--transition);
-}
-
-.mobileToggle:hover span {
-  background: var(--text-primary);
+  background: #ffffff;
+  border-radius: 1px;
 }
 
 @media (max-width: 768px) {
-  .links {
+  .links, .cta {
     display: none;
   }
 
-  .cta {
-    display: none;
-  }
-
-  .mobileToggle {
+  .toggle {
     display: flex;
   }
 }

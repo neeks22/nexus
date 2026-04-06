@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ServiceCard } from '@/components/ServiceCard';
 import { TestimonialCard } from '@/components/TestimonialCard';
 import { CTABanner } from '@/components/CTABanner';
+import { LogoSlider } from '@/components/LogoSlider';
 import styles from './page.module.css';
 
 export default function HomePage() {
@@ -9,51 +10,26 @@ export default function HomePage() {
     <>
       {/* ── HERO ─────────────────────────────────── */}
       <section className={styles.hero}>
-        <div className={styles.heroGrid} />
-        <div className={styles.heroOrb} />
-        <div className={styles.heroOrbSecondary} />
+        <div className={styles.heroGlow} />
         <div className={styles.heroInner}>
-          <div className={styles.heroBadge}>
-            <span className={styles.heroBadgeDot} />
-            Ottawa&rsquo;s AI Agent Agency
-          </div>
+          <p className={styles.heroLabel}>SELF-HEALING AI AGENTS</p>
           <h1 className={styles.heroHeadline}>
             Your AI Agents Break.<br />
-            <span className={styles.heroAccent}>Ours Heal Themselves.</span>
+            Ours Heal Themselves.
           </h1>
           <p className={styles.heroSubline}>
-            We build self-healing AI agent systems that run 24/7 without babysitting.
-            While your competitors scramble to fix their AI at 2am, yours is already healing itself.
+            We build self-healing AI agent systems that run 24/7 without babysitting — so you can scale without hiring more engineers.
           </p>
           <div className={styles.heroActions}>
-            <Link href="/contact" className={styles.heroPrimary}>
-              Book a Free Audit <span>&#8594;</span>
-            </Link>
-            <Link href="/services" className={styles.heroSecondary}>
-              See How It Works
-            </Link>
-          </div>
-          <div className={styles.heroStats}>
-            <div className={styles.heroStat}>
-              <div className={styles.heroStatValue}>$47K</div>
-              <div className={styles.heroStatLabel}>avg. annual savings per client</div>
-            </div>
-            <div className={styles.heroStatDivider} />
-            <div className={styles.heroStat}>
-              <div className={styles.heroStatValue}>89%</div>
-              <div className={styles.heroStatLabel}>agent failures recovered automatically</div>
-            </div>
-            <div className={styles.heroStatDivider} />
-            <div className={styles.heroStat}>
-              <div className={styles.heroStatValue}>171%</div>
-              <div className={styles.heroStatLabel}>avg. ROI on agent deployments</div>
-            </div>
+            <Link href="/contact" className={styles.heroPrimary}>Book a Free Audit</Link>
           </div>
         </div>
       </section>
 
+      <LogoSlider />
+
       {/* ── PROBLEM / SOLUTION ───────────────────── */}
-      <section className={styles.problems}>
+      <section className={styles.problems} data-animate>
         <div className={styles.container}>
           <div className={styles.problemsHeader}>
             <div className={styles.labelPill}>
@@ -115,7 +91,7 @@ export default function HomePage() {
       </section>
 
       {/* ── SERVICES PREVIEW ─────────────────────── */}
-      <section className={styles.services}>
+      <section className={styles.services} data-animate>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <div className={styles.labelPill}>
@@ -130,7 +106,7 @@ export default function HomePage() {
           </div>
           <div className={styles.servicesGrid}>
             <ServiceCard
-              icon="&#128269;"
+              number="01"
               title="AI Agent Audit"
               priceRange="$5,000 - $15,000"
               description="We study your business, find automation opportunities, and build an ROI projection. You leave with a clear picture of what AI agents can do for you — and what it will cost."
@@ -144,7 +120,7 @@ export default function HomePage() {
               cta="Start with an Audit"
             />
             <ServiceCard
-              icon="&#9889;"
+              number="02"
               title="Custom Agent Build"
               priceRange="$15,000 - $50,000"
               description="We design, build, and deploy a self-healing multi-agent system custom to your business. Every agent has a circuit breaker, health score, and automatic recovery built in."
@@ -159,7 +135,7 @@ export default function HomePage() {
               cta="Start a Custom Build"
             />
             <ServiceCard
-              icon="&#128737;"
+              number="03"
               title="Managed Operations"
               priceRange="$5,000 - $25,000/mo"
               description="We run your agents 24/7. Self-healing keeps them alive. Monthly reports prove the value. You focus on your business — we keep your AI running."
@@ -182,7 +158,7 @@ export default function HomePage() {
       </section>
 
       {/* ── HOW IT WORKS ─────────────────────────── */}
-      <section className={styles.howItWorks}>
+      <section className={styles.howItWorks} data-animate>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <div className={styles.labelPill}>
@@ -228,7 +204,7 @@ export default function HomePage() {
       </section>
 
       {/* ── SELF-HEALING DEMO ────────────────────── */}
-      <section className={styles.healingDemo}>
+      <section className={styles.healingDemo} data-animate>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <div className={styles.labelPill}>
@@ -296,32 +272,11 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-          <div className={styles.healingSteps}>
-            <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="fail">&#10005;</div>
-              <div className={styles.healingStepLabel}>Agent Fails</div>
-            </div>
-            <div className={styles.healingArrow}>&#8594;</div>
-            <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="diagnose">&#9889;</div>
-              <div className={styles.healingStepLabel}>Self-Healing Kicks In</div>
-            </div>
-            <div className={styles.healingArrow}>&#8594;</div>
-            <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="recover">&#8634;</div>
-              <div className={styles.healingStepLabel}>Agent Recovers</div>
-            </div>
-            <div className={styles.healingArrow}>&#8594;</div>
-            <div className={styles.healingStep}>
-              <div className={styles.healingStepIcon} data-state="continue">&#10003;</div>
-              <div className={styles.healingStepLabel}>Pipeline Continues</div>
-            </div>
-          </div>
         </div>
       </section>
 
       {/* ── SOCIAL PROOF ─────────────────────────── */}
-      <section className={styles.testimonials}>
+      <section className={styles.testimonials} data-animate>
         <div className={styles.container}>
           <div className={styles.sectionHeader}>
             <div className={styles.labelPill}>
@@ -357,7 +312,7 @@ export default function HomePage() {
       </section>
 
       {/* ── ROI SECTION ──────────────────────────── */}
-      <section className={styles.roi}>
+      <section className={styles.roi} data-animate>
         <div className={styles.container}>
           <div className={styles.roiInner}>
             <div className={styles.roiLeft}>
@@ -434,8 +389,13 @@ export default function HomePage() {
         subline="Book a free 30-minute audit call. We'll map your biggest AI opportunities and show you exactly what self-healing would mean for your business — no commitment required."
         ctaText="Book Your Free Audit"
         ctaHref="/contact"
-        secondaryText="View pricing"
-        secondaryHref="/pricing"
+      />
+
+      <script
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{
+          __html: '(function(){var o=new IntersectionObserver(function(e){e.forEach(function(n){if(n.isIntersecting){n.target.classList.add("visible");o.unobserve(n.target)}})},{threshold:0.1});document.querySelectorAll("[data-animate]").forEach(function(el){o.observe(el)})})();',
+        }}
       />
     </>
   );

@@ -225,8 +225,6 @@ console.log(result.healingSummary);
         subline="Book a free 30-minute call. No commitment, no pressure — just a conversation about what you're trying to build."
         ctaText="Book a Free Audit"
         ctaHref="/contact"
-        secondaryText="View our services"
-        secondaryHref="/services"
       />
     </>
   );

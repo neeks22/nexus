@@ -1,0 +1,70 @@
+.section {
+  padding: 40px 24px 80px;
+  text-align: center;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.2);
+  margin-bottom: 32px;
+}
+
+.track {
+  position: relative;
+  overflow: hidden;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Edge fade masks */
+.track::before,
+.track::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 120px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.track::before {
+  left: 0;
+  background: linear-gradient(90deg, #000000 0%, transparent 100%);
+}
+
+.track::after {
+  right: 0;
+  background: linear-gradient(270deg, #000000 0%, transparent 100%);
+}
+
+.slider {
+  display: flex;
+  align-items: center;
+  gap: 64px;
+  width: max-content;
+  animation: scroll 30s linear infinite;
+}
+
+.logo {
+  flex-shrink: 0;
+  height: 20px;
+  color: rgba(255,255,255,0.3);
+  transition: color 200ms ease;
+}
+
+.logo:hover {
+  color: rgba(255,255,255,0.6);
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
