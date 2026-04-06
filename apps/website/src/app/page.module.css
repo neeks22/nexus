@@ -221,6 +221,14 @@
   align-items: center;
 }
 
+.solutionLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.solutionRight {}
+
 .solutionText {
   font-size: 15px;
   color: rgba(255,255,255,0.45);
@@ -496,6 +504,10 @@
   gap: 80px;
   align-items: center;
 }
+
+.roiLeft {}
+
+.roiRight {}
 
 .roiTitle {
   font-size: clamp(1.75rem, 3.5vw, 2.5rem);
