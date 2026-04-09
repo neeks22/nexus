@@ -18,13 +18,16 @@
     "imapflow": "^1.2.18",
     "next": "^14.0.0",
     "nodemailer": "^8.0.4",
+    "papaparse": "^5.5.3",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "recharts": "^3.8.1",
+    "xlsx": "^0.18.5",
     "zod": "^3.22.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "@types/papaparse": "^5.5.2",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "typescript": "^5.0.0"
