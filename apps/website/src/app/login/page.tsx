@@ -39,7 +39,7 @@ export default function LoginPage() {
       });
 
       if (res.status === 429) {
-        setError('Too many attempts. Wait a minute.');
+        setError('Too many attempts. Please wait a minute and try again.');
         setLoading(false);
         return;
       }

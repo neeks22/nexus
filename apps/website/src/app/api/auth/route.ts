@@ -26,7 +26,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const ip = getClientIp(request);
-  if (await rateLimit(ip, 5)) {
+  if (await rateLimit(ip, 50)) {
     return NextResponse.json({ error: 'Too many attempts' }, { status: 429 });
   }
 
