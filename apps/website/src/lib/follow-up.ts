@@ -10,7 +10,7 @@ import { TENANTS, TenantConfig } from './auto-response';
 
 export const FOLLOW_UP_SCHEDULE_HOURS = [4, 24, 72, 168]; // touch 2 at 4h, touch 3 at 24h, touch 4 at 72h, touch 5 at 7d
 export const MAX_TOUCHES = 5; // touch 1 (auto-response) + 4 follow-ups
-const BATCH_SIZE = 5;
+const BATCH_SIZE = 20; // Daily cron — process more per run
 
 export interface FollowUpCandidate {
   phone: string;

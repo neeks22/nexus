@@ -3,7 +3,7 @@
   "outputDirectory": "apps/website/.next",
   "installCommand": "npm install",
   "crons": [
-    { "path": "/api/cron/follow-up", "schedule": "0 * * * *" }
+    { "path": "/api/cron/follow-up", "schedule": "0 14 * * *" }
   ],
   "headers": [
     {
