@@ -28,18 +28,19 @@
   --text-secondary: rgba(255,255,255,0.45);
   --text-muted: rgba(255,255,255,0.25);
 
-  /* Accent — monochrome (no color) */
+  /* Accent — monochrome for landing pages */
   --accent-primary: #ffffff;
   --accent-secondary: rgba(255,255,255,0.85);
-  --accent-gradient: none;
+  --accent-gradient: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05));
   --accent-glow: none;
-  --accent-green: #ffffff;
-  --accent-green-hover: rgba(255,255,255,0.85);
-  --accent-green-dim: rgba(255,255,255,0.06);
-  --accent-green-glow: rgba(255,255,255,0.15);
-  --accent-amber: rgba(255,255,255,0.6);
-  --red: rgba(255,255,255,0.4);
-  --red-dim: rgba(255,255,255,0.06);
+  /* Functional colors — used by CRM inbox, status badges, buttons */
+  --accent-green: #22c55e;
+  --accent-green-hover: #16a34a;
+  --accent-green-dim: rgba(34,197,94,0.1);
+  --accent-green-glow: rgba(34,197,94,0.25);
+  --accent-amber: #f59e0b;
+  --red: #ef4444;
+  --red-dim: rgba(239,68,68,0.1);
 
   /* Typography */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
