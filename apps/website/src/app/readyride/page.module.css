@@ -385,14 +385,14 @@
 }
 
 .bubbleInbound {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
+  background: var(--accent-green);
+  color: #fff;
   border-bottom-left-radius: 6px;
 }
 
 .bubbleOutbound {
-  background: var(--accent-green);
-  color: #fff;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   border-bottom-right-radius: 6px;
 }
 
