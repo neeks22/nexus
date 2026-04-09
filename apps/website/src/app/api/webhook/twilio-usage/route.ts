@@ -49,7 +49,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (isHardCap) {
       // HARD BLOCK: disable SMS sending via agent_toggles
       // Disable SMS for all tenants
-      await fetch(`${SUPABASE_URL}/rest/v1/agent_toggles?agent_id=eq.instant_response`, {
+      await fetch(`${SUPABASE_URL}/rest/v1/agent_toggles?agent_id=in.(instant_response,follow_up)`, {
         method: 'PATCH',
         headers: { ...supaHeaders(), Prefer: 'return=minimal' },
         body: JSON.stringify({ enabled: false, reason: `Spending cap hit: $${amount.toFixed(2)}`, toggled_by: 'twilio_usage_trigger' }),

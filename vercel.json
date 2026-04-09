@@ -2,6 +2,9 @@
   "buildCommand": "cd apps/website && npm run build",
   "outputDirectory": "apps/website/.next",
   "installCommand": "npm install",
+  "crons": [
+    { "path": "/api/cron/follow-up", "schedule": "0 * * * *" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
