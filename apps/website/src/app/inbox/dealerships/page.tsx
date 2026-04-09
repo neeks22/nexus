@@ -3,97 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './page.module.css';
 
-/* ============================================
-   PASSWORD GATE
-   ============================================ */
-
 const TENANT = 'readycar';
-
-function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const res = await fetch('/api/auth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, tenant: 'readycar' }),
-      });
-      const data = await res.json();
-      if (data.authenticated) {
-        // Cookie is set server-side (HttpOnly) — no sessionStorage needed
-        onUnlock();
-      } else {
-        setError(true);
-        setPassword('');
-      }
-    } catch {
-      setError(true);
-      setPassword('');
-    }
-  };
-
-  return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'var(--bg-primary, #0a0a0f)',
-      fontFamily: 'Inter, system-ui, sans-serif'
-    }}>
-      <form onSubmit={handleSubmit} style={{
-        background: 'rgba(255,255,255,0.03)',
-        border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '16px',
-        padding: '40px',
-        width: '100%',
-        maxWidth: '400px',
-        backdropFilter: 'blur(20px)',
-        textAlign: 'center'
-      }}>
-        <div style={{ fontSize: '32px', marginBottom: '8px' }}>🔒</div>
-        <h2 style={{ color: '#f0f0f5', margin: '0 0 8px', fontSize: '20px' }}>Nexus Inbox</h2>
-        <p style={{ color: '#8888a0', margin: '0 0 24px', fontSize: '14px' }}>Enter password to access conversations</p>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => { setPassword(e.target.value); setError(false); }}
-          placeholder="Password"
-          autoFocus
-          style={{
-            width: '100%',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            border: error ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-            color: '#f0f0f5',
-            fontSize: '16px',
-            outline: 'none',
-            marginBottom: '16px',
-            boxSizing: 'border-box'
-          }}
-        />
-        {error && <p style={{ color: '#ef4444', fontSize: '13px', margin: '-8px 0 12px' }}>Incorrect password</p>}
-        <button type="submit" style={{
-          width: '100%',
-          padding: '12px',
-          borderRadius: '8px',
-          border: 'none',
-          background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-          color: '#fff',
-          fontSize: '15px',
-          fontWeight: 600,
-          cursor: 'pointer'
-        }}>
-          Unlock
-        </button>
-      </form>
-    </div>
-  );
-}
 
 /* ============================================
    TYPES
@@ -221,26 +131,6 @@ function SendIcon(): React.ReactElement {
    ============================================ */
 
 export default function InboxPage(): React.ReactElement {
-  const [authed, setAuthed] = useState(false);
-
-  useEffect(() => {
-    // Check for valid server-side session via GET /api/auth
-    // The HttpOnly cookie is sent automatically; we just check the response
-    async function checkSession(): Promise<void> {
-      try {
-        const res = await fetch('/api/auth');
-        if (res.ok) setAuthed(true);
-      } catch {
-        // No valid session — show login
-      }
-    }
-    checkSession();
-  }, []);
-
-  if (!authed) {
-    return <PasswordGate onUnlock={() => setAuthed(true)} />;
-  }
-
   return <InboxContent />;
 }
 
