@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL } from '../../../../../lib/security';
+import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL, isDeduplicate, acquirePhoneLock, releasePhoneLock } from '../../../../../lib/security';
 
 /* =============================================================================
    DELAYED SMS PROCESSOR — Called internally by the webhook
@@ -25,8 +25,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   try {
     const body = await request.json();
-    const { fromPhone, toPhone, messageBody, delay } = body as {
-      fromPhone: string; toPhone: string; messageBody: string; delay?: number;
+    const { fromPhone, toPhone, messageBody, messageSid, delay } = body as {
+      fromPhone: string; toPhone: string; messageBody: string; messageSid?: string; delay?: number;
     };
 
     if (!fromPhone || !toPhone || !messageBody) {
@@ -35,19 +35,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const tenant = TENANT_MAP[toPhone] || TENANT_MAP['+13433125045'];
 
-    // Log inbound
-    await supaPost('lead_transcripts', {
-      tenant_id: tenant.tenant, lead_id: fromPhone,
-      entry_type: 'message', role: 'customer', content: messageBody, channel: 'sms',
-    });
+    // Distributed dedup: skip if this messageSid was already processed (covers Twilio retries + double-fire)
+    if (messageSid) {
+      const isDupe = await isDeduplicate(`proc:${messageSid}`, 300);
+      if (isDupe) {
+        return NextResponse.json({ sent: false, reason: 'duplicate messageSid' });
+      }
+    }
 
-    // Intent classification
+    // Per-phone lock: prevent concurrent processing of messages from the same phone
+    const lockAcquired = await acquirePhoneLock(fromPhone, tenant.tenant);
+    if (!lockAcquired) {
+      return NextResponse.json({ sent: false, reason: 'phone locked — another message is being processed' });
+    }
+
+    // Intent classification (before logging, so STOP messages can skip logging if needed)
     const lower = messageBody.toLowerCase().trim();
     let intent = 'GENERAL';
     let shouldStop = false;
     let shouldHandoff = false;
 
-    if (['stop', 'unsubscribe', 'remove', 'cancel', 'arret'].includes(lower)) {
+    if (['stop', 'unsubscribe', 'remove', 'cancel', 'arret', 'arreter', 'arretez', 'end', 'quit', 'stopall', 'optout', 'opt-out', 'revoke'].includes(lower) || /\b(stop texting|stop messaging|don'?t (text|message|contact) me|leave me alone|remove me|take me off)\b/i.test(lower)) {
       intent = 'UNSUBSCRIBE'; shouldStop = true;
     } else if (/\b(speak.*(rep|person|someone|human|manager|agent)|talk.*(rep|person|someone|human|manager)|call me|give me a call|can (you|someone) call|ready to (go|move|start|proceed|do this|sign|buy)|let.s do (it|this)|sign me up|i.m (in|ready|interested)|set.*(up|it up)|appointment|schedule|book|ready to buy|want to (buy|get|proceed|start)|i.ll take it|where do i sign)\b/i.test(lower)) {
       intent = 'HOT'; shouldHandoff = true;
@@ -142,6 +150,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     }
 
+    // Log inbound message AFTER loading history (prevents Claude seeing it twice in prompt)
+    await supaPost('lead_transcripts', {
+      tenant_id: tenant.tenant, lead_id: fromPhone,
+      entry_type: 'message', role: 'customer', content: messageBody, channel: 'sms',
+    });
+
     // Sanitize customer message to prevent prompt injection
     const safeMessage = messageBody
       .replace(/ignore.*(?:previous|above|all).*(?:instructions?|prompts?|rules?)/gi, '[message filtered]')
@@ -185,8 +199,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     });
 
+    await releasePhoneLock(fromPhone, tenant.tenant);
     return NextResponse.json({ sent: true, delayed: true });
-  } catch (error) {
+  } catch (error: unknown) {
+    // Lock will auto-expire via 30s TTL — no need to manually release in catch
     console.error('[sms-process] Error:', error);
     Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ error: 'Processing failed' }, { status: 500 });
@@ -277,6 +293,17 @@ Return ONLY the JSON, nothing else.`;
   const filledRequired = requiredFields.filter(f => formData[f] !== null && formData[f] !== '' && formData[f] !== 'null');
 
   if (filledRequired.length >= 5) {
+    // Check if already HOT_PAUSED (e.g., from HOT intent in the main flow) — do NOT double-send handoff
+    let alreadyPaused = false;
+    try {
+      const pauseCheck = await supaGetData(
+        `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&entry_type=eq.status&content=eq.HOT_PAUSED&select=id&limit=1`
+      ) as { id: string }[];
+      alreadyPaused = pauseCheck.length > 0;
+    } catch (err) {
+      console.error('[sms-process] Form extraction pause check failed:', err instanceof Error ? err.message : 'unknown');
+    }
+
     // FORM IS COMPLETE — generate lead card and send to rep
     const leadCard = `NEW QUALIFIED LEAD — ${tenant.name}
 
@@ -304,21 +331,24 @@ ${fullConvo.split('\n').slice(-10).join('\n')}`;
 
     await slackNotify(`QUALIFIED LEAD FORM COMPLETE\n${leadCard}`);
 
-    const handoffMsg = 'Setting up a call for you now. Someone will reach out within the hour to get everything rolling — approval to delivery, right to your door.';
-    await sendTwilioSMS(fromPhone, toPhone, handoffMsg);
-    await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: handoffMsg, channel: 'sms' });
+    // Only send handoff SMS + pause if not already paused (prevents double-text with HOT intent handoff)
+    if (!alreadyPaused) {
+      const handoffMsg = 'Setting up a call for you now. Someone will reach out within the hour to get everything rolling — approval to delivery, right to your door.';
+      await sendTwilioSMS(fromPhone, toPhone, handoffMsg);
+      await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: handoffMsg, channel: 'sms' });
 
-    await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'status', role: 'system', content: 'HOT_PAUSED', channel: 'sms' });
+      await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'status', role: 'system', content: 'HOT_PAUSED', channel: 'sms' });
 
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_lead_status`, {
-        method: 'POST', headers: { ...supaHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ p_phone: fromPhone, p_tenant: tenant.tenant, p_status: 'credit_app', p_only_if_status: null }),
-        signal: AbortSignal.timeout(5000),
-      });
-    } catch (err) {
-      console.error('[sms-process] Failed to update lead status:', err instanceof Error ? err.message : 'unknown');
-      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_lead_status`, {
+          method: 'POST', headers: { ...supaHeaders(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_phone: fromPhone, p_tenant: tenant.tenant, p_status: 'credit_app', p_only_if_status: null }),
+          signal: AbortSignal.timeout(5000),
+        });
+      } catch (err) {
+        console.error('[sms-process] Failed to update lead status:', err instanceof Error ? err.message : 'unknown');
+        Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      }
     }
   }
 }

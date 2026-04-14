@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
-import { supaGet, supaPost, supaInsert, supaPatch, sendTwilioSMS, slackNotify, callClaude, GMAIL_USER, GMAIL_PASS } from './security';
+import { supaGet, supaPost, supaInsert, supaPatch, sendTwilioSMS, slackNotify, callClaude, GMAIL_USER, GMAIL_PASS, isDeduplicate } from './security';
 
 /* =============================================================================
    AUTO-RESPONSE — Instant SMS + email when a lead submits the funnel
@@ -279,10 +279,15 @@ To unsubscribe, reply "unsubscribe". ${tenant.name} | ${tenant.location}`;
 
     await transport.sendMail({
       from: `"${tenant.gm} | ${tenant.name}" <${GMAIL_USER}>`,
+      replyTo: tenant.email,
       to: lead.email,
       subject,
       text,
       html,
+      headers: {
+        'List-Unsubscribe': `<mailto:${tenant.email}?subject=Unsubscribe>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
 
     await supaPost('lead_transcripts', {
@@ -325,9 +330,18 @@ export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'r
       return;
     }
 
+    // Distributed dedup via Redis — atomic, prevents double-click and import+funnel race conditions
+    const redisKey = `first-contact:${tenant.tenantId}:${normalizedPhone}`;
+    const isRedisDupe = await isDeduplicate(redisKey, 3600); // 1 hour TTL
+    if (isRedisDupe) {
+      console.log(`[auto-response] Redis dedup caught duplicate: ${normalizedPhone}`);
+      return;
+    }
+
+    // Supabase dedup as backup (checks if phone already exists in DB from prior sessions)
     const duplicate = await isDuplicate(normalizedPhone, tenant.tenantId);
     if (duplicate) {
-      console.log(`[auto-response] Duplicate lead skipped: ${normalizedPhone}`);
+      console.log(`[auto-response] Supabase dedup caught duplicate: ${normalizedPhone}`);
       return;
     }
 
@@ -335,9 +349,11 @@ export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'r
     try {
       leadId = await insertLead(lead, normalizedPhone, tenant);
     } catch (err) {
-      console.error('[auto-response] insertLead failed (continuing with SMS+email):', err instanceof Error ? err.message : 'unknown');
+      // If insert fails, do NOT send SMS/email — prevents orphaned messages that bypass dedup next time
+      console.error('[auto-response] insertLead failed — aborting SMS+email to prevent future duplicates:', err instanceof Error ? err.message : 'unknown');
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
-      await slackNotify(`AUTO-RESPONSE: Supabase insert failed but sending SMS+email anyway\nLead: ${lead.firstName} ${lead.lastName}\nError: ${err instanceof Error ? err.message : 'unknown'}`).catch(() => {});
+      await slackNotify(`AUTO-RESPONSE BLOCKED: Supabase insert failed — SMS+email NOT sent to prevent duplicates\nLead: ${lead.firstName} ${lead.lastName}\nError: ${err instanceof Error ? err.message : 'unknown'}`).catch(() => {});
+      return;
     }
 
     const results = await Promise.allSettled([

@@ -19,7 +19,7 @@ export const SUPABASE_ANON_KEY = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '
 export const ANTHROPIC_KEY = (process.env.ANTHROPIC_API_KEY ?? '').trim();
 export const TWILIO_SID = (process.env.TWILIO_ACCOUNT_SID ?? '').trim();
 export const TWILIO_TOKEN = (process.env.TWILIO_AUTH_TOKEN ?? '').trim();
-export const GMAIL_USER = process.env.GMAIL_USER ?? '';
+export const GMAIL_USER = (process.env.GMAIL_USER ?? '').trim();
 export const GMAIL_PASS = (process.env.GMAIL_PASS ?? '').trim();
 export const SLACK_WEBHOOK = (process.env.SLACK_WEBHOOK_URL ?? '').trim();
 export const NEXUS_API_KEY = (process.env.NEXUS_API_KEY ?? '').trim();
@@ -248,6 +248,51 @@ export async function rateLimit(ip: string, maxRequests: number = 30, windowMs: 
 
 export function getClientIp(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || '0.0.0.0';
+}
+
+/* ---------- Distributed Dedup & Locks (Upstash Redis) ---------- */
+
+/**
+ * Atomic dedup check: returns true if this key was already seen (duplicate).
+ * Uses Redis SET NX with TTL — if the key is new, it's set and returns false.
+ * If the key exists, returns true (duplicate). Falls back to "not duplicate" if Redis unavailable.
+ */
+export async function isDeduplicate(key: string, ttlSeconds: number = 300): Promise<boolean> {
+  if (!redis) return false;
+  try {
+    const result = await redis.set(key, '1', { nx: true, ex: ttlSeconds });
+    return result === null; // null = key already existed = duplicate
+  } catch (err) {
+    console.error('[dedup] Redis error, allowing through:', err instanceof Error ? err.message : 'unknown');
+    return false; // fail open — better to risk a duplicate than block all messages
+  }
+}
+
+/**
+ * Per-phone processing lock. Prevents concurrent processing of messages for the same phone.
+ * Returns true if lock acquired, false if already locked (another request is processing).
+ */
+export async function acquirePhoneLock(phone: string, tenant: string, ttlSeconds: number = 30): Promise<boolean> {
+  if (!redis) return true; // no Redis = no locking, proceed
+  try {
+    const result = await redis.set(`phone-lock:${tenant}:${phone}`, Date.now().toString(), { nx: true, ex: ttlSeconds });
+    return result !== null; // non-null = lock acquired
+  } catch (err) {
+    console.error('[phone-lock] Redis error, allowing through:', err instanceof Error ? err.message : 'unknown');
+    return true;
+  }
+}
+
+/**
+ * Release a per-phone processing lock.
+ */
+export async function releasePhoneLock(phone: string, tenant: string): Promise<void> {
+  if (!redis) return;
+  try {
+    await redis.del(`phone-lock:${tenant}:${phone}`);
+  } catch (err) {
+    console.error('[phone-lock] Redis release error:', err instanceof Error ? err.message : 'unknown');
+  }
 }
 
 /* ---------- Input Sanitization ---------- */

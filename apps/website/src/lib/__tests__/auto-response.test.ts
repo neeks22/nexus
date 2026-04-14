@@ -14,6 +14,8 @@ const mockSendTwilioSMS = vi.fn();
 const mockSlackNotify = vi.fn();
 const mockCallClaude = vi.fn();
 
+const mockIsDeduplicate = vi.fn();
+
 vi.mock('../security', () => ({
   supaGet: (...args: unknown[]) => mockSupaGet(...args),
   supaPost: (...args: unknown[]) => mockSupaPost(...args),
@@ -22,6 +24,7 @@ vi.mock('../security', () => ({
   sendTwilioSMS: (...args: unknown[]) => mockSendTwilioSMS(...args),
   slackNotify: (...args: unknown[]) => mockSlackNotify(...args),
   callClaude: (...args: unknown[]) => mockCallClaude(...args),
+  isDeduplicate: (...args: unknown[]) => mockIsDeduplicate(...args),
   GMAIL_USER: 'test@gmail.com',
   GMAIL_PASS: 'test-pass',
 }));
@@ -102,6 +105,8 @@ describe('handleAutoResponse', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Default happy-path mocks
+    // Redis dedup: not a duplicate
+    mockIsDeduplicate.mockResolvedValue(false);
     // First call: toggle check (enabled), second call: dedup check (not duplicate)
     mockSupaGet
       .mockResolvedValueOnce({ data: [{ enabled: true }], error: false })
@@ -216,23 +221,18 @@ describe('handleAutoResponse', () => {
     );
   });
 
-  it('still sends SMS + email even when insertLead fails', async () => {
-    // supaInsert (insertLead) throws, but SMS+email should still send
+  it('aborts SMS + email when insertLead fails (prevents orphaned messages that bypass dedup)', async () => {
     mockSupaInsert.mockRejectedValue(new Error('Supabase insert failed'));
 
     const lead = makeLead();
     await handleAutoResponse(lead, 'readycar');
 
-    // Should still call Claude for SMS
-    expect(mockCallClaude).toHaveBeenCalledTimes(1);
+    // Should NOT send SMS or email — aborting prevents future dedup bypass
+    expect(mockCallClaude).not.toHaveBeenCalled();
+    expect(mockSendTwilioSMS).not.toHaveBeenCalled();
+    expect(mockSendMail).not.toHaveBeenCalled();
 
-    // Should still send SMS
-    expect(mockSendTwilioSMS).toHaveBeenCalledTimes(1);
-
-    // Should still send email
-    expect(mockSendMail).toHaveBeenCalledTimes(1);
-
-    // Should notify Slack about the insert failure
+    // Should notify Slack about the blocked send
     expect(mockSlackNotify).toHaveBeenCalledWith(
       expect.stringContaining('Supabase insert failed'),
     );
