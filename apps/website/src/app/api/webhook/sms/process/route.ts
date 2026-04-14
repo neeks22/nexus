@@ -9,7 +9,7 @@ import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNot
 
 export const maxDuration = 60;
 
-const PROCESS_SECRET = (process.env.PROCESS_SECRET ?? '').trim();
+const PROCESS_SECRET = (process.env.PROCESS_SECRET || process.env.AUTH_SECRET || '').trim();
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   // Verify internal call — reject if secret not configured or mismatch
@@ -89,14 +89,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ sent: true, immediate: true, handoff: true, paused: true });
     }
 
-    // Check if this lead is paused (was marked HOT previously) — don't auto-reply
-    // TWO checks: transcript status entries AND funnel_submissions status
-    // If EITHER indicates paused, do NOT reply. Errors default to NOT replying (safe).
+    // Check if this lead is paused — ONLY via explicit pause button (HOT_PAUSED / AGENT_PAUSED)
+    // AI keeps replying unless someone clicks the Pause Agent button in the CRM.
     {
       let isPaused = false;
-
-      // Check 1: transcript status entries (HOT_PAUSED / AGENT_PAUSED / AI_RESUMED)
       let pauseContent = '';
+
       try {
         const statusEntries = await supaGetData(
           `lead_transcripts?tenant_id=eq.${tenant.tenant}&lead_id=eq.${encodeURIComponent(fromPhone)}&entry_type=eq.status&select=content,created_at&order=created_at.desc&limit=1`
@@ -106,27 +104,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           isPaused = true;
           pauseContent = statusEntries[0].content;
         }
-      } catch {
-        // Supabase query failed — default to paused (safe: don't risk replying)
-        console.error('[sms-process] Pause check failed for phone ...', fromPhone.slice(-4), '— defaulting to paused');
-        isPaused = true;
-      }
-
-      // Check 2: funnel_submissions status — appointment or credit_app means human took over
-      if (!isPaused) {
-        try {
-          const leadStatus = await supaGetData(
-            `v_funnel_submissions?tenant_id=eq.${tenant.tenant}&phone=eq.${encodeURIComponent(fromPhone)}&select=status&limit=1`
-          ) as { status: string }[];
-
-          if (leadStatus.length > 0 && ['appointment', 'credit_app', 'approved', 'delivered'].includes(leadStatus[0].status)) {
-            isPaused = true;
-          }
-        } catch {
-          // If we can't check, don't reply — safer than spamming a hot lead
-          console.error('[sms-process] Lead status check failed for phone ...', fromPhone.slice(-4), '— defaulting to paused');
-          isPaused = true;
-        }
+      } catch (err) {
+        // Query failed — default to KEEP REPLYING (user wants AI active unless explicitly paused)
+        console.error('[sms-process] Pause check failed for phone ...', fromPhone.slice(-4), '— defaulting to active:', err instanceof Error ? err.message : 'unknown');
       }
 
       if (isPaused) {

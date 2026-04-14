@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import styles from './page.module.css';
 import CreditRouter from '../../components/CreditRouter';
 import ImportSpreadsheetModal from '../../components/crm/ImportSpreadsheetModal';
@@ -167,6 +168,7 @@ function TransferIcon(): React.ReactElement {
 }
 
 function InboxContent(): React.ReactElement {
+  const queryClient = useQueryClient();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [archivedPhones, setArchivedPhones] = useState<Set<string>>(() => {
     try {
@@ -568,7 +570,7 @@ function InboxContent(): React.ReactElement {
           <ImportSpreadsheetModal
             tenant={TENANT}
             onClose={() => setShowNewMessage(false)}
-            onComplete={() => { setShowNewMessage(false); fetchConversations(); }}
+            onComplete={() => { setShowNewMessage(false); fetchConversations(); queryClient.invalidateQueries({ queryKey: ['leads', 'readyride'] }); queryClient.invalidateQueries({ queryKey: ['dashboard', 'readyride'] }); }}
           />
         )}
 

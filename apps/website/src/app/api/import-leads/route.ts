@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
         try {
           const { data: existing } = await supaGet(
-            `funnel_submissions?tenant_id=eq.${tenant.tenantId}&phone=eq.${encodeURIComponent(normalizedPhone)}&select=id&limit=1`
+            `v_funnel_submissions?tenant_id=eq.${tenant.tenantId}&phone=eq.${encodeURIComponent(normalizedPhone)}&select=id&limit=1`
           );
           if ((existing as unknown[]).length > 0) {
             duplicates++;
