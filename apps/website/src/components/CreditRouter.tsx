@@ -645,6 +645,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
       margin: '0 auto',
       overflowY: 'auto' as const,
       height: isMobile ? 'calc(100vh - 116px)' : undefined,
+      boxSizing: 'border-box' as const,
     } as React.CSSProperties,
 
     card: {
@@ -765,6 +766,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
         <style>{`
           @keyframes crPulse { 0%,100% { opacity:1 } 50% { opacity:.5 } }
           @keyframes crSlide { from { opacity:0; transform:translateY(12px) } to { opacity:1; transform:translateY(0) } }
+          @keyframes spin { to { transform: rotate(360deg) } }
           .cr-enter { animation: crSlide .35s ease-out forwards }
           .cr-input:focus { border-color: #DC2626 !important; box-shadow: 0 0 0 3px rgba(220,38,38,.1) !important }
         `}</style>
@@ -1001,7 +1003,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
               {/* Vehicle Details */}
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 24, paddingTop: 20 }}>
                 <div style={{ ...s.label, marginBottom: 14, color: '#55556a' }}>Vehicle Details (optional)</div>
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ ...s.label, fontSize: 10 }}>Year</label>
                     <input type="number" value={profile.vehicleYear} onChange={(e) => setProfile({ ...profile, vehicleYear: e.target.value })} placeholder="2022" className="cr-input" style={s.inputSmall} />

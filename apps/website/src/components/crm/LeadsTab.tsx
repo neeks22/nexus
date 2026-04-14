@@ -103,7 +103,7 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
   };
 
   return (
-    <div style={{ padding: isMobile ? '16px' : '24px', overflowY: 'auto', height: isMobile ? 'calc(100vh - 116px)' : '100vh' }}>
+    <div style={{ padding: isMobile ? '16px' : '24px', overflowY: 'auto', height: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 52px)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <h1 style={{ color: '#f0f0f5', fontSize: isMobile ? '18px' : '22px', fontWeight: 700, margin: 0 }}>Leads</h1>
         <button onClick={() => setShowCreate(true)} style={{
@@ -115,10 +115,10 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
 
       {/* Create Lead Modal */}
       {showCreate && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }} onClick={() => setShowCreate(false)}>
-          <div style={{ background: '#1a1a2e', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '480px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0 16px' : 0, backdropFilter: 'blur(4px)' }} onClick={() => setShowCreate(false)}>
+          <div style={{ background: '#1a1a2e', borderRadius: '16px', padding: isMobile ? '20px' : '32px', width: '100%', maxWidth: '480px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)', maxHeight: isMobile ? '90vh' : undefined, overflowY: isMobile ? 'auto' : undefined }} onClick={(e) => e.stopPropagation()}>
             <h3 style={{ color: '#f0f0f5', margin: '0 0 20px', fontSize: '18px' }}>Create New Lead</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
               <div>
                 <label style={{ color: '#8888a0', fontSize: '12px', display: 'block', marginBottom: '4px' }}>First Name *</label>
                 <input value={newLead.first_name} onChange={(e) => setNewLead({ ...newLead, first_name: e.target.value })} placeholder="John" autoFocus style={inputStyle} />

@@ -251,12 +251,12 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
 
       {/* Create Modal */}
       {showCreate && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0 16px' : 0, backdropFilter: 'blur(4px)' }}
           onClick={() => setShowCreate(false)}>
-          <div style={{ background: '#1a1a2e', borderRadius: '16px', padding: '32px', width: '100%', maxWidth: '480px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}
+          <div style={{ background: '#1a1a2e', borderRadius: '16px', padding: isMobile ? '20px' : '32px', width: '100%', maxWidth: '480px', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)', maxHeight: isMobile ? '90vh' : undefined, overflowY: isMobile ? 'auto' : undefined }}
             onClick={e => e.stopPropagation()}>
             <h2 style={{ color: '#f0f0f5', fontSize: '18px', fontWeight: 700, margin: '0 0 20px 0' }}>New Appointment</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
               <div><label style={{ color: '#8888a0', fontSize: '12px' }}>Phone *</label><input value={newAppt.lead_phone} onChange={e => setNewAppt({ ...newAppt, lead_phone: e.target.value })} style={inputStyle} placeholder="+16131234567" /></div>
               <div><label style={{ color: '#8888a0', fontSize: '12px' }}>Name</label><input value={newAppt.lead_name} onChange={e => setNewAppt({ ...newAppt, lead_name: e.target.value })} style={inputStyle} placeholder="John Smith" /></div>
               <div><label style={{ color: '#8888a0', fontSize: '12px' }}>Type *</label>

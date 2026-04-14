@@ -30,28 +30,30 @@ const COLORS = ['#DC2626', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#22c55e'
 const STAGES = ['new', 'contacted', 'appointment', 'showed', 'credit_app', 'approved', 'delivered', 'lost'];
 
 function computeAvgResponseTime(transcripts: TranscriptRow[]): number {
-  // Group by lead_id, find first customer/funnel entry and first AI response
-  const byLead: Record<string, { firstContact?: Date; firstAiReply?: Date }> = {};
-
+  // Group transcripts by lead_id, sorted by time
+  const byLead: Record<string, TranscriptRow[]> = {};
   for (const t of transcripts) {
-    if (!byLead[t.lead_id]) byLead[t.lead_id] = {};
-    const entry = byLead[t.lead_id];
-    const ts = new Date(t.created_at);
-
-    if ((t.role === 'customer' || t.channel === 'funnel') && (!entry.firstContact || ts < entry.firstContact)) {
-      entry.firstContact = ts;
-    }
-    if (t.role === 'ai' && (!entry.firstAiReply || ts < entry.firstAiReply)) {
-      entry.firstAiReply = ts;
-    }
+    if (!byLead[t.lead_id]) byLead[t.lead_id] = [];
+    byLead[t.lead_id].push(t);
   }
 
   const responseTimes: number[] = [];
-  for (const entry of Object.values(byLead)) {
-    if (entry.firstContact && entry.firstAiReply && entry.firstAiReply > entry.firstContact) {
-      const diffSec = (entry.firstAiReply.getTime() - entry.firstContact.getTime()) / 1000;
-      if (diffSec < 3600) responseTimes.push(diffSec); // exclude outliers > 1hr
-    }
+  for (const entries of Object.values(byLead)) {
+    // Sort chronologically
+    entries.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+    // Find first customer/funnel contact
+    const firstContact = entries.find(e => e.role === 'customer' || e.channel === 'funnel');
+    if (!firstContact) continue;
+
+    const contactTime = new Date(firstContact.created_at).getTime();
+
+    // Find first AI reply AFTER the first contact
+    const firstAiReply = entries.find(e => e.role === 'ai' && new Date(e.created_at).getTime() > contactTime);
+    if (!firstAiReply) continue;
+
+    const diffSec = (new Date(firstAiReply.created_at).getTime() - contactTime) / 1000;
+    if (diffSec < 3600) responseTimes.push(diffSec); // exclude outliers > 1hr
   }
 
   if (responseTimes.length === 0) return 0;
@@ -85,13 +87,14 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
             count: counts[s] || 0,
           })));
 
-          // Funnel: cumulative from start to end (excluding lost)
+          // Funnel: suffix sum — each stage = leads at this stage or beyond
           const funnelStages = ['new', 'contacted', 'appointment', 'showed', 'credit_app', 'approved', 'delivered'];
-          let cumulative = 0;
-          const funnelEntries = funnelStages.map((s) => { cumulative += counts[s] || 0; return cumulative; });
+          const funnelValues = funnelStages.map((_, i) =>
+            funnelStages.slice(i).reduce((sum, s) => sum + (counts[s] || 0), 0)
+          );
           setFunnelData(funnelStages.map((s, i) => ({
             name: s.replace('_', ' ').replace(/^\w/, (c: string) => c.toUpperCase()),
-            value: funnelEntries[funnelStages.length - 1 - i] || 0,
+            value: funnelValues[i] || 0,
             fill: COLORS[i % COLORS.length],
           })));
 
@@ -121,7 +124,9 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
           for (const lead of leads) {
             const d = new Date(lead.created_at);
             const daysDiff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-            const weekIdx = Math.min(3, Math.floor(daysDiff / 7));
+            if (daysDiff > 28) continue; // skip leads outside 4-week window
+            const weekIdx = Math.floor(daysDiff / 7);
+            if (weekIdx > 3) continue;
             const weekKeys = Object.keys(weeks);
             const key = weekKeys[3 - weekIdx];
             if (key) weeks[key]++;

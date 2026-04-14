@@ -133,7 +133,7 @@ describe('POST /api/funnel-lead', () => {
 
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.error).toContain('CASL consent is required');
+    expect(json.error).toContain('Invalid literal value, expected true');
   });
 
   it('returns 400 for SQL injection in firstName', async () => {

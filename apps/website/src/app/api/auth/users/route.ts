@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import * as Sentry from '@sentry/nextjs';
-import { SUPABASE_URL, SUPABASE_KEY, rateLimit, getClientIp } from '@/lib/security';
+import { SUPABASE_URL, SUPABASE_KEY, rateLimit, getClientIp, VALID_TENANTS } from '@/lib/security';
 import { hashPassword, verifyPassword, findUserByEmail } from '@/lib/auth';
 
 function cleanEnv(val: string | undefined): string {
@@ -87,6 +87,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     if (!email || !password || !name || !tenant_id) {
       return NextResponse.json({ error: 'Missing required fields: email, password, name, tenant_id' }, { status: 400 });
+    }
+
+    if (!VALID_TENANTS.includes(tenant_id)) {
+      return NextResponse.json({ error: 'Invalid tenant_id' }, { status: 400 });
     }
 
     const validRoles = ['admin', 'manager', 'staff'];

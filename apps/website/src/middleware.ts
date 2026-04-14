@@ -213,7 +213,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       const isDev = process.env.NODE_ENV === 'development';
 
       // Exempt webhook and cron endpoints from CSRF (they have their own auth: Twilio signature, API keys, secrets)
-      const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/') || path.startsWith('/api/auth') || path === '/api/campaign';
+      const isWebhookOrCron = path.startsWith('/api/webhook/') || path.startsWith('/api/cron/') || path === '/api/campaign';
 
       if (!origin && !referer && !isDev && !isWebhookOrCron) {
         return NextResponse.json(

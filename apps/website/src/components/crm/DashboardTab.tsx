@@ -59,6 +59,7 @@ const EMPTY: DashboardData = {
 export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps): React.ReactElement {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     async function fetchDashboard(): Promise<void> {
@@ -82,7 +83,6 @@ export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps
 
   const d = data || EMPTY;
   const totalPipeline = Object.values(d.pipelineCounts).reduce((a, b) => a + b, 0);
-  const isMobile = useIsMobile();
 
   return (
     <div style={{ padding: isMobile ? '16px' : '24px', overflowY: 'auto', height: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 52px)' }}>
