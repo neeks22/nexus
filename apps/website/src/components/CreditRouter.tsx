@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import useIsMobile from './crm/useIsMobile';
 
 /* =============================================================================
    LENDER DATABASE
@@ -330,6 +331,7 @@ function computeCreditGrade(fico: number, situation: string, selfEmployed: boole
    ============================================================================= */
 
 export default function CreditRouter({ tenant, customerPhone }: { tenant?: string; customerPhone?: string } = {}): React.ReactElement {
+  const isMobile = useIsMobile();
   const [step, setStep] = useState<'input' | 'results'>('input');
   const [analyzing, setAnalyzing] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -638,9 +640,11 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
     page: {
       fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       color: '#f0f0f5',
-      padding: '24px',
+      padding: isMobile ? '16px' : '24px',
       maxWidth: 1400,
       margin: '0 auto',
+      overflowY: 'auto' as const,
+      height: isMobile ? 'calc(100vh - 116px)' : undefined,
     } as React.CSSProperties,
 
     card: {
@@ -766,24 +770,24 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
         `}</style>
 
         {/* HEADER */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12 }}>
             <span style={{
               background: 'linear-gradient(135deg, #DC2626, #B91C1C)',
-              color: '#fff', width: 36, height: 36, borderRadius: 10,
+              color: '#fff', width: isMobile ? 32 : 36, height: isMobile ? 32 : 36, borderRadius: 10,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 800, fontSize: 18,
+              fontWeight: 800, fontSize: isMobile ? 16 : 18,
             }}>C</span>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 700, color: '#f0f0f5', letterSpacing: '-0.02em' }}>Credit Router</div>
-              <div style={{ fontSize: 12, color: '#55556a' }}>8 lenders &middot; AI bureau analysis &middot; auto-route</div>
+              <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: '#f0f0f5', letterSpacing: '-0.02em' }}>Credit Router</div>
+              {!isMobile && <div style={{ fontSize: 12, color: '#55556a' }}>8 lenders &middot; AI bureau analysis &middot; auto-route</div>}
             </div>
           </div>
           <button onClick={resetForm} style={s.btnSecondary}>New Application</button>
         </div>
 
         {/* TWO COLUMN LAYOUT */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 20 }}>
 
           {/* LEFT — Bureau Upload + Notes */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -911,7 +915,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             {/* Customer Info */}
             <div className="cr-enter" style={{ ...s.card, animationDelay: '0.06s', marginBottom: 16 }}>
               <div style={s.sectionTitle}>Customer Info</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={s.label}>First Name</label>
                   <input value={customerInfo.first_name} onChange={(e) => setCustomerInfo({ ...customerInfo, first_name: e.target.value })} placeholder="John" className="cr-input" style={s.input} />
@@ -938,7 +942,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             <div className="cr-enter" style={{ ...s.card, animationDelay: '0.08s' }}>
               <div style={s.sectionTitle}>Customer Profile</div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 12 : 16 }}>
                 <div>
                   <label style={s.label}>Beacon / FICO Score</label>
                   <input
@@ -997,7 +1001,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
               {/* Vehicle Details */}
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 24, paddingTop: 20 }}>
                 <div style={{ ...s.label, marginBottom: 14, color: '#55556a' }}>Vehicle Details (optional)</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={{ ...s.label, fontSize: 10 }}>Year</label>
                     <input type="number" value={profile.vehicleYear} onChange={(e) => setProfile({ ...profile, vehicleYear: e.target.value })} placeholder="2022" className="cr-input" style={s.inputSmall} />
@@ -1013,7 +1017,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginTop: 16 }}>
                 <div>
                   <label style={{ ...s.label, fontSize: 10 }}>Down Payment ($)</label>
                   <input type="number" value={profile.downPayment} onChange={(e) => setProfile({ ...profile, downPayment: e.target.value })} placeholder="1000" className="cr-input" style={s.inputSmall} />
@@ -1052,26 +1056,26 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
       `}</style>
 
       {/* RESULTS HEADER */}
-      <div className="cr-enter" style={{ ...s.card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+      <div className="cr-enter" style={{ ...s.card, display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', marginBottom: 20, gap: isMobile ? 16 : 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 14 : 20 }}>
           {/* Score circle */}
           <div style={{
-            width: 72, height: 72, borderRadius: '50%',
+            width: isMobile ? 56 : 72, height: isMobile ? 56 : 72, borderRadius: '50%',
             background: `conic-gradient(${tierColor(ficoNum)} ${(ficoNum / 900) * 100}%, rgba(255,255,255,0.06) 0)`,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
           }}>
             <div style={{
-              width: 60, height: 60, borderRadius: '50%', background: '#111119',
+              width: isMobile ? 46 : 60, height: isMobile ? 46 : 60, borderRadius: '50%', background: '#111119',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: tierColor(ficoNum), lineHeight: 1 }}>{profile.fico}</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: tierColor(ficoNum), lineHeight: 1 }}>{profile.fico}</div>
               <div style={{ fontSize: 9, color: '#55556a', letterSpacing: '0.05em', marginTop: 2 }}>BEACON</div>
             </div>
           </div>
 
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', color: tierColor(ficoNum), textTransform: 'uppercase' }}>{tierLabel(ficoNum)}</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: '#f0f0f5', letterSpacing: '-0.02em', marginTop: 2 }}>${parseInt(profile.income, 10).toLocaleString()}<span style={{ fontSize: 13, color: '#55556a', fontWeight: 400 }}>/mo</span></div>
+            <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, color: '#f0f0f5', letterSpacing: '-0.02em', marginTop: 2 }}>${parseInt(profile.income, 10).toLocaleString()}<span style={{ fontSize: 13, color: '#55556a', fontWeight: 400 }}>/mo</span></div>
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               {profile.situation !== 'standard' && (
                 <span style={s.badge('rgba(245,158,11,0.12)', '#f59e0b')}>{profile.situation.toUpperCase()}</span>
@@ -1145,16 +1149,16 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             )}
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#f0f0f5', letterSpacing: '-0.02em' }}>{r.lender}</div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 700, color: '#f0f0f5', letterSpacing: '-0.02em' }}>{r.lender}</div>
                 {r.tier && (
-                  <div style={{ fontSize: 13, color: '#55556a', marginTop: 4, fontFamily: "'JetBrains Mono', monospace" }}>
+                  <div style={{ fontSize: isMobile ? 11 : 13, color: '#55556a', marginTop: 4, fontFamily: "'JetBrains Mono', monospace", wordBreak: 'break-word' }}>
                     {r.tier.tier} &mdash; {r.tier.rate} &mdash; LTV {r.tier.maxLTV} &mdash; Reserve {r.tier.reserve}
                   </div>
                 )}
               </div>
-              <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 20 }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: isTop ? '#DC2626' : '#55556a', lineHeight: 1 }}>{Math.round(r.score)}</div>
+              <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: isMobile ? 12 : 20 }}>
+                <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: isTop ? '#DC2626' : '#55556a', lineHeight: 1 }}>{Math.round(r.score)}</div>
                 <div style={{ fontSize: 10, color: '#55556a', letterSpacing: '0.05em', marginTop: 2 }}>SCORE</div>
               </div>
             </div>
