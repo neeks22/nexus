@@ -65,20 +65,20 @@ describe('validateTenant', () => {
     expect(validateTenant('readyride')).toBe('readyride');
   });
 
-  it('defaults to readycar for invalid tenant', () => {
-    expect(validateTenant('invalid')).toBe('readycar');
+  it('throws for invalid tenant', () => {
+    expect(() => validateTenant('invalid')).toThrow('Invalid tenant');
   });
 
-  it('defaults to readycar for null', () => {
-    expect(validateTenant(null)).toBe('readycar');
+  it('throws for null', () => {
+    expect(() => validateTenant(null)).toThrow('Invalid tenant');
   });
 
-  it('defaults to readycar for empty string', () => {
-    expect(validateTenant('')).toBe('readycar');
+  it('throws for empty string', () => {
+    expect(() => validateTenant('')).toThrow('Invalid tenant');
   });
 
-  it('defaults to readycar for unknown tenant', () => {
-    expect(validateTenant('some-other-dealer')).toBe('readycar');
+  it('throws for unknown tenant', () => {
+    expect(() => validateTenant('some-other-dealer')).toThrow('Invalid tenant');
   });
 });
 
