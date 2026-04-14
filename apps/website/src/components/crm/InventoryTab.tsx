@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import useIsMobile from './useIsMobile';
 
 interface Vehicle {
   id: string;
@@ -39,6 +40,7 @@ const fmt = (n: number | null): string => n != null ? `$${n.toLocaleString()}` :
 const fmtMi = (n: number | null): string => n != null ? `${n.toLocaleString()} km` : '—';
 
 export default function InventoryTab({ tenant }: InventoryTabProps): React.ReactElement {
+  const isMobile = useIsMobile();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -121,9 +123,9 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
   vehicles.forEach(v => { if (counts[v.status] !== undefined) counts[v.status]++; });
 
   return (
-    <div style={{ padding: '24px', height: 'calc(100vh - 52px)', overflowY: 'auto' }}>
+    <div style={{ padding: isMobile ? '16px' : '24px', height: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 52px)', overflowY: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ color: '#f0f0f5', fontSize: '20px', fontWeight: 700, margin: 0 }}>Inventory</h1>
+        <h1 style={{ color: '#f0f0f5', fontSize: isMobile ? '18px' : '20px', fontWeight: 700, margin: 0 }}>Inventory</h1>
         <button onClick={() => setShowCreate(true)} style={{
           padding: '10px 20px', background: '#DC2626', color: '#fff', border: 'none',
           borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
@@ -131,7 +133,7 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
       </div>
 
       {/* Summary */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: isMobile ? '8px' : '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {Object.entries(counts).map(([s, c]) => (
           <div key={s} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '12px 20px', border: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ color: STATUS_COLORS[s], fontWeight: 700, fontSize: '20px' }}>{c}</span>
@@ -145,10 +147,10 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
       </div>
 
       {/* Filters */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <input placeholder="Search make, model, stock#, VIN..." value={search} onChange={e => setSearch(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && fetchVehicles()}
-          style={{ ...inputStyle, maxWidth: '320px' }} />
+          style={{ ...inputStyle, maxWidth: isMobile ? '100%' : '320px', flex: isMobile ? '1 1 100%' : undefined }} />
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           style={{ ...inputStyle, maxWidth: '160px', cursor: 'pointer' }}>
           <option value="">All Status</option>
@@ -160,32 +162,59 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
 
       {/* Table */}
       <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.7fr 0.8fr 0.7fr 0.7fr 0.6fr 0.5fr', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#8888a0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          <span>Vehicle</span><span>Price</span><span>Mileage</span><span>Stock #</span><span>Color</span><span>Status</span><span></span>
-        </div>
+        {!isMobile && (
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 0.7fr 0.8fr 0.7fr 0.7fr 0.6fr 0.5fr', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#8888a0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span>Vehicle</span><span>Price</span><span>Mileage</span><span>Stock #</span><span>Color</span><span>Status</span><span></span>
+          </div>
+        )}
         {vehicles.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#8888a0' }}>No vehicles found. Add your first vehicle above.</div>
-        ) : vehicles.map(v => (
-          <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '2fr 0.7fr 0.8fr 0.7fr 0.7fr 0.6fr 0.5fr', padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center', transition: 'background 0.15s' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <div>
-              <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '14px' }}>{v.year} {v.make} {v.model}</span>
-              {v.trim && <span style={{ color: '#8888a0', fontSize: '12px', marginLeft: '6px' }}>{v.trim}</span>}
+        ) : isMobile ? (
+          vehicles.map(v => (
+            <div key={v.id} style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <div>
+                  <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '14px' }}>{v.year} {v.make} {v.model}</span>
+                  {v.trim && <span style={{ color: '#8888a0', fontSize: '12px', marginLeft: '6px' }}>{v.trim}</span>}
+                </div>
+                <button onClick={() => deleteVehicle(v.id)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '16px', padding: '4px 8px' }} title="Delete">✕</button>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                <span style={{ color: '#f0f0f5', fontSize: '13px', fontWeight: 500 }}>{fmt(v.price)}</span>
+                <span style={{ color: '#8888a0', fontSize: '12px' }}>{fmtMi(v.mileage)}</span>
+                {v.color && <span style={{ color: '#8888a0', fontSize: '12px' }}>{v.color}</span>}
+                <select value={v.status} onChange={e => updateStatus(v.id, e.target.value)}
+                  style={{ background: 'transparent', border: `1px solid ${STATUS_COLORS[v.status]}40`, borderRadius: '6px', color: STATUS_COLORS[v.status], padding: '4px 8px', fontSize: '12px', cursor: 'pointer', outline: 'none', marginLeft: 'auto' }}>
+                  <option value="available">Available</option>
+                  <option value="pending">Pending</option>
+                  <option value="sold">Sold</option>
+                </select>
+              </div>
             </div>
-            <span style={{ color: '#f0f0f5', fontSize: '14px' }}>{fmt(v.price)}</span>
-            <span style={{ color: '#ccc', fontSize: '13px' }}>{fmtMi(v.mileage)}</span>
-            <span style={{ color: '#ccc', fontSize: '13px' }}>{v.stock_number || '—'}</span>
-            <span style={{ color: '#ccc', fontSize: '13px' }}>{v.color || '—'}</span>
-            <select value={v.status} onChange={e => updateStatus(v.id, e.target.value)}
-              style={{ background: 'transparent', border: `1px solid ${STATUS_COLORS[v.status]}40`, borderRadius: '6px', color: STATUS_COLORS[v.status], padding: '4px 8px', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
-              <option value="available">Available</option>
-              <option value="pending">Pending</option>
-              <option value="sold">Sold</option>
-            </select>
-            <button onClick={() => deleteVehicle(v.id)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '16px' }} title="Delete">✕</button>
-          </div>
-        ))}
+          ))
+        ) : (
+          vehicles.map(v => (
+            <div key={v.id} style={{ display: 'grid', gridTemplateColumns: '2fr 0.7fr 0.8fr 0.7fr 0.7fr 0.6fr 0.5fr', padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center', transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <div>
+                <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '14px' }}>{v.year} {v.make} {v.model}</span>
+                {v.trim && <span style={{ color: '#8888a0', fontSize: '12px', marginLeft: '6px' }}>{v.trim}</span>}
+              </div>
+              <span style={{ color: '#f0f0f5', fontSize: '14px' }}>{fmt(v.price)}</span>
+              <span style={{ color: '#ccc', fontSize: '13px' }}>{fmtMi(v.mileage)}</span>
+              <span style={{ color: '#ccc', fontSize: '13px' }}>{v.stock_number || '—'}</span>
+              <span style={{ color: '#ccc', fontSize: '13px' }}>{v.color || '—'}</span>
+              <select value={v.status} onChange={e => updateStatus(v.id, e.target.value)}
+                style={{ background: 'transparent', border: `1px solid ${STATUS_COLORS[v.status]}40`, borderRadius: '6px', color: STATUS_COLORS[v.status], padding: '4px 8px', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
+                <option value="available">Available</option>
+                <option value="pending">Pending</option>
+                <option value="sold">Sold</option>
+              </select>
+              <button onClick={() => deleteVehicle(v.id)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: '16px' }} title="Delete">✕</button>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Create Modal */}

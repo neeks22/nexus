@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import useIsMobile from './useIsMobile';
 
 interface Appointment {
   id: string;
@@ -55,6 +56,7 @@ function isOverdue(appt: Appointment): boolean {
 }
 
 export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTabProps): React.ReactElement {
+  const isMobile = useIsMobile();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'today' | 'upcoming' | 'all'>('upcoming');
@@ -137,9 +139,9 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
   appointments.forEach(a => { if (counts[a.status as keyof typeof counts] !== undefined) counts[a.status as keyof typeof counts]++; });
 
   return (
-    <div style={{ padding: '24px', height: 'calc(100vh - 52px)', overflowY: 'auto' }}>
+    <div style={{ padding: isMobile ? '16px' : '24px', height: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 52px)', overflowY: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ color: '#f0f0f5', fontSize: '20px', fontWeight: 700, margin: 0 }}>Appointments</h1>
+        <h1 style={{ color: '#f0f0f5', fontSize: isMobile ? '18px' : '20px', fontWeight: 700, margin: 0 }}>Appointments</h1>
         <button onClick={() => setShowCreate(true)} style={{
           padding: '10px 20px', background: '#DC2626', color: '#fff', border: 'none',
           borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
@@ -147,7 +149,7 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
       </div>
 
       {/* Summary */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: isMobile ? '8px' : '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
         {(['scheduled', 'confirmed', 'completed', 'no_show'] as const).map(s => (
           <div key={s} style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '10px', padding: '12px 20px', border: '1px solid rgba(255,255,255,0.06)' }}>
             <span style={{ color: STATUS_COLORS[s], fontWeight: 700, fontSize: '20px' }}>{counts[s]}</span>
@@ -170,15 +172,44 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
 
       {/* Table */}
       <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr 1fr 1fr 0.8fr 1.2fr', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#8888a0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          <span>Date / Time</span><span>Lead</span><span>Type</span><span>Assigned To</span><span>Status</span><span>Actions</span>
-        </div>
+        {!isMobile && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr 1fr 1fr 0.8fr 1.2fr', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#8888a0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span>Date / Time</span><span>Lead</span><span>Type</span><span>Assigned To</span><span>Status</span><span>Actions</span>
+          </div>
+        )}
         {appointments.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#8888a0' }}>No appointments found.</div>
         ) : appointments.map(a => {
           const { date, time } = formatDateTime(a.scheduled_at);
           const overdue = isOverdue(a);
-          return (
+          return isMobile ? (
+            <div key={a.id} style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', background: overdue ? 'rgba(239,68,68,0.05)' : 'transparent' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <span onClick={() => onSelectLead(a.lead_phone)} style={{ color: '#f0f0f5', fontWeight: 500, fontSize: '14px', cursor: 'pointer' }}>
+                  {a.lead_name || a.lead_phone}
+                </span>
+                <select value={a.status} onChange={e => updateStatus(a.id, e.target.value)}
+                  style={{ background: 'transparent', border: `1px solid ${STATUS_COLORS[a.status] || '#666'}40`, borderRadius: '6px', color: STATUS_COLORS[a.status] || '#666', padding: '4px 8px', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
+                  <option value="scheduled">Scheduled</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="completed">Completed</option>
+                  <option value="no_show">No Show</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', color: '#8888a0', fontSize: '12px' }}>
+                <span style={{ color: overdue ? '#ef4444' : '#ccc', fontWeight: 500 }}>{date} {time}{overdue ? ' OVERDUE' : ''}</span>
+                <span>{TYPE_LABELS[a.appointment_type] || a.appointment_type}</span>
+                {!a.reminder_sent && (a.status === 'scheduled' || a.status === 'confirmed') && (
+                  <button onClick={() => sendReminder(a.id)} disabled={sendingReminder === a.id}
+                    style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '11px', cursor: 'pointer', marginLeft: 'auto' }}>
+                    {sendingReminder === a.id ? '...' : 'Remind'}
+                  </button>
+                )}
+                {a.reminder_sent && <span style={{ color: '#10b981', fontSize: '11px', marginLeft: 'auto' }}>Reminded</span>}
+              </div>
+            </div>
+          ) : (
             <div key={a.id} style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.5fr 1fr 1fr 0.8fr 1.2fr', padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center', background: overdue ? 'rgba(239,68,68,0.05)' : 'transparent', transition: 'background 0.15s' }}
               onMouseEnter={e => { if (!overdue) e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
               onMouseLeave={e => { if (!overdue) e.currentTarget.style.background = 'transparent'; }}>

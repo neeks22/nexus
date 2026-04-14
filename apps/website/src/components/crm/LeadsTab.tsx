@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import useIsMobile from './useIsMobile';
 
 interface Lead {
   phone: string;
@@ -58,6 +59,7 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
   const [showCreate, setShowCreate] = useState(false);
   const [newLead, setNewLead] = useState({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
   const [creating, setCreating] = useState(false);
+  const isMobile = useIsMobile();
 
   const fetchLeads = useCallback(async (): Promise<void> => {
     try {
@@ -101,9 +103,9 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
   };
 
   return (
-    <div style={{ padding: '24px', overflowY: 'auto', height: '100vh' }}>
+    <div style={{ padding: isMobile ? '16px' : '24px', overflowY: 'auto', height: isMobile ? 'calc(100vh - 116px)' : '100vh' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h1 style={{ color: '#f0f0f5', fontSize: '22px', fontWeight: 700, margin: 0 }}>Leads</h1>
+        <h1 style={{ color: '#f0f0f5', fontSize: isMobile ? '18px' : '22px', fontWeight: 700, margin: 0 }}>Leads</h1>
         <button onClick={() => setShowCreate(true)} style={{
           padding: '8px 18px', borderRadius: '8px', border: 'none',
           background: 'linear-gradient(135deg, #DC2626, #B91C1C)', color: '#fff',
@@ -228,31 +230,72 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
         overflow: 'hidden',
       }}>
         {/* Header */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1.5fr 1fr 1fr 0.8fr 1fr 0.8fr',
-          padding: '12px 16px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
-          color: '#8888a0',
-          fontSize: '12px',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-        }}>
-          <span>Name</span>
-          <span>Phone</span>
-          <span>Email</span>
-          <span>Status</span>
-          <span>Vehicle</span>
-          <span>Credit</span>
-        </div>
+        {!isMobile && (
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1.5fr 1fr 1fr 0.8fr 1fr 0.8fr',
+            padding: '12px 16px',
+            borderBottom: '1px solid rgba(255,255,255,0.08)',
+            color: '#8888a0',
+            fontSize: '12px',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}>
+            <span>Name</span>
+            <span>Phone</span>
+            <span>Email</span>
+            <span>Status</span>
+            <span>Vehicle</span>
+            <span>Credit</span>
+          </div>
+        )}
 
         {/* Rows */}
         {loading ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Loading...</div>
         ) : leads.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>No leads found</div>
+        ) : isMobile ? (
+          /* Mobile: card layout */
+          leads.map((lead) => (
+            <div
+              key={lead.phone}
+              onClick={() => onSelectLead(lead.phone)}
+              style={{
+                padding: '14px 16px',
+                borderBottom: '1px solid rgba(255,255,255,0.04)',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ color: '#f0f0f5', fontSize: '14px', fontWeight: 500 }}>
+                  {[lead.first_name, lead.last_name].filter(Boolean).join(' ') || 'Unknown'}
+                </span>
+                <span style={{
+                  background: STATUS_COLORS[lead.status] || '#666',
+                  color: '#fff',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                }}>
+                  {lead.status || 'new'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', color: '#8888a0', fontSize: '12px' }}>
+                <span>{lead.phone}</span>
+                {lead.vehicle_type && <span>{lead.vehicle_type}</span>}
+                {(() => {
+                  const parsed = parseCreditGrade(lead.credit_situation);
+                  return parsed ? <span style={{ color: GRADE_COLORS[parsed.grade] || '#ccc', fontWeight: 600 }}>{parsed.grade}</span> : null;
+                })()}
+              </div>
+            </div>
+          ))
         ) : (
+          /* Desktop: grid layout */
           leads.map((lead) => (
             <div
               key={lead.phone}

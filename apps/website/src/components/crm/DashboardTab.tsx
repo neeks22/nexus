@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import StatCard from './StatCard';
 import TodaySchedule from './TodaySchedule';
+import useIsMobile from './useIsMobile';
 import PipelineFunnel from './PipelineFunnel';
 
 interface Appointment {
@@ -81,10 +82,11 @@ export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps
 
   const d = data || EMPTY;
   const totalPipeline = Object.values(d.pipelineCounts).reduce((a, b) => a + b, 0);
+  const isMobile = useIsMobile();
 
   return (
-    <div style={{ padding: '24px', overflowY: 'auto', height: 'calc(100vh - 52px)' }}>
-      <h1 style={{ color: '#f0f0f5', fontSize: '22px', fontWeight: 700, margin: '0 0 24px' }}>Dashboard</h1>
+    <div style={{ padding: isMobile ? '16px' : '24px', overflowY: 'auto', height: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 52px)' }}>
+      <h1 style={{ color: '#f0f0f5', fontSize: isMobile ? '18px' : '22px', fontWeight: 700, margin: '0 0 24px' }}>Dashboard</h1>
 
       {/* KPI Row */}
       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '24px' }}>

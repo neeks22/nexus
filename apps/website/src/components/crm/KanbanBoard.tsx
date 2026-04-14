@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import useIsMobile from './useIsMobile';
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors, useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import LeadCard from './LeadCard';
@@ -42,6 +43,7 @@ function DroppableColumn({ id, children }: { id: string; children: React.ReactNo
 
 export default function KanbanBoard({ leads, onMoveLead, onSelectLead }: KanbanBoardProps): React.ReactElement {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const isMobile = useIsMobile();
 
   const leadsByStage: Record<string, Lead[]> = {};
   for (const stage of STAGES) {
@@ -73,10 +75,11 @@ export default function KanbanBoard({ leads, onMoveLead, onSelectLead }: KanbanB
     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <div style={{
         display: 'flex',
-        gap: '12px',
+        gap: isMobile ? '8px' : '12px',
         overflowX: 'auto',
-        padding: '0 0 16px',
-        height: 'calc(100vh - 100px)',
+        padding: isMobile ? '0 12px 16px' : '0 0 16px',
+        height: isMobile ? 'calc(100vh - 180px)' : 'calc(100vh - 100px)',
+        WebkitOverflowScrolling: 'touch',
       }}>
         {STAGES.map((stage) => {
           const stageLeads = leadsByStage[stage.id] || [];
@@ -85,8 +88,8 @@ export default function KanbanBoard({ leads, onMoveLead, onSelectLead }: KanbanB
               key={stage.id}
               id={stage.id}
               style={{
-                minWidth: '240px',
-                width: '240px',
+                minWidth: isMobile ? '180px' : '240px',
+                width: isMobile ? '180px' : '240px',
                 background: 'rgba(255,255,255,0.02)',
                 borderRadius: '12px',
                 border: '1px solid rgba(255,255,255,0.06)',

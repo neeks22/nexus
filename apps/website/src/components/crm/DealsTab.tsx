@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import useIsMobile from './useIsMobile';
 
 interface Deal {
   id: string;
@@ -41,6 +42,7 @@ const inputStyle: React.CSSProperties = {
 const fmt = (n: number | null): string => n != null ? `$${n.toLocaleString()}` : '—';
 
 export default function DealsTab({ tenant, onSelectLead }: DealsTabProps): React.ReactElement {
+  const isMobile = useIsMobile();
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
@@ -127,9 +129,9 @@ export default function DealsTab({ tenant, onSelectLead }: DealsTabProps): React
   });
 
   return (
-    <div style={{ padding: '24px', height: 'calc(100vh - 52px)', overflowY: 'auto' }}>
+    <div style={{ padding: isMobile ? '16px' : '24px', height: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 52px)', overflowY: 'auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-        <h1 style={{ color: '#f0f0f5', fontSize: '20px', fontWeight: 700, margin: 0 }}>Deals</h1>
+        <h1 style={{ color: '#f0f0f5', fontSize: isMobile ? '18px' : '20px', fontWeight: 700, margin: 0 }}>Deals</h1>
         <button onClick={() => setShowCreate(true)} style={{
           padding: '10px 20px', background: '#DC2626', color: '#fff', border: 'none',
           borderRadius: '8px', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
@@ -165,49 +167,77 @@ export default function DealsTab({ tenant, onSelectLead }: DealsTabProps): React
 
       {/* Table */}
       <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.7fr', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#8888a0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          <span>Lead</span><span>Vehicle</span><span>Sale Price</span><span>Down / Trade</span><span>Monthly</span><span>Lender</span><span>Status</span>
-        </div>
+        {!isMobile && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.7fr', padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', color: '#8888a0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <span>Lead</span><span>Vehicle</span><span>Sale Price</span><span>Down / Trade</span><span>Monthly</span><span>Lender</span><span>Status</span>
+          </div>
+        )}
         {deals.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#8888a0' }}>No deals found. Create your first deal above.</div>
-        ) : deals.map(d => (
-          <div key={d.id} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.7fr', padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center', transition: 'background 0.15s' }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
-            <div>
-              <span onClick={() => onSelectLead(d.lead_phone)} style={{ color: '#f0f0f5', cursor: 'pointer', fontWeight: 500, fontSize: '14px' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#DC2626')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#f0f0f5')}>
-                {d.lead_name || d.lead_phone}
-              </span>
-              {d.lead_name && <div style={{ color: '#8888a0', fontSize: '12px' }}>{d.lead_phone}</div>}
+        ) : isMobile ? (
+          deals.map(d => (
+            <div key={d.id} style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span onClick={() => onSelectLead(d.lead_phone)} style={{ color: '#f0f0f5', fontWeight: 500, fontSize: '14px', cursor: 'pointer' }}>
+                  {d.lead_name || d.lead_phone}
+                </span>
+                <select value={d.status} onChange={e => updateStatus(d.id, e.target.value)}
+                  style={{ background: 'transparent', border: `1px solid ${STATUS_COLORS[d.status] || '#666'}40`, borderRadius: '6px', color: STATUS_COLORS[d.status] || '#666', padding: '4px 8px', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
+                  <option value="negotiating">Negotiating</option>
+                  <option value="approved">Approved</option>
+                  <option value="funded">Funded</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="lost">Lost</option>
+                </select>
+              </div>
+              {d.vehicle_description && <div style={{ color: '#8888a0', fontSize: '12px', marginBottom: '4px' }}>{d.vehicle_description}</div>}
+              <div style={{ display: 'flex', gap: '12px', color: '#ccc', fontSize: '13px' }}>
+                <span style={{ fontWeight: 600, color: '#f0f0f5' }}>{fmt(d.sale_price)}</span>
+                {d.monthly_payment != null && <span>{fmt(d.monthly_payment)}/mo</span>}
+                {d.lender && <span>{d.lender}</span>}
+              </div>
             </div>
-            <span style={{ color: '#ccc', fontSize: '13px' }}>{d.vehicle_description || '—'}</span>
-            <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '14px' }}>{fmt(d.sale_price)}</span>
-            <div style={{ fontSize: '12px' }}>
-              {d.down_payment != null && <div style={{ color: '#ccc' }}>↓ {fmt(d.down_payment)}</div>}
-              {d.trade_in_value != null && <div style={{ color: '#8888a0' }}>↔ {fmt(d.trade_in_value)}</div>}
-              {d.down_payment == null && d.trade_in_value == null && <span style={{ color: '#666' }}>—</span>}
+          ))
+        ) : (
+          deals.map(d => (
+            <div key={d.id} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.2fr 0.8fr 0.8fr 0.8fr 0.8fr 0.7fr', padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.04)', alignItems: 'center', transition: 'background 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+              <div>
+                <span onClick={() => onSelectLead(d.lead_phone)} style={{ color: '#f0f0f5', cursor: 'pointer', fontWeight: 500, fontSize: '14px' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#DC2626')}
+                  onMouseLeave={e => (e.currentTarget.style.color = '#f0f0f5')}>
+                  {d.lead_name || d.lead_phone}
+                </span>
+                {d.lead_name && <div style={{ color: '#8888a0', fontSize: '12px' }}>{d.lead_phone}</div>}
+              </div>
+              <span style={{ color: '#ccc', fontSize: '13px' }}>{d.vehicle_description || '—'}</span>
+              <span style={{ color: '#f0f0f5', fontWeight: 600, fontSize: '14px' }}>{fmt(d.sale_price)}</span>
+              <div style={{ fontSize: '12px' }}>
+                {d.down_payment != null && <div style={{ color: '#ccc' }}>↓ {fmt(d.down_payment)}</div>}
+                {d.trade_in_value != null && <div style={{ color: '#8888a0' }}>↔ {fmt(d.trade_in_value)}</div>}
+                {d.down_payment == null && d.trade_in_value == null && <span style={{ color: '#666' }}>—</span>}
+              </div>
+              <div style={{ fontSize: '13px' }}>
+                {d.monthly_payment != null ? (
+                  <div>
+                    <span style={{ color: '#f0f0f5' }}>{fmt(d.monthly_payment)}</span>
+                    {d.term_months && <span style={{ color: '#8888a0' }}>/mo × {d.term_months}</span>}
+                  </div>
+                ) : <span style={{ color: '#666' }}>—</span>}
+              </div>
+              <span style={{ color: '#ccc', fontSize: '13px' }}>{d.lender || '—'}</span>
+              <select value={d.status} onChange={e => updateStatus(d.id, e.target.value)}
+                style={{ background: 'transparent', border: `1px solid ${STATUS_COLORS[d.status] || '#666'}40`, borderRadius: '6px', color: STATUS_COLORS[d.status] || '#666', padding: '4px 8px', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
+                <option value="negotiating">Negotiating</option>
+                <option value="approved">Approved</option>
+                <option value="funded">Funded</option>
+                <option value="delivered">Delivered</option>
+                <option value="lost">Lost</option>
+              </select>
             </div>
-            <div style={{ fontSize: '13px' }}>
-              {d.monthly_payment != null ? (
-                <div>
-                  <span style={{ color: '#f0f0f5' }}>{fmt(d.monthly_payment)}</span>
-                  {d.term_months && <span style={{ color: '#8888a0' }}>/mo × {d.term_months}</span>}
-                </div>
-              ) : <span style={{ color: '#666' }}>—</span>}
-            </div>
-            <span style={{ color: '#ccc', fontSize: '13px' }}>{d.lender || '—'}</span>
-            <select value={d.status} onChange={e => updateStatus(d.id, e.target.value)}
-              style={{ background: 'transparent', border: `1px solid ${STATUS_COLORS[d.status] || '#666'}40`, borderRadius: '6px', color: STATUS_COLORS[d.status] || '#666', padding: '4px 8px', fontSize: '12px', cursor: 'pointer', outline: 'none' }}>
-              <option value="negotiating">Negotiating</option>
-              <option value="approved">Approved</option>
-              <option value="funded">Funded</option>
-              <option value="delivered">Delivered</option>
-              <option value="lost">Lost</option>
-            </select>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {/* Create Modal */}
