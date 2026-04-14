@@ -42,6 +42,32 @@
   --red: #ef4444;
   --red-dim: rgba(239,68,68,0.1);
 
+  /* CRM — dark workspace palette */
+  --crm-bg: #0e0e1a;
+  --crm-bg-panel: #12121f;
+  --crm-bg-card: rgba(255,255,255,0.03);
+  --crm-bg-card-hover: rgba(255,255,255,0.04);
+  --crm-bg-input: rgba(255,255,255,0.05);
+  --crm-bg-modal: #1a1a2e;
+  --crm-border: rgba(255,255,255,0.06);
+  --crm-border-strong: rgba(255,255,255,0.1);
+  --crm-text: #f0f0f5;
+  --crm-text-secondary: #ccc;
+  --crm-text-muted: #8888a0;
+  --crm-text-dim: #666;
+  --crm-brand: #DC2626;
+  --crm-brand-dark: #B91C1C;
+  --crm-brand-gradient: linear-gradient(135deg, #DC2626, #B91C1C);
+  --crm-green: #10b981;
+  --crm-green-bright: #22c55e;
+  --crm-amber: #f59e0b;
+  --crm-cyan: #06b6d4;
+  --crm-purple: #8b5cf6;
+  --crm-red: #ef4444;
+  --crm-radius: 8px;
+  --crm-radius-lg: 12px;
+  --crm-radius-xl: 16px;
+
   /* Typography */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;

@@ -1,7 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import ActivityTimeline from './ActivityTimeline';
+import {
+  useLeadDetail, useSendSMS, useSendEmail, useUpdateLeadStatus,
+  usePostLeadStatus, useDeleteLeadData,
+} from '@/hooks/use-lead-detail';
+import { GRADE_COLORS } from './tokens';
 
 interface LeadDetailPanelProps {
   tenant: string;
@@ -9,42 +14,26 @@ interface LeadDetailPanelProps {
   onClose: () => void;
 }
 
-interface LeadData {
-  phone: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  status: string;
-  vehicle_type: string;
-  credit_situation: string;
-  budget: string;
-  created_at: string;
-}
-
-interface TimelineEntry {
-  id: string;
-  time: string;
-  rawTime: string;
-  role: string;
-  channel: string;
-  content: string;
-}
-
 const STATUSES = ['new', 'contacted', 'appointment', 'showed', 'credit_app', 'approved', 'delivered', 'lost'];
 
 export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPanelProps): React.ReactElement {
-  const [lead, setLead] = useState<LeadData | null>(null);
-  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { lead, timeline, isLoading: loading } = useLeadDetail(tenant, phone);
   const [activeAction, setActiveAction] = useState<'none' | 'sms' | 'email'>('none');
   const [messageText, setMessageText] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
   const [emailBody, setEmailBody] = useState('');
-  const [sending, setSending] = useState(false);
   const [sendSuccess, setSendSuccess] = useState('');
-  const [statusUpdating, setStatusUpdating] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const smsMutation = useSendSMS(tenant);
+  const emailMutation = useSendEmail(tenant);
+  const statusMutation = useUpdateLeadStatus(tenant);
+  const postStatusMutation = usePostLeadStatus(tenant);
+  const deleteMutation = useDeleteLeadData(tenant);
+
+  const sending = smsMutation.isPending || emailMutation.isPending;
+  const statusUpdating = statusMutation.isPending;
 
   const showSuccess = useCallback((msg: string) => {
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
@@ -52,144 +41,31 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
     successTimerRef.current = setTimeout(() => setSendSuccess(''), 3000);
   }, []);
 
-  useEffect(() => {
-    fetchData();
-    return () => {
-      if (successTimerRef.current) clearTimeout(successTimerRef.current);
-    };
-  }, [tenant, phone]);
-
-  async function fetchData(): Promise<void> {
-    try {
-      const SUPABASE_URL = '/api/dashboard'; // reuse to get supabase URL indirectly
-      const [leadRes, timelineRes] = await Promise.all([
-        fetch(`/api/leads?tenant=${tenant}&search=${encodeURIComponent(phone)}&limit=1`),
-        fetch(`/api/messages?tenant=${tenant}&phone=${encodeURIComponent(phone)}`),
-      ]);
-
-      if (leadRes.ok) {
-        const data = await leadRes.json();
-        if (data.leads?.length > 0) setLead(data.leads[0]);
-      }
-
-      // SMS messages
-      const smsEntries: TimelineEntry[] = [];
-      if (timelineRes.ok) {
-        const data = await timelineRes.json();
-        const conv = data.conversation;
-        if (conv?.messages) {
-          conv.messages.forEach((m: { sid: string; dateSent: string; direction: string; body: string }, i: number) => {
-            smsEntries.push({
-              id: m.sid || `sms-${i}`,
-              time: new Date(m.dateSent).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
-              rawTime: m.dateSent,
-              role: m.direction === 'inbound' ? 'customer' : 'ai',
-              channel: 'sms',
-              content: m.body,
-            });
-          });
-        }
-      }
-
-      // CRM activity entries (credit routing, notes, etc.) from Supabase
-      const crmEntries: TimelineEntry[] = [];
-      try {
-        const crmRes = await fetch(`/api/leads?tenant=${tenant}&phone=${encodeURIComponent(phone)}&activity=true`);
-        if (crmRes.ok) {
-          const crmData = await crmRes.json();
-          if (crmData.activity) {
-            crmData.activity.forEach((a: { id: string; created_at: string; role: string; channel: string; content: string }, i: number) => {
-              crmEntries.push({
-                id: a.id || `crm-${i}`,
-                time: new Date(a.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
-                rawTime: a.created_at,
-                role: a.role || 'system',
-                channel: a.channel || 'crm',
-                content: a.content,
-              });
-            });
-          }
-        }
-      } catch (err) { console.error('[LeadDetail] Activity fetch error:', err instanceof Error ? err.message : 'unknown'); }
-
-      // Merge and sort by time (newest first for display, but timeline shows oldest first)
-      const allEntries = [...smsEntries, ...crmEntries].sort((a, b) => {
-        const ta = new Date(a.rawTime).getTime() || 0;
-        const tb = new Date(b.rawTime).getTime() || 0;
-        return ta - tb;
-      });
-
-      setTimeline(allEntries);
-    } catch (err) {
-      console.error('Lead detail fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   async function sendSMS(): Promise<void> {
     if (!messageText.trim() || sending) return;
-    setSending(true);
     try {
-      const res = await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: phone, body: messageText.trim(), tenant }),
-      });
-      if (res.ok) {
-        showSuccess('SMS sent!');
-        setMessageText('');
-        setActiveAction('none');
-        fetchData();
-      } else {
-        alert('Failed to send SMS');
-      }
+      await smsMutation.mutateAsync({ to: phone, body: messageText.trim() });
+      showSuccess('SMS sent!');
+      setMessageText('');
+      setActiveAction('none');
     } catch (err) { console.error('[LeadDetail] SMS send error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to send SMS'); }
-    finally { setSending(false); }
   }
 
   async function sendEmail(): Promise<void> {
     if (!emailBody.trim() || !lead?.email || sending) return;
-    setSending(true);
     try {
-      const res = await fetch('/api/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channel: 'email',
-          email: lead.email,
-          subject: emailSubject || 'Following up',
-          body: emailBody.trim(),
-          tenant,
-        }),
-      });
-      if (res.ok) {
-        showSuccess('Email sent!');
-        setEmailSubject('');
-        setEmailBody('');
-        setActiveAction('none');
-        fetchData();
-      } else {
-        const data = await res.json().catch(() => ({ error: 'Unknown error' }));
-        alert(`Failed to send email: ${data.error || 'Server error'}`);
-      }
+      await emailMutation.mutateAsync({ email: lead.email, subject: emailSubject || 'Following up', body: emailBody.trim() });
+      showSuccess('Email sent!');
+      setEmailSubject('');
+      setEmailBody('');
+      setActiveAction('none');
     } catch (err) { console.error('[LeadDetail] Email send error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to send email'); }
-    finally { setSending(false); }
   }
 
   async function updateStatus(newStatus: string): Promise<void> {
-    setStatusUpdating(true);
     try {
-      const res = await fetch('/api/leads', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, status: newStatus, tenant }),
-      });
-      if (res.ok && lead) {
-        setLead({ ...lead, status: newStatus });
-      }
+      await statusMutation.mutateAsync({ phone, status: newStatus });
     } catch (err) { console.error('[LeadDetail] Status update error:', err instanceof Error ? err.message : 'unknown'); }
-    finally { setStatusUpdating(false); }
   }
 
   // Check if agent is paused for this lead (HOT_PAUSED or manually AGENT_PAUSED)
@@ -204,21 +80,14 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
 
   async function pauseAgent(): Promise<void> {
     try {
-      const promises: Promise<Response>[] = [
-        fetch('/api/leads', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenant, phone, type: 'status', content: 'AGENT_PAUSED' }),
-        }),
+      const promises: Promise<unknown>[] = [
+        postStatusMutation.mutateAsync({ phone, type: 'status', content: 'AGENT_PAUSED' }),
       ];
       if (lead?.email) {
-        promises.push(fetch('/api/leads', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenant, phone: lead.email, type: 'status', content: 'AGENT_PAUSED' }),
-        }));
+        promises.push(postStatusMutation.mutateAsync({ phone: lead.email, type: 'status', content: 'AGENT_PAUSED' }));
       }
       await Promise.all(promises);
       showSuccess('Agent paused — manual mode');
-      fetchData();
     } catch (err) {
       console.error('[LeadDetail] Pause Agent error:', err instanceof Error ? err.message : 'unknown');
     }
@@ -226,27 +95,15 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
 
   async function resumeAgent(): Promise<void> {
     try {
-      const promises: Promise<Response>[] = [
-        fetch('/api/leads', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenant, phone, type: 'status', content: 'AI_RESUMED' }),
-        }),
-        // Reset lead status so the SMS processor's funnel check passes
-        fetch('/api/leads', {
-          method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenant, phone, status: 'contacted' }),
-        }),
+      const promises: Promise<unknown>[] = [
+        postStatusMutation.mutateAsync({ phone, type: 'status', content: 'AI_RESUMED' }),
+        statusMutation.mutateAsync({ phone, status: 'contacted' }),
       ];
       if (lead?.email) {
-        promises.push(fetch('/api/leads', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenant, phone: lead.email, type: 'status', content: 'AI_RESUMED' }),
-        }));
+        promises.push(postStatusMutation.mutateAsync({ phone: lead.email, type: 'status', content: 'AI_RESUMED' }));
       }
       await Promise.all(promises);
-      if (lead) setLead({ ...lead, status: 'contacted' });
       showSuccess('Agent resumed — auto-replies are back on');
-      fetchData();
     } catch (err) {
       console.error('[LeadDetail] Resume Agent error:', err instanceof Error ? err.message : 'unknown');
     }
@@ -464,17 +321,9 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
               onClick={async () => {
                 if (!window.confirm(`Permanently delete ALL data for ${name} (${phone})? This includes all messages, credit routing results, and lead records. This cannot be undone.`)) return;
                 try {
-                  const res = await fetch('/api/leads', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ tenant, phone }),
-                  });
-                  if (res.ok) {
-                    alert('All customer data has been permanently deleted.');
-                    onClose();
-                  } else {
-                    alert('Failed to delete data.');
-                  }
+                  await deleteMutation.mutateAsync(phone);
+                  alert('All customer data has been permanently deleted.');
+                  onClose();
                 } catch (err) { console.error('[LeadDetail] Delete error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to delete data.'); }
               }}
               style={{
@@ -510,13 +359,6 @@ function ActionButton({ label, color, active, disabled, onClick }: {
   );
 }
 
-const GRADE_COLORS: Record<string, string> = {
-  'A+': '#10b981', 'A': '#10b981', 'A-': '#34d399',
-  'B+': '#22c55e', 'B': '#22c55e', 'B-': '#86efac',
-  'C+': '#f59e0b', 'C': '#f59e0b', 'C-': '#fbbf24',
-  'D+': '#f97316', 'D': '#f97316', 'D-': '#fb923c',
-  'F': '#ef4444',
-};
 
 function CreditGradeCard({ creditSituation }: { creditSituation: string }): React.ReactElement {
   if (!creditSituation) {

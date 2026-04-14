@@ -1,21 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import useIsMobile from './useIsMobile';
-
-interface Appointment {
-  id: string;
-  lead_phone: string;
-  lead_name: string | null;
-  appointment_type: string;
-  status: string;
-  scheduled_at: string;
-  assigned_to: string | null;
-  notes: string | null;
-  reminder_sent: boolean;
-  vehicle_id: string | null;
-  created_at: string;
-}
+import { useAppointments, useCreateAppointment, useUpdateAppointment, useSendReminder, type Appointment } from '@/hooks/use-appointments';
+import { APPOINTMENT_STATUS_COLORS as STATUS_COLORS } from './tokens';
+import { inputStyle } from './styles';
 
 interface AppointmentsTabProps {
   tenant: string;
@@ -27,20 +16,6 @@ const TYPE_LABELS: Record<string, string> = {
   financing: 'Financing',
   trade_appraisal: 'Trade Appraisal',
   general: 'General',
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  scheduled: '#f59e0b',
-  confirmed: '#10b981',
-  completed: '#06b6d4',
-  no_show: '#ef4444',
-  cancelled: '#666',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', borderRadius: '8px',
-  border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
-  color: '#f0f0f5', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const,
 };
 
 function formatDateTime(iso: string): { date: string; time: string; full: string } {
@@ -57,81 +32,48 @@ function isOverdue(appt: Appointment): boolean {
 
 export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTabProps): React.ReactElement {
   const isMobile = useIsMobile();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<'today' | 'upcoming' | 'all'>('upcoming');
   const [showCreate, setShowCreate] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [sendingReminder, setSendingReminder] = useState<string | null>(null);
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
   const [newAppt, setNewAppt] = useState({ lead_phone: '', lead_name: '', appointment_type: 'general', scheduled_at: '', assigned_to: '', notes: '' });
 
-  const fetchAppointments = useCallback(async (): Promise<void> => {
-    try {
-      const res = await fetch(`/api/appointments?tenant=${tenant}&view=${view}`);
-      if (res.ok) {
-        const data = await res.json();
-        setAppointments(data.appointments || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch appointments:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [tenant, view]);
-
-  useEffect(() => { setLoading(true); fetchAppointments(); }, [fetchAppointments]);
+  const { data: appointments = [], isLoading } = useAppointments(tenant, { view });
+  const createMutation = useCreateAppointment(tenant);
+  const updateMutation = useUpdateAppointment(tenant);
+  const reminderMutation = useSendReminder(tenant);
 
   const handleCreate = async (): Promise<void> => {
     if (!newAppt.lead_phone || !newAppt.scheduled_at) return;
-    setCreating(true);
     try {
-      const res = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, ...newAppt }),
-      });
-      if (res.ok) {
-        setShowCreate(false);
-        setNewAppt({ lead_phone: '', lead_name: '', appointment_type: 'general', scheduled_at: '', assigned_to: '', notes: '' });
-        fetchAppointments();
-      }
+      await createMutation.mutateAsync(newAppt);
+      setShowCreate(false);
+      setNewAppt({ lead_phone: '', lead_name: '', appointment_type: 'general', scheduled_at: '', assigned_to: '', notes: '' });
     } catch (err) {
       console.error('Failed to create appointment:', err);
     }
-    setCreating(false);
   };
 
   const updateStatus = async (id: string, status: string): Promise<void> => {
     try {
-      await fetch('/api/appointments', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, id, status }),
-      });
-      setAppointments(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+      await updateMutation.mutateAsync({ id, status });
     } catch (err) {
       console.error('Failed to update appointment:', err);
     }
   };
 
   const sendReminder = async (id: string): Promise<void> => {
-    setSendingReminder(id);
+    setSendingReminderId(id);
     try {
-      const res = await fetch('/api/appointments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, action: 'send_reminder', appointment_id: id }),
-      });
-      if (res.ok) {
-        setAppointments(prev => prev.map(a => a.id === id ? { ...a, reminder_sent: true } : a));
-      }
+      await reminderMutation.mutateAsync(id);
     } catch (err) {
       console.error('Failed to send reminder:', err);
     }
-    setSendingReminder(null);
+    setSendingReminderId(null);
   };
 
-  if (loading) {
+  const creating = createMutation.isPending;
+
+  if (isLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading appointments...</div>;
   }
 
@@ -201,9 +143,9 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
                 <span style={{ color: overdue ? '#ef4444' : '#ccc', fontWeight: 500 }}>{date} {time}{overdue ? ' OVERDUE' : ''}</span>
                 <span>{TYPE_LABELS[a.appointment_type] || a.appointment_type}</span>
                 {!a.reminder_sent && (a.status === 'scheduled' || a.status === 'confirmed') && (
-                  <button onClick={() => sendReminder(a.id)} disabled={sendingReminder === a.id}
+                  <button onClick={() => sendReminder(a.id)} disabled={sendingReminderId === a.id}
                     style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '11px', cursor: 'pointer', marginLeft: 'auto' }}>
-                    {sendingReminder === a.id ? '...' : 'Remind'}
+                    {sendingReminderId === a.id ? '...' : 'Remind'}
                   </button>
                 )}
                 {a.reminder_sent && <span style={{ color: '#10b981', fontSize: '11px', marginLeft: 'auto' }}>Reminded</span>}
@@ -237,9 +179,9 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
               </select>
               <div style={{ display: 'flex', gap: '6px' }}>
                 {!a.reminder_sent && (a.status === 'scheduled' || a.status === 'confirmed') && (
-                  <button onClick={() => sendReminder(a.id)} disabled={sendingReminder === a.id}
-                    style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '11px', cursor: 'pointer', opacity: sendingReminder === a.id ? 0.5 : 1 }}>
-                    {sendingReminder === a.id ? 'Sending...' : 'Remind'}
+                  <button onClick={() => sendReminder(a.id)} disabled={sendingReminderId === a.id}
+                    style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#ccc', fontSize: '11px', cursor: 'pointer', opacity: sendingReminderId === a.id ? 0.5 : 1 }}>
+                    {sendingReminderId === a.id ? 'Sending...' : 'Remind'}
                   </button>
                 )}
                 {a.reminder_sent && <span style={{ color: '#10b981', fontSize: '11px', padding: '4px 0' }}>Reminded</span>}

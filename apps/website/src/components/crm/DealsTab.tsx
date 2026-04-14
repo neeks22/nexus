@@ -1,117 +1,58 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import useIsMobile from './useIsMobile';
-
-interface Deal {
-  id: string;
-  lead_phone: string;
-  lead_name: string | null;
-  vehicle_id: string | null;
-  vehicle_description: string | null;
-  sale_price: number | null;
-  trade_in_value: number | null;
-  down_payment: number | null;
-  monthly_payment: number | null;
-  term_months: number | null;
-  lender: string | null;
-  status: string;
-  notes: string | null;
-  created_at: string;
-}
+import { useDeals, useCreateDeal, useUpdateDeal } from '@/hooks/use-deals';
+import { DEAL_STATUS_COLORS as STATUS_COLORS } from './tokens';
+import { inputStyle } from './styles';
 
 interface DealsTabProps {
   tenant: string;
   onSelectLead: (phone: string) => void;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  negotiating: '#f59e0b',
-  approved: '#10b981',
-  funded: '#06b6d4',
-  delivered: '#22c55e',
-  lost: '#ef4444',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', borderRadius: '8px',
-  border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
-  color: '#f0f0f5', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const,
-};
-
 const fmt = (n: number | null): string => n != null ? `$${n.toLocaleString()}` : '—';
 
 export default function DealsTab({ tenant, onSelectLead }: DealsTabProps): React.ReactElement {
   const isMobile = useIsMobile();
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [newDeal, setNewDeal] = useState({
     lead_phone: '', lead_name: '', vehicle_description: '',
     sale_price: '', trade_in_value: '', down_payment: '',
     monthly_payment: '', term_months: '', lender: '', notes: '',
   });
 
-  const fetchDeals = useCallback(async (): Promise<void> => {
-    try {
-      let url = `/api/deals?tenant=${tenant}`;
-      if (filterStatus) url += `&status=${filterStatus}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setDeals(data.deals || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch deals:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [tenant, filterStatus]);
-
-  useEffect(() => { fetchDeals(); }, [fetchDeals]);
+  const { data: deals = [], isLoading: loading } = useDeals(tenant, { status: filterStatus });
+  const createMutation = useCreateDeal(tenant);
+  const updateMutation = useUpdateDeal(tenant);
+  const creating = createMutation.isPending;
 
   const handleCreate = async (): Promise<void> => {
     if (!newDeal.lead_phone) return;
-    setCreating(true);
     try {
-      const res = await fetch('/api/deals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant,
-          lead_phone: newDeal.lead_phone,
-          lead_name: newDeal.lead_name || undefined,
-          vehicle_description: newDeal.vehicle_description || undefined,
-          sale_price: newDeal.sale_price || undefined,
-          trade_in_value: newDeal.trade_in_value || undefined,
-          down_payment: newDeal.down_payment || undefined,
-          monthly_payment: newDeal.monthly_payment || undefined,
-          term_months: newDeal.term_months || undefined,
-          lender: newDeal.lender || undefined,
-          notes: newDeal.notes || undefined,
-        }),
+      await createMutation.mutateAsync({
+        lead_phone: newDeal.lead_phone,
+        lead_name: newDeal.lead_name || undefined,
+        vehicle_description: newDeal.vehicle_description || undefined,
+        sale_price: newDeal.sale_price || undefined,
+        trade_in_value: newDeal.trade_in_value || undefined,
+        down_payment: newDeal.down_payment || undefined,
+        monthly_payment: newDeal.monthly_payment || undefined,
+        term_months: newDeal.term_months || undefined,
+        lender: newDeal.lender || undefined,
+        notes: newDeal.notes || undefined,
       });
-      if (res.ok) {
-        setShowCreate(false);
-        setNewDeal({ lead_phone: '', lead_name: '', vehicle_description: '', sale_price: '', trade_in_value: '', down_payment: '', monthly_payment: '', term_months: '', lender: '', notes: '' });
-        fetchDeals();
-      }
+      setShowCreate(false);
+      setNewDeal({ lead_phone: '', lead_name: '', vehicle_description: '', sale_price: '', trade_in_value: '', down_payment: '', monthly_payment: '', term_months: '', lender: '', notes: '' });
     } catch (err) {
       console.error('Failed to create deal:', err);
     }
-    setCreating(false);
   };
 
   const updateStatus = async (id: string, status: string): Promise<void> => {
     try {
-      await fetch('/api/deals', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, id, status }),
-      });
-      setDeals(prev => prev.map(d => d.id === id ? { ...d, status } : d));
+      await updateMutation.mutateAsync({ id, status });
     } catch (err) {
       console.error('Failed to update deal:', err);
     }

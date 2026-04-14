@@ -1,16 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import KanbanBoard from './KanbanBoard';
-
-interface Lead {
-  phone: string;
-  first_name: string;
-  last_name: string;
-  status: string;
-  vehicle_type: string;
-  created_at: string;
-}
+import { useLeads, useUpdateLeadStatus } from '@/hooks/use-leads';
 
 interface PipelineTabProps {
   tenant: string;
@@ -18,46 +9,18 @@ interface PipelineTabProps {
 }
 
 export default function PipelineTab({ tenant, onSelectLead }: PipelineTabProps): React.ReactElement {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchLeads = useCallback(async (): Promise<void> => {
-    try {
-      const res = await fetch(`/api/leads?tenant=${tenant}&limit=500`);
-      if (res.ok) {
-        const data = await res.json();
-        setLeads(data.leads || []);
-      }
-    } catch (err) {
-      console.error('Pipeline fetch error:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [tenant]);
-
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+  const { data: leads = [], isLoading } = useLeads(tenant, { search: '', status: '' });
+  const updateStatus = useUpdateLeadStatus(tenant);
 
   const handleMoveLead = async (phone: string, newStatus: string): Promise<void> => {
-    // Optimistic update
-    setLeads((prev) => prev.map((l) => (l.phone === phone ? { ...l, status: newStatus } : l)));
-
-    // Persist
     try {
-      const res = await fetch('/api/leads', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, status: newStatus, tenant }),
-      });
-      if (!res.ok) throw new Error('Failed to update lead status');
+      await updateStatus.mutateAsync({ phone, status: newStatus });
     } catch (err) {
       console.error('Failed to update lead status:', err);
-      fetchLeads(); // Revert on failure
     }
   };
 
-  if (loading) {
+  if (isLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading pipeline...</div>;
   }
 

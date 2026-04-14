@@ -1,51 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import StatCard from './StatCard';
 import TodaySchedule from './TodaySchedule';
 import useIsMobile from './useIsMobile';
 import PipelineFunnel from './PipelineFunnel';
-
-interface Appointment {
-  id: string;
-  leadPhone: string;
-  leadName: string | null;
-  type: string;
-  scheduledAt: string;
-  status: string;
-  reminderSent: boolean;
-}
-
-interface ActiveDeal {
-  id: string;
-  leadPhone: string;
-  leadName: string | null;
-  vehicle: string | null;
-  salePrice: number | null;
-  status: string;
-}
-
-interface DashboardData {
-  leadsToday: number;
-  messagesToday: number;
-  pipelineCounts: Record<string, number>;
-  hotLeads: { phone: string; name: string; status: string }[];
-  recentActivity: { time: string; type: string; content: string; phone: string }[];
-  todayAppointments: Appointment[];
-  activeDeals: { deals: ActiveDeal[]; totalValue: number; byStatus: Record<string, number> };
-  monthlyDeals: { count: number; totalValue: number; funded: number; delivered: number };
-}
+import { useDashboard, type DashboardData } from '@/hooks/use-dashboard';
+import { DEAL_STATUS_COLORS } from './tokens';
 
 interface DashboardTabProps {
   tenant: string;
   onSelectLead: (phone: string) => void;
 }
-
-const DEAL_STATUS_COLORS: Record<string, string> = {
-  negotiating: '#f59e0b',
-  approved: '#10b981',
-  funded: '#06b6d4',
-};
 
 const fmt = (n: number): string => `$${n.toLocaleString()}`;
 
@@ -57,27 +22,10 @@ const EMPTY: DashboardData = {
 };
 
 export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps): React.ReactElement {
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading } = useDashboard(tenant);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    async function fetchDashboard(): Promise<void> {
-      try {
-        const res = await fetch(`/api/dashboard?tenant=${tenant}`);
-        if (res.ok) setData(await res.json());
-      } catch (err) {
-        console.error('Dashboard fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchDashboard();
-    const interval = setInterval(fetchDashboard, 30000);
-    return () => clearInterval(interval);
-  }, [tenant]);
-
-  if (loading) {
+  if (isLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading dashboard...</div>;
   }
 

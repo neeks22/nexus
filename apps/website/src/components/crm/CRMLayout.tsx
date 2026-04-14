@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import dynamic from 'next/dynamic';
+import CRMQueryProvider from '@/lib/query-provider';
 import ProfileDropdown from './ProfileDropdown';
 import useIsMobile from './useIsMobile';
 
@@ -119,6 +120,7 @@ export default function CRMLayout({
   const contentPaddingBottom = isMobile ? '64px' : '0';
 
   return (
+    <CRMQueryProvider>
     <div style={{ minHeight: '100vh', background: '#0a0a0f', fontFamily: 'Inter, system-ui, sans-serif' }}>
       {/* Red accent line at top */}
       <div style={{ height: '3px', background: `linear-gradient(90deg, ${theme.primary}, ${theme.primaryHover})` }} />
@@ -358,5 +360,6 @@ export default function CRMLayout({
         </>
       )}
     </div>
+    </CRMQueryProvider>
   );
 }

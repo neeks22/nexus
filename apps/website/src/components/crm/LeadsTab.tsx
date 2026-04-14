@@ -1,43 +1,15 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import useIsMobile from './useIsMobile';
-
-interface Lead {
-  phone: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  status: string;
-  vehicle_type: string;
-  credit_situation: string;
-  budget: string;
-  created_at: string;
-}
+import { useLeads, useCreateLead, type Lead } from '@/hooks/use-leads';
+import { colors, STATUS_COLORS, GRADE_COLORS } from './tokens';
+import { inputStyle as sharedInputStyle } from './styles';
 
 interface LeadsTabProps {
   tenant: string;
   onSelectLead: (phone: string) => void;
 }
-
-const STATUS_COLORS: Record<string, string> = {
-  new: '#DC2626',
-  contacted: '#f59e0b',
-  appointment: '#10b981',
-  showed: '#06b6d4',
-  credit_app: '#B91C1C',
-  approved: '#22c55e',
-  delivered: '#10b981',
-  lost: '#ef4444',
-};
-
-const GRADE_COLORS: Record<string, string> = {
-  'A+': '#10b981', 'A': '#10b981', 'A-': '#34d399',
-  'B+': '#22c55e', 'B': '#22c55e', 'B-': '#86efac',
-  'C+': '#f59e0b', 'C': '#f59e0b', 'C-': '#fbbf24',
-  'D+': '#f97316', 'D': '#f97316', 'D-': '#fb923c',
-  'F': '#ef4444',
-};
 
 function parseCreditGrade(credit: string): { grade: string; detail: string } | null {
   if (!credit) return null;
@@ -52,55 +24,27 @@ function parseCreditGrade(credit: string): { grade: string; detail: string } | n
 }
 
 export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React.ReactElement {
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [newLead, setNewLead] = useState({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
-  const [creating, setCreating] = useState(false);
   const isMobile = useIsMobile();
 
-  const fetchLeads = useCallback(async (): Promise<void> => {
-    try {
-      let url = `/api/leads?tenant=${tenant}`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-      if (filterStatus) url += `&status=${filterStatus}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setLeads(data.leads || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch leads:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [tenant, search, filterStatus]);
-
-  useEffect(() => {
-    fetchLeads();
-  }, [fetchLeads]);
+  const { data: leads = [], isLoading: loading, refetch } = useLeads(tenant, { search, status: filterStatus });
+  const createMutation = useCreateLead(tenant);
 
   const createLead = async (): Promise<void> => {
     if (!newLead.first_name || !newLead.phone) return;
-    setCreating(true);
     try {
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, type: 'create_lead', content: JSON.stringify(newLead), phone: newLead.phone }),
-      });
-      if (res.ok) {
-        setShowCreate(false);
-        setNewLead({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
-        fetchLeads();
-      } else {
-        alert('Failed to create lead');
-      }
-    } catch { alert('Failed to create lead'); }
-    finally { setCreating(false); }
+      await createMutation.mutateAsync(newLead);
+      setShowCreate(false);
+      setNewLead({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
+    } catch {
+      alert('Failed to create lead');
+    }
   };
+
+  const creating = createMutation.isPending;
 
   return (
     <div style={{ padding: isMobile ? '16px' : '24px', overflowY: 'auto', height: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 52px)' }}>
@@ -172,7 +116,7 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
           placeholder="Search by name, phone, email..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && fetchLeads()}
+          onKeyDown={(e) => e.key === 'Enter' && refetch()}
           style={{
             flex: '1 1 250px',
             padding: '10px 14px',
@@ -208,7 +152,7 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
           <option value="lost">Lost</option>
         </select>
         <button
-          onClick={fetchLeads}
+          onClick={() => refetch()}
           style={{
             padding: '10px 20px',
             borderRadius: '8px',
@@ -359,8 +303,4 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', borderRadius: '8px',
-  border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
-  color: '#f0f0f5', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const,
-};
+const inputStyle = sharedInputStyle;

@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, CartesianGrid,
   FunnelChart, Funnel, LabelList,
 } from 'recharts';
+import { apiGet } from '@/lib/api';
 import useIsMobile from './useIsMobile';
+import { tooltipStyle as sharedTooltipStyle } from './styles';
 
 interface ReportsTabProps {
   tenant: string;
@@ -24,6 +27,19 @@ interface TranscriptRow {
   role: string;
   channel: string;
   created_at: string;
+}
+
+interface DashboardResponse {
+  pipelineCounts?: Record<string, number>;
+}
+
+interface LeadsResponse {
+  leads?: LeadRow[];
+}
+
+interface TranscriptsResponse {
+  transcripts?: TranscriptRow[];
+  leads?: TranscriptRow[];
 }
 
 const COLORS = ['#DC2626', '#f59e0b', '#10b981', '#06b6d4', '#8b5cf6', '#22c55e', '#ef4444', '#666'];
@@ -61,111 +77,90 @@ function computeAvgResponseTime(transcripts: TranscriptRow[]): number {
 }
 
 export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElement {
-  const [pipelineData, setPipelineData] = useState<{ name: string; count: number }[]>([]);
-  const [funnelData, setFunnelData] = useState<{ name: string; value: number; fill: string }[]>([]);
-  const [trendData, setTrendData] = useState<{ date: string; leads: number }[]>([]);
-  const [sourceData, setSourceData] = useState<{ name: string; count: number }[]>([]);
-  const [stats, setStats] = useState({ avgResponseSec: 0, totalLeads: 0, conversionRate: 0 });
-  const [loading, setLoading] = useState(true);
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    async function fetchData(): Promise<void> {
-      try {
-        const [dashRes, leadsRes, transcriptsRes] = await Promise.all([
-          fetch(`/api/dashboard?tenant=${tenant}`),
-          fetch(`/api/leads?tenant=${tenant}&limit=200`),
-          fetch(`/api/leads?tenant=${tenant}&mode=activity&limit=500`),
-        ]);
+  const { data: dashData, isLoading: dashLoading } = useQuery({
+    queryKey: ['reports-dashboard', tenant],
+    queryFn: () => apiGet<DashboardResponse>('/api/dashboard', { tenant }),
+  });
 
-        // Pipeline data from dashboard
-        if (dashRes.ok) {
-          const data = await dashRes.json();
-          const counts = data.pipelineCounts || {};
-          setPipelineData(STAGES.map((s) => ({
-            name: s.replace('_', ' ').replace(/^\w/, (c: string) => c.toUpperCase()),
-            count: counts[s] || 0,
-          })));
+  const { data: leadsData, isLoading: leadsLoading } = useQuery({
+    queryKey: ['reports-leads', tenant],
+    queryFn: () => apiGet<LeadsResponse>('/api/leads', { tenant, limit: '200' }),
+  });
 
-          // Funnel: suffix sum — each stage = leads at this stage or beyond
-          const funnelStages = ['new', 'contacted', 'appointment', 'showed', 'credit_app', 'approved', 'delivered'];
-          const funnelValues = funnelStages.map((_, i) =>
-            funnelStages.slice(i).reduce((sum, s) => sum + (counts[s] || 0), 0)
-          );
-          setFunnelData(funnelStages.map((s, i) => ({
-            name: s.replace('_', ' ').replace(/^\w/, (c: string) => c.toUpperCase()),
-            value: funnelValues[i] || 0,
-            fill: COLORS[i % COLORS.length],
-          })));
+  const { data: transcriptsData, isLoading: transcriptsLoading } = useQuery({
+    queryKey: ['reports-transcripts', tenant],
+    queryFn: () => apiGet<TranscriptsResponse>('/api/leads', { tenant, mode: 'activity', limit: '500' }),
+  });
 
-          const delivered = counts['delivered'] || 0;
-          const total = Object.values(counts).reduce((a: number, b: unknown) => a + (typeof b === 'number' ? b : 0), 0);
-          setStats((prev) => ({
-            ...prev,
-            totalLeads: total,
-            conversionRate: total > 0 ? Math.round((delivered / total) * 100) : 0,
-          }));
-        }
+  const { pipelineData, funnelData, stats } = useMemo(() => {
+    const counts = dashData?.pipelineCounts || {};
+    const pipeline = STAGES.map((s) => ({
+      name: s.replace('_', ' ').replace(/^\w/, (c: string) => c.toUpperCase()),
+      count: counts[s] || 0,
+    }));
 
-        // Leads for trend + source
-        if (leadsRes.ok) {
-          const data = await leadsRes.json();
-          const leads: LeadRow[] = data.leads || [];
+    const funnelStages = ['new', 'contacted', 'appointment', 'showed', 'credit_app', 'approved', 'delivered'];
+    const funnelValues = funnelStages.map((_, i) =>
+      funnelStages.slice(i).reduce((sum, s) => sum + (counts[s] || 0), 0)
+    );
+    const funnel = funnelStages.map((s, i) => ({
+      name: s.replace('_', ' ').replace(/^\w/, (c: string) => c.toUpperCase()),
+      value: funnelValues[i] || 0,
+      fill: COLORS[i % COLORS.length],
+    }));
 
-          // Weekly trend (last 4 weeks)
-          const now = new Date();
-          const weeks: Record<string, number> = {};
-          for (let i = 3; i >= 0; i--) {
-            const weekStart = new Date(now);
-            weekStart.setDate(weekStart.getDate() - (i * 7));
-            const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            weeks[label] = 0;
-          }
-          for (const lead of leads) {
-            const d = new Date(lead.created_at);
-            const daysDiff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
-            if (daysDiff > 28) continue; // skip leads outside 4-week window
-            const weekIdx = Math.floor(daysDiff / 7);
-            if (weekIdx > 3) continue;
-            const weekKeys = Object.keys(weeks);
-            const key = weekKeys[3 - weekIdx];
-            if (key) weeks[key]++;
-          }
-          setTrendData(Object.entries(weeks).map(([date, leads]) => ({ date, leads })));
+    const delivered = counts['delivered'] || 0;
+    const total = Object.values(counts).reduce((a: number, b: unknown) => a + (typeof b === 'number' ? b : 0), 0);
 
-          // Source breakdown
-          const sources: Record<string, number> = {};
-          for (const lead of leads) {
-            const src = lead.utm_source || lead.utm_medium || 'Direct';
-            sources[src] = (sources[src] || 0) + 1;
-          }
-          setSourceData(
-            Object.entries(sources)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 6)
-              .map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count }))
-          );
-        }
+    const transcripts: TranscriptRow[] = transcriptsData?.transcripts || transcriptsData?.leads || [];
+    const avgSec = transcripts.length > 0 && transcripts[0]?.lead_id ? computeAvgResponseTime(transcripts) : 0;
 
-        // Compute avg response time from transcripts
-        if (transcriptsRes.ok) {
-          const data = await transcriptsRes.json();
-          const transcripts: TranscriptRow[] = data.transcripts || data.leads || [];
-          if (transcripts.length > 0 && transcripts[0]?.lead_id) {
-            const avgSec = computeAvgResponseTime(transcripts);
-            setStats((prev) => ({ ...prev, avgResponseSec: avgSec }));
-          }
-        }
-      } catch (err) {
-        console.error('Reports fetch error:', err);
-      } finally {
-        setLoading(false);
-      }
+    return {
+      pipelineData: pipeline,
+      funnelData: funnel,
+      stats: { totalLeads: total, conversionRate: total > 0 ? Math.round((delivered / total) * 100) : 0, avgResponseSec: avgSec },
+    };
+  }, [dashData, transcriptsData]);
+
+  const { trendData, sourceData } = useMemo(() => {
+    const leads: LeadRow[] = leadsData?.leads || [];
+    const now = new Date();
+    const weeks: Record<string, number> = {};
+    for (let i = 3; i >= 0; i--) {
+      const weekStart = new Date(now);
+      weekStart.setDate(weekStart.getDate() - (i * 7));
+      const label = weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      weeks[label] = 0;
     }
-    fetchData();
-  }, [tenant]);
+    for (const lead of leads) {
+      const d = new Date(lead.created_at);
+      const daysDiff = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysDiff > 28) continue;
+      const weekIdx = Math.floor(daysDiff / 7);
+      if (weekIdx > 3) continue;
+      const weekKeys = Object.keys(weeks);
+      const key = weekKeys[3 - weekIdx];
+      if (key) weeks[key]++;
+    }
 
-  if (loading) {
+    const sources: Record<string, number> = {};
+    for (const lead of leads) {
+      const src = lead.utm_source || lead.utm_medium || 'Direct';
+      sources[src] = (sources[src] || 0) + 1;
+    }
+
+    return {
+      trendData: Object.entries(weeks).map(([date, leads]) => ({ date, leads })),
+      sourceData: Object.entries(sources)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count })),
+    };
+  }, [leadsData]);
+
+  if (dashLoading || leadsLoading || transcriptsLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading reports...</div>;
   }
 
@@ -255,12 +250,7 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
   );
 }
 
-const tooltipStyle = {
-  background: '#1a1a2e',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: '8px',
-  color: '#f0f0f5',
-};
+const tooltipStyle = sharedTooltipStyle;
 
 function KPICard({ label, value, sub, color, isMobile }: { label: string; value: string; sub?: string; color: string; isMobile?: boolean }): React.ReactElement {
   return (

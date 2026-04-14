@@ -1,101 +1,45 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import useIsMobile from './useIsMobile';
-
-interface Vehicle {
-  id: string;
-  year: number;
-  make: string;
-  model: string;
-  trim: string | null;
-  color: string | null;
-  price: number | null;
-  mileage: number | null;
-  stock_number: string | null;
-  vin: string | null;
-  status: 'available' | 'sold' | 'pending';
-  notes: string | null;
-  created_at: string;
-}
+import { useInventory, useCreateVehicle, useUpdateVehicle, useDeleteVehicle, type Vehicle } from '@/hooks/use-inventory';
+import { INVENTORY_STATUS_COLORS as STATUS_COLORS } from './tokens';
+import { inputStyle } from './styles';
 
 interface InventoryTabProps {
   tenant: string;
   onSelectLead: (phone: string) => void;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  available: '#10b981',
-  sold: '#ef4444',
-  pending: '#f59e0b',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '10px 12px', borderRadius: '8px',
-  border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)',
-  color: '#f0f0f5', fontSize: '14px', outline: 'none', boxSizing: 'border-box' as const,
-};
-
 const fmt = (n: number | null): string => n != null ? `$${n.toLocaleString()}` : '—';
 const fmtMi = (n: number | null): string => n != null ? `${n.toLocaleString()} km` : '—';
 
 export default function InventoryTab({ tenant }: InventoryTabProps): React.ReactElement {
   const isMobile = useIsMobile();
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [showCreate, setShowCreate] = useState(false);
-  const [creating, setCreating] = useState(false);
   const [newV, setNewV] = useState({ year: '', make: '', model: '', trim: '', color: '', price: '', mileage: '', stock_number: '', vin: '' });
 
-  const fetchVehicles = useCallback(async (): Promise<void> => {
-    try {
-      let url = `/api/inventory?tenant=${tenant}`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-      if (filterStatus) url += `&status=${filterStatus}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        setVehicles(data.vehicles || []);
-      }
-    } catch (err) {
-      console.error('Failed to fetch inventory:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [tenant, search, filterStatus]);
-
-  useEffect(() => { fetchVehicles(); }, [fetchVehicles]);
+  const { data: vehicles = [], isLoading, refetch } = useInventory(tenant, { search, status: filterStatus });
+  const createMutation = useCreateVehicle(tenant);
+  const updateMutation = useUpdateVehicle(tenant);
+  const deleteMutation = useDeleteVehicle(tenant);
 
   const handleCreate = async (): Promise<void> => {
     if (!newV.year || !newV.make || !newV.model) return;
-    setCreating(true);
     try {
-      const res = await fetch('/api/inventory', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, ...newV, year: parseInt(newV.year, 10), price: newV.price || undefined, mileage: newV.mileage || undefined }),
-      });
-      if (res.ok) {
-        setShowCreate(false);
-        setNewV({ year: '', make: '', model: '', trim: '', color: '', price: '', mileage: '', stock_number: '', vin: '' });
-        fetchVehicles();
-      }
+      await createMutation.mutateAsync({ ...newV, year: parseInt(newV.year, 10), price: newV.price || undefined, mileage: newV.mileage || undefined });
+      setShowCreate(false);
+      setNewV({ year: '', make: '', model: '', trim: '', color: '', price: '', mileage: '', stock_number: '', vin: '' });
     } catch (err) {
       console.error('Failed to create vehicle:', err);
     }
-    setCreating(false);
   };
 
   const updateStatus = async (id: string, status: string): Promise<void> => {
     try {
-      await fetch('/api/inventory', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, id, status }),
-      });
-      setVehicles(prev => prev.map(v => v.id === id ? { ...v, status: status as Vehicle['status'] } : v));
+      await updateMutation.mutateAsync({ id, status });
     } catch (err) {
       console.error('Failed to update vehicle:', err);
     }
@@ -104,18 +48,15 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
   const deleteVehicle = async (id: string): Promise<void> => {
     if (!confirm('Delete this vehicle?')) return;
     try {
-      await fetch('/api/inventory', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenant, id }),
-      });
-      setVehicles(prev => prev.filter(v => v.id !== id));
+      await deleteMutation.mutateAsync(id);
     } catch (err) {
       console.error('Failed to delete vehicle:', err);
     }
   };
 
-  if (loading) {
+  const creating = createMutation.isPending;
+
+  if (isLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading inventory...</div>;
   }
 
@@ -149,7 +90,7 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
       {/* Filters */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <input placeholder="Search make, model, stock#, VIN..." value={search} onChange={e => setSearch(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && fetchVehicles()}
+          onKeyDown={e => e.key === 'Enter' && refetch()}
           style={{ ...inputStyle, maxWidth: isMobile ? '100%' : '320px', flex: isMobile ? '1 1 100%' : undefined }} />
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           style={{ ...inputStyle, maxWidth: '160px', cursor: 'pointer' }}>
