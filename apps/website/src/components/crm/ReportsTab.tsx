@@ -176,7 +176,7 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
   }
 
   return (
-    <div style={{ padding: isMobile ? '16px' : '24px', overflowY: 'auto', height: isMobile ? 'calc(100vh - 116px)' : '100vh' }}>
+    <div style={{ padding: isMobile ? '16px' : '24px', overflowY: 'auto', height: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 52px)' }}>
       <h1 style={{ color: '#f0f0f5', fontSize: isMobile ? '18px' : '22px', fontWeight: 700, margin: '0 0 24px' }}>Reports</h1>
 
       {/* KPI Summary */}

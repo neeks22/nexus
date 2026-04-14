@@ -644,7 +644,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
       maxWidth: 1400,
       margin: '0 auto',
       overflowY: 'auto' as const,
-      height: isMobile ? 'calc(100vh - 116px)' : undefined,
+      height: isMobile ? 'calc(100vh - 116px)' : 'calc(100vh - 52px)',
       boxSizing: 'border-box' as const,
     } as React.CSSProperties,
 
