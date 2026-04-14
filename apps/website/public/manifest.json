@@ -1,0 +1,30 @@
+{
+  "name": "Nexus CRM",
+  "short_name": "Nexus",
+  "description": "AI-powered dealership CRM — leads, pipeline, credit routing, appointments",
+  "start_url": "/readycar",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#DC2626",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -57,6 +57,7 @@ const AppointmentsTab = dynamic(() => import('./AppointmentsTab'), { ssr: false,
 const DealsTab = dynamic(() => import('./DealsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading deals...</div> });
 const SettingsTab = dynamic(() => import('./SettingsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading settings...</div> });
 const LeadDetailPanel = dynamic(() => import('./LeadDetailPanel'), { ssr: false });
+const InstallPrompt = dynamic(() => import('./InstallPrompt'), { ssr: false });
 
 interface BrandTheme {
   primary: string;
@@ -251,6 +252,9 @@ export default function CRMLayout({
           />
         )}
       </div>
+
+      {/* PWA Install Prompt */}
+      {isMobile && <InstallPrompt />}
 
       {/* MOBILE BOTTOM TAB BAR */}
       {isMobile && (

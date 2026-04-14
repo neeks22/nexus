@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { MetaPixel } from '@/components/MetaPixel';
+import ServiceWorkerRegistration from '@/components/ServiceWorkerRegistration';
 import './globals.css';
 
 const inter = Inter({
@@ -61,11 +62,19 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#DC2626" />
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+      </head>
       <body>
         <MetaPixel />
         <Navbar />
         <main>{children}</main>
         <Footer />
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );
