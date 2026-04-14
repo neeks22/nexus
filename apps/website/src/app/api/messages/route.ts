@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireApiKey, rateLimit as sharedRateLimit, getClientIp, validateTenant } from '../../../lib/security';
+import { requireSession, isAuthError, rateLimit as sharedRateLimit, getClientIp } from '../../../lib/security';
 
 /* =============================================================================
    ENVIRONMENT VARIABLES — never hardcode credentials
@@ -74,28 +74,6 @@ function securityHeaders(origin?: string | null): Record<string, string> {
   }
 
   return headers;
-}
-
-/* =============================================================================
-   ORIGIN VALIDATION (CSRF-lite for API routes)
-   ============================================================================= */
-
-function isValidOrigin(request: NextRequest): boolean {
-  const origin = request.headers.get('origin');
-  const referer = request.headers.get('referer');
-
-  // Allow same-origin requests (no origin header = same-origin in most cases)
-  if (!origin && !referer) return true;
-
-  if (origin === ALLOWED_ORIGIN) return true;
-  if (referer?.startsWith(ALLOWED_ORIGIN)) return true;
-
-  // Allow localhost in development
-  if (process.env.NODE_ENV === 'development') {
-    if (origin?.includes('localhost') || referer?.includes('localhost')) return true;
-  }
-
-  return false;
 }
 
 /* =============================================================================
@@ -400,8 +378,9 @@ export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
    ============================================================================= */
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   const origin = request.headers.get('origin');
@@ -424,8 +403,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   try {
     const phone = request.nextUrl.searchParams.get('phone');
-    const tenant = request.nextUrl.searchParams.get('tenant');
-    const fromNumber = tenant ? (TENANT_NUMBERS[tenant] || TWILIO_FROM_NUMBER) : TWILIO_FROM_NUMBER;
+    const fromNumber = TENANT_NUMBERS[tenant] || TWILIO_FROM_NUMBER;
 
     if (phone) {
       // Validate phone parameter
@@ -439,7 +417,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
       const [messages, leads] = await Promise.all([
         fetchMessagesForPhone(normalized),
-        fetchLeads(tenant || undefined),
+        fetchLeads(tenant),
       ]);
 
       const conversations = groupIntoConversations(messages, leads, fromNumber);
@@ -451,7 +429,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const [messages, leads] = await Promise.all([fetchAllMessages(), fetchLeads(tenant || undefined)]);
+    const [messages, leads] = await Promise.all([fetchAllMessages(), fetchLeads(tenant)]);
     const conversations = groupIntoConversations(messages, leads, fromNumber);
 
     return NextResponse.json(
@@ -474,6 +452,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
    ============================================================================= */
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
+
   const ip = getClientIp(request);
   const origin = request.headers.get('origin');
 
@@ -481,14 +463,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json(
       { error: 'Too many requests. Please try again later.' },
       { status: 429, headers: securityHeaders(origin) }
-    );
-  }
-
-  // CSRF-lite: validate origin
-  if (!isValidOrigin(request)) {
-    return NextResponse.json(
-      { error: 'Forbidden' },
-      { status: 403, headers: securityHeaders(origin) }
     );
   }
 
@@ -559,7 +533,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
 
       // Update lead status to 'contacted' if still 'new' — manual email send
-      const emailTenant = validateTenant(typeof body.tenant === 'string' ? body.tenant : null);
+      const emailTenant = tenant;
       try {
         const lookupRes = await fetch(
           `${SUPABASE_URL}/rest/v1/v_funnel_submissions?email=eq.${encodeURIComponent(toEmail)}&tenant_id=eq.${emailTenant}&status=eq.new&select=id&limit=1`,
@@ -614,9 +588,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const sendFromNumber = typeof body.tenant === 'string' && TENANT_NUMBERS[body.tenant]
-      ? TENANT_NUMBERS[body.tenant]
-      : TWILIO_FROM_NUMBER;
+    const sendFromNumber = TENANT_NUMBERS[tenant] || TWILIO_FROM_NUMBER;
 
     const params = new URLSearchParams({
       To: toPhone,
@@ -643,7 +615,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const sentMessage = await res.json();
 
     // Update lead status to 'contacted' if still 'new' — manual SMS send
-    const smsTenant = validateTenant(typeof body.tenant === 'string' ? body.tenant : null);
+    const smsTenant = tenant;
     try {
       await fetch(`${SUPABASE_URL}/rest/v1/rpc/update_lead_status`, {
         method: 'POST',

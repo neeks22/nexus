@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireApiKey, rateLimit, getClientIp } from '@/lib/security';
+import { requireSession, isAuthError, rateLimit, getClientIp } from '@/lib/security';
 
 export const maxDuration = 60;
 
@@ -44,9 +44,8 @@ Be extremely specific with numbers. This data routes to lender matching.
 ${CLIENT_INFO_BLOCK}`;
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  // Auth check
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
 
   // Rate limit: 10 per minute per IP
   const ip = getClientIp(request);

@@ -78,7 +78,7 @@ async function verifySession(cookie: string): Promise<SessionPayload | null> {
 /* ----- Protected paths ----- */
 
 const PROTECTED_PAGE_PATHS = ['/inbox', '/readycar', '/readyride', '/dashboard'];
-const PROTECTED_API_PATHS = ['/api/leads', '/api/messages', '/api/dashboard', '/api/inventory', '/api/appointments', '/api/deals'];
+const PROTECTED_API_PATHS = ['/api/leads', '/api/messages', '/api/dashboard', '/api/inventory', '/api/appointments', '/api/deals', '/api/import-leads', '/api/check-duplicates', '/api/credit-analyze'];
 
 function isProtectedRoute(path: string): boolean {
   return PROTECTED_PAGE_PATHS.some(p => path.startsWith(p)) ||
@@ -100,7 +100,7 @@ function unauthorizedResponse(path: string, request: NextRequest, message: strin
   return res;
 }
 
-function setSecurityHeaders(response: NextResponse, path: string, request: NextRequest, verifiedTenant: string | null): void {
+function setSecurityHeaders(response: NextResponse, path: string): void {
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
@@ -117,17 +117,15 @@ function setSecurityHeaders(response: NextResponse, path: string, request: NextR
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
   }
-
-  if (verifiedTenant) {
-    response.headers.set('x-session-tenant', verifiedTenant);
-  }
 }
 
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const path = request.nextUrl.pathname;
 
-  // Track verified session tenant for downstream header injection
+  // Session data to inject into request headers for route handlers
   let verifiedTenant: string | null = null;
+  let verifiedRole: string | null = null;
+  let verifiedUserId: string | null = null;
 
   // ----- CRM session verification for protected routes -----
   if (isProtectedRoute(path)) {
@@ -166,6 +164,8 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
 
     verifiedTenant = sessionTenant;
+    verifiedRole = sessionRole;
+    verifiedUserId = session.user_id;
 
     // For admin accessing a specific tenant path, use that tenant for RLS
     if (sessionRole === 'admin') {
@@ -189,7 +189,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       const renewedSig = await computeHmac(AUTH_SECRET, renewedB64);
       const renewedToken = `${renewedB64}.${renewedSig}`;
 
-      const res = NextResponse.next();
+      // Inject session context into request headers for route handlers
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set('x-session-tenant', verifiedTenant);
+      requestHeaders.set('x-session-role', verifiedRole);
+      requestHeaders.set('x-session-user-id', verifiedUserId);
+
+      const res = NextResponse.next({ request: { headers: requestHeaders } });
       res.cookies.set('nexus_session', renewedToken, {
         httpOnly: true,
         secure: true,
@@ -198,8 +204,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         maxAge: 86400,
       });
 
-      // Still set security headers and tenant below
-      setSecurityHeaders(res, path, request, verifiedTenant);
+      setSecurityHeaders(res, path);
       return res;
     }
   }
@@ -241,8 +246,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     }
   }
 
-  const response = NextResponse.next();
-  setSecurityHeaders(response, path, request, verifiedTenant);
+  // Inject session context into request headers for route handlers
+  const requestHeaders = new Headers(request.headers);
+  if (verifiedTenant) requestHeaders.set('x-session-tenant', verifiedTenant);
+  if (verifiedRole) requestHeaders.set('x-session-role', verifiedRole);
+  if (verifiedUserId) requestHeaders.set('x-session-user-id', verifiedUserId);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  setSecurityHeaders(response, path);
   return response;
 }
 

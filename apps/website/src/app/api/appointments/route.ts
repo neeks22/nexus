@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import {
-  SUPABASE_URL, requireApiKey, rateLimit, getClientIp,
-  validateTenant, sanitizeInput, supaHeaders, supaAnonHeaders, encodeSupabaseParam, sendTwilioSMS, isValidUuid,
+  SUPABASE_URL, requireSession, isAuthError, rateLimit, getClientIp,
+  sanitizeInput, supaHeaders, supaAnonHeaders, encodeSupabaseParam, sendTwilioSMS, isValidUuid,
 } from '@/lib/security';
 
 const VALID_TYPES = ['test_drive', 'financing', 'trade_appraisal', 'general'];
@@ -26,15 +26,14 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 60)) {
     return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
   }
-
-  const tenant = validateTenant(request.nextUrl.searchParams.get('tenant'));
   const view = request.nextUrl.searchParams.get('view') || 'upcoming';
   const leadPhone = request.nextUrl.searchParams.get('lead_phone');
 
@@ -79,14 +78,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
 
   try {
     const body = await request.json();
-    const tenant = validateTenant(body.tenant);
 
     // SMS Reminder action
     if (body.action === 'send_reminder') {
@@ -201,8 +200,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 30)) {
@@ -211,7 +211,6 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 
   try {
     const body = await request.json();
-    const tenant = validateTenant(body.tenant);
     const { id } = body as { id?: string };
 
     if (!id || !isValidUuid(id)) {

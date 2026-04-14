@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { SUPABASE_URL, SUPABASE_KEY, requireApiKey, rateLimit, getClientIp, supaHeaders, validateTenant, encodeSupabaseParam, sanitizeInput } from '../../../../lib/security';
+import { SUPABASE_URL, SUPABASE_KEY, requireSession, isAuthError, rateLimit, getClientIp, supaHeaders, encodeSupabaseParam, sanitizeInput } from '../../../../lib/security';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 30)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
@@ -18,8 +19,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { phone, credit_situation, tenant: rawTenant } = body as { phone?: string; credit_situation?: string; tenant?: string };
-  const tenant = validateTenant(rawTenant || null);
+  const { phone, credit_situation } = body as { phone?: string; credit_situation?: string };
 
   if (!phone || !credit_situation) {
     return NextResponse.json({ error: 'phone and credit_situation required' }, { status: 400 });

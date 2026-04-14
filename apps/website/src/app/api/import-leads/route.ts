@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { FunnelLead, TENANTS, normalizePhone, insertLead, sendSMS } from '@/lib/auto-response';
-import { rateLimit, getClientIp, supaGet } from '@/lib/security';
+import { rateLimit, getClientIp, supaGet, requireRole, isAuthError } from '@/lib/security';
 import { z } from 'zod';
 
 const ImportSchema = z.object({
@@ -10,10 +10,13 @@ const ImportSchema = z.object({
     lastName: z.string(),
     phone: z.string().min(7),
   })).max(200),
-  tenant: z.enum(['readycar', 'readyride']),
 });
 
 export async function POST(request: NextRequest) {
+  // Require manager+ role for imports
+  const session = requireRole(request, 'manager');
+  if (isAuthError(session)) return session;
+
   const ip = getClientIp(request);
   if (await rateLimit(ip, 2, 60000)) {
     return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429 });
@@ -26,7 +29,7 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ error: 'Invalid request' }), { status: 400 });
   }
 
-  const tenant = TENANTS[body.tenant];
+  const tenant = TENANTS[session.tenant];
   if (!tenant) {
     return new Response(JSON.stringify({ error: 'Invalid tenant' }), { status: 400 });
   }

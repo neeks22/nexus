@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { SUPABASE_URL, requireApiKey, rateLimit, getClientIp, supaAnonHeaders, validateTenant } from '../../../lib/security';
+import { SUPABASE_URL, requireSession, isAuthError, rateLimit, getClientIp, supaAnonHeaders } from '../../../lib/security';
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 30)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
-
-  const tenant = validateTenant(request.nextUrl.searchParams.get('tenant'));
   if (!SUPABASE_URL) return NextResponse.json({ error: 'Config error' }, { status: 500 });
 
   try {

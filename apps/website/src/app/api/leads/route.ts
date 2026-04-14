@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { SUPABASE_URL, SUPABASE_KEY, requireApiKey, rateLimit, getClientIp, supaHeaders, supaAnonHeaders, validateTenant, encodeSupabaseParam, sanitizeInput } from '../../../lib/security';
+import { SUPABASE_URL, SUPABASE_KEY, requireSession, requireRole, isAuthError, rateLimit, getClientIp, supaHeaders, supaAnonHeaders, encodeSupabaseParam, sanitizeInput } from '../../../lib/security';
 
 /* =============================================================================
    LEADS API — CRUD for lead management
@@ -10,14 +10,12 @@ import { SUPABASE_URL, SUPABASE_KEY, requireApiKey, rateLimit, getClientIp, supa
 const VALID_STATUSES = ['new', 'contacted', 'appointment', 'showed', 'credit_app', 'approved', 'delivered', 'lost'];
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  // Auth
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 60)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
-
-  const tenant = validateTenant(request.nextUrl.searchParams.get('tenant'));
   const status = request.nextUrl.searchParams.get('status');
   const search = request.nextUrl.searchParams.get('search');
   const activity = request.nextUrl.searchParams.get('activity');
@@ -97,8 +95,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 30)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
@@ -113,8 +112,7 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const { phone, status, tenant: rawTenant } = body as { phone?: string; status?: string; tenant?: string };
-    const tenant = validateTenant(rawTenant || null);
+    const { phone, status } = body as { phone?: string; status?: string };
 
     if (!phone || !status || !VALID_STATUSES.includes(status)) {
       return NextResponse.json({ error: 'Valid phone and status required' }, { status: 400 });
@@ -138,8 +136,9 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 20)) return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
@@ -154,8 +153,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const { tenant: rawTenant, phone, type, content } = postBody as { tenant?: string; phone?: string; type?: string; content?: string };
-    const tenant = validateTenant(rawTenant || null);
+    const { phone, type, content } = postBody as { phone?: string; type?: string; content?: string };
 
     if (!content) return NextResponse.json({ error: 'content required' }, { status: 400 });
 
@@ -216,8 +214,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  // Require manager+ role for deleting leads
+  const session = requireRole(request, 'manager');
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   let deleteBody;
   try {
@@ -229,8 +229,7 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
   }
 
   try {
-    const { tenant: rawTenant, phone } = deleteBody as { tenant?: string; phone?: string };
-    const tenant = validateTenant(rawTenant || null);
+    const { phone } = deleteBody as { phone?: string };
 
     if (!phone) return NextResponse.json({ error: 'phone required' }, { status: 400 });
 

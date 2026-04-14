@@ -263,6 +263,57 @@ export function validateTenant(tenant: string | null): string {
   return tenant;
 }
 
+/* ---------- Session Context (reads headers injected by middleware) ---------- */
+
+export interface SessionContext {
+  tenant: string;
+  role: string;
+  userId: string;
+}
+
+const ROLE_HIERARCHY: Record<string, number> = { staff: 1, manager: 2, admin: 3 };
+
+/**
+ * Reads session context from request headers set by middleware.
+ * Returns null if headers are missing (unauthenticated request).
+ */
+export function getSessionContext(request: NextRequest): SessionContext | null {
+  const tenant = request.headers.get('x-session-tenant');
+  const role = request.headers.get('x-session-role');
+  const userId = request.headers.get('x-session-user-id');
+  if (!tenant || !role || !userId) return null;
+  if (!VALID_TENANTS.includes(tenant)) return null;
+  return { tenant, role, userId };
+}
+
+/**
+ * Requires a valid session. Returns session context or a 401 response.
+ */
+export function requireSession(request: NextRequest): SessionContext | NextResponse {
+  const session = getSessionContext(request);
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return session;
+}
+
+/**
+ * Requires a minimum role level. Returns session context or a 403 response.
+ */
+export function requireRole(request: NextRequest, minimumRole: 'staff' | 'manager' | 'admin'): SessionContext | NextResponse {
+  const session = getSessionContext(request);
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const userLevel = ROLE_HIERARCHY[session.role] || 0;
+  const requiredLevel = ROLE_HIERARCHY[minimumRole] || 0;
+  if (userLevel < requiredLevel) {
+    return NextResponse.json({ error: 'Forbidden — insufficient permissions' }, { status: 403 });
+  }
+  return session;
+}
+
+/** Type guard: true when requireSession/requireRole returned a NextResponse (error) */
+export function isAuthError(result: SessionContext | NextResponse): result is NextResponse {
+  return result instanceof NextResponse;
+}
+
 export function encodeSupabaseParam(value: string): string {
   // Encode special chars but preserve + (needed for phone numbers like +16471234567)
   return encodeURIComponent(value)

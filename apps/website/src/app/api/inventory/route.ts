@@ -1,22 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import {
-  SUPABASE_URL, SUPABASE_KEY, requireApiKey, rateLimit, getClientIp,
-  validateTenant, sanitizeInput, supaHeaders, supaAnonHeaders, encodeSupabaseParam, isValidUuid,
+  SUPABASE_URL, requireSession, requireRole, isAuthError, rateLimit, getClientIp,
+  sanitizeInput, supaHeaders, supaAnonHeaders, encodeSupabaseParam, isValidUuid,
 } from '@/lib/security';
 
 const VALID_STATUSES = ['available', 'sold', 'pending'];
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 60)) {
     return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
   }
-
-  const tenant = validateTenant(request.nextUrl.searchParams.get('tenant'));
   const status = request.nextUrl.searchParams.get('status');
   const search = request.nextUrl.searchParams.get('search');
   const limit = Math.min(parseInt(request.nextUrl.searchParams.get('limit') || '200'), 500);
@@ -53,8 +52,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 20)) {
@@ -63,7 +63,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   try {
     const body = await request.json();
-    const tenant = validateTenant(body.tenant);
     const { year, make, model } = body as { year?: number; make?: string; model?: string };
 
     if (!year || !make || !model) {
@@ -111,8 +110,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  const session = requireSession(request);
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 30)) {
@@ -121,7 +121,6 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 
   try {
     const body = await request.json();
-    const tenant = validateTenant(body.tenant);
     const { id } = body as { id?: string };
 
     if (!id || !isValidUuid(id)) {
@@ -169,8 +168,10 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
-  const authError = requireApiKey(request);
-  if (authError) return authError;
+  // Require manager+ role for deleting inventory
+  const session = requireRole(request, 'manager');
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
 
   const ip = getClientIp(request);
   if (await rateLimit(ip, 20)) {
@@ -179,7 +180,6 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
 
   try {
     const body = await request.json();
-    const tenant = validateTenant(body.tenant);
     const { id } = body as { id?: string };
 
     if (!id || !isValidUuid(id)) {
