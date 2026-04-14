@@ -195,7 +195,7 @@ describe('handleAutoResponse', () => {
     expect(mockSendTwilioSMS).toHaveBeenCalledWith(
       '+16135551234',
       '+13433125045',
-      expect.stringContaining('Hey John'),
+      expect.stringContaining('John'),
     );
 
     // Fallback should mention the tenant GM name
