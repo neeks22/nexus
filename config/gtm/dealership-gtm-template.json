@@ -7,7 +7,7 @@
     "containerId": "0",
     "containerVersionId": "1",
     "name": "Nexus Dealership Template v1.0",
-    "description": "Full-stack tracking for car dealerships: Meta Pixel, Google Ads, GA4, and server-side CAPI forwarding via n8n. Change 3 constants (META_PIXEL_ID, GOOGLE_ADS_CONVERSION_ID, GA4_MEASUREMENT_ID) and deploy.",
+    "description": "Full-stack tracking for car dealerships: Meta Pixel, Google Ads, GA4. Change 3 constants (META_PIXEL_ID, GOOGLE_ADS_CONVERSION_ID, GA4_MEASUREMENT_ID) and deploy.",
     "container": {
       "path": "accounts/0/containers/0",
       "accountId": "0",
@@ -607,24 +607,6 @@
         "firingTriggerId": ["6"],
         "tagFiringOption": "ONCE_PER_EVENT",
         "fingerprint": "11"
-      },
-      {
-        "accountId": "0",
-        "containerId": "0",
-        "tagId": "12",
-        "name": "CAPI Event Forwarder (n8n Webhook)",
-        "type": "html",
-        "parameter": [
-          {
-            "type": "TEMPLATE",
-            "key": "html",
-            "value": "<script>\n(function() {\n  var dl = window.dataLayer || [];\n  var lastEvent = null;\n  for (var i = dl.length - 1; i >= 0; i--) {\n    if (dl[i] && dl[i].event) { lastEvent = dl[i]; break; }\n  }\n  if (!lastEvent) return;\n\n  var payload = {\n    event_name: lastEvent.event || 'PageView',\n    event_id: lastEvent.event_id || (Date.now() + '_' + Math.random().toString(36).substr(2, 9)),\n    event_time: Math.floor(Date.now() / 1000),\n    event_source_url: window.location.href,\n    user_agent: navigator.userAgent,\n    pixel_id: '{{META_PIXEL_ID}}',\n    action_source: 'website',\n    vehicle_make: lastEvent.vehicle_make || null,\n    vehicle_model: lastEvent.vehicle_model || null,\n    vehicle_year: lastEvent.vehicle_year || null,\n    vehicle_price: lastEvent.vehicle_price || null,\n    vehicle_vin: lastEvent.vehicle_vin || null,\n    user_ip: lastEvent.user_ip || null,\n    fbc: (document.cookie.match('(^|;)\\\\s*_fbc\\\\s*=\\\\s*([^;]+)') || [])[2] || null,\n    fbp: (document.cookie.match('(^|;)\\\\s*_fbp\\\\s*=\\\\s*([^;]+)') || [])[2] || null\n  };\n\n  var xhr = new XMLHttpRequest();\n  xhr.open('POST', 'https://nexusagents.app.n8n.cloud/webhook/meta-capi', true);\n  xhr.setRequestHeader('Content-Type', 'application/json');\n  xhr.send(JSON.stringify(payload));\n})();\n</script>"
-          },
-          { "type": "BOOLEAN", "key": "supportDocumentWrite", "value": "false" }
-        ],
-        "firingTriggerId": ["2", "3", "4", "5", "6", "7", "8", "9", "10"],
-        "tagFiringOption": "ONCE_PER_EVENT",
-        "fingerprint": "12"
       }
     ],
     "fingerprint": "1"

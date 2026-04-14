@@ -2,7 +2,7 @@
  * InstantResponseAgent — generates personalized first-touch responses
  * for new leads using template-based rendering with compliance checks.
  *
- * Real Claude API integration comes in the n8n workflow (Epic 9).
+ * Claude API integration is handled natively via auto-response and follow-up crons.
  * This agent uses the MessageTemplateRepository for template-based generation.
  */
 

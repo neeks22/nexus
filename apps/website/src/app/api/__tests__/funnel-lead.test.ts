@@ -18,10 +18,6 @@ vi.mock('../../../lib/security', () => ({
   getClientIp: (...args: unknown[]) => mockGetClientIp(...args),
 }));
 
-// Mock global fetch for n8n webhook
-const mockFetch = vi.fn().mockResolvedValue({ ok: true });
-vi.stubGlobal('fetch', mockFetch);
-
 // Import route handler after mocks
 import { POST } from '../funnel-lead/route';
 
@@ -67,7 +63,6 @@ describe('POST /api/funnel-lead', () => {
     mockRateLimit.mockResolvedValue(false); // not rate limited
     mockGetClientIp.mockReturnValue('127.0.0.1');
     mockHandleAutoResponse.mockResolvedValue(undefined);
-    mockFetch.mockResolvedValue({ ok: true });
   });
 
   it('returns 200 with success:true for valid payload', async () => {

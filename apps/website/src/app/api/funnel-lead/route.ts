@@ -9,7 +9,7 @@ import { sendLeadEvent } from '../../../lib/meta-conversions';
  * POST /api/funnel-lead
  *
  * Receives multi-step funnel data from the /apply page (9 steps),
- * forwards it to the n8n webhook for CRM creation and instant response,
+ * runs auto-response (SMS + email) and Meta CAPI tracking,
  * and returns success/error.
  *
  * Security: rate-limited (10/min/IP), Zod-validated, injection-blocked,
@@ -20,8 +20,6 @@ import { sendLeadEvent } from '../../../lib/meta-conversions';
    ENVIRONMENT
    ============================================================================= */
 
-const N8N_WEBHOOK_URL =
-  process.env.N8N_FUNNEL_WEBHOOK_URL ?? 'https://nexusagents.app.n8n.cloud/webhook/ad-lead';
 const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
 
 /* =============================================================================
@@ -213,7 +211,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         `credit=${body.creditSituation} utm_source=${body.utmSource || 'direct'}`
     );
 
-    // Run auto-response and n8n webhook in parallel to stay within Vercel time limits
+    // Run auto-response and Meta CAPI tracking in parallel
     await Promise.allSettled([
       handleAutoResponse(lead, body.tenant).catch((err) => {
         console.error('[funnel-lead] Auto-response error:', err instanceof Error ? err.message : 'unknown');
@@ -229,44 +227,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         sourceUrl: request.headers.get('referer') || undefined,
       }).catch((err) => {
         console.error('[funnel-lead] Meta CAPI error:', err instanceof Error ? err.message : 'unknown');
-        Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
-      }),
-      fetch(N8N_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source: 'funnel',
-          funnelData: {
-            vehicleType: body.vehicleType,
-            monthlyIncome: body.monthlyIncome,
-            employmentStatus: body.employmentStatus,
-            jobDuration: body.jobDuration,
-            creditSituation: body.creditSituation,
-          },
-          contact: {
-            firstName: body.firstName,
-            lastName: body.lastName,
-            phone: body.phone,
-            email: body.email,
-          },
-          consent: {
-            casl: body.caslConsent,
-            timestamp: body.completedAt || new Date().toISOString(),
-          },
-          attribution: {
-            utmSource: body.utmSource,
-            utmMedium: body.utmMedium,
-            utmCampaign: body.utmCampaign,
-          },
-          metadata: {
-            submittedAt: new Date().toISOString(),
-            userAgent: sanitizeString(request.headers.get('user-agent') || '', 500),
-            ip,
-          },
-        }),
-        signal: AbortSignal.timeout(10000),
-      }).catch((err) => {
-        console.error('[funnel-lead] n8n webhook failed:', err instanceof Error ? err.message : 'unknown');
         Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       }),
     ]);

@@ -155,7 +155,7 @@ ALTER TABLE agent_toggles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trace_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tenant_configs ENABLE ROW LEVEL SECURITY;
 
--- Service role bypasses RLS, so n8n + backend can access everything
+-- Service role bypasses RLS, so backend can access everything
 -- For client dashboard access, add tenant-scoped policies later
 
 -- 11. UPDATED_AT TRIGGER

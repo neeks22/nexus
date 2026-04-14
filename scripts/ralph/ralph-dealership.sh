@@ -14,9 +14,7 @@ while [ $ITERATION -lt $MAX_ITERATIONS ]; do
 Read PRD-dealership.md and progress-dealership.txt.
 Find the next unchecked item in the PRD.
 Implement it fully — working code, not stubs. Write tests. Verify tests pass.
-You have access to n8n MCP tools — use them to create and validate n8n workflows directly.
 Use the Activix CRM API docs at docs/research/activix-crm-integration-research.md for API reference.
-Use the design spec at docs/superpowers/specs/2026-03-28-dealership-n8n-workflow-design.md for architecture guidance.
 Update progress-dealership.txt with what you completed and any issues encountered.
 Check off the completed item in PRD-dealership.md.
 Commit your changes with a descriptive git message.
