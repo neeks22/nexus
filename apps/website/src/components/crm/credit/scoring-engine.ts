@@ -49,7 +49,7 @@ export const LENDER_DB: Lender[] = [
       { tier: '5 Ride', ficoMin: 560, ficoMax: 619, rate: '16.99%', maxLTV: '140%', maxPayCall: '$950', reserve: '$250-750', color: '#2D6B4F' },
       { tier: '4 Ride', ficoMin: 500, ficoMax: 559, rate: '19.99%', maxLTV: '135%', maxPayCall: '$950', reserve: '$250-750', color: '#2D6B4F' },
       { tier: '3 Ride', ficoMin: 400, ficoMax: 499, rate: '23.99%', maxLTV: '130%', maxPayCall: '$950', reserve: '$250-750', color: '#2D6B4F' },
-      { tier: 'EP No Hit', ficoMin: 0, ficoMax: 0, rate: '19.99%', maxLTV: '130%', maxPayCall: '$950', reserve: '$250-750', color: '#2D6B4F' },
+      { tier: 'EP No Hit', ficoMin: 0, ficoMax: 399, rate: '19.99%', maxLTV: '130%', maxPayCall: '$950', reserve: '$250-750', color: '#2D6B4F' },
     ],
     minIncome: 1800, maxKm: 180000, maxTerm: 84,
     special: ['No Hit program for newcomers', 'Reserve paid on every deal', 'Full spectrum'],
@@ -73,8 +73,8 @@ export const LENDER_DB: Lender[] = [
   {
     name: 'Rifco',
     tiers: [
-      { tier: 'Standard', ficoMin: 0, ficoMax: 599, rate: '29.95%', maxLTV: '125%', maxPayCall: '$950', reserve: '$250', color: '#4A2C2A' },
       { tier: 'Drive Plan', ficoMin: 0, ficoMax: 499, rate: '29.95%', maxLTV: '130%', maxPayCall: '$950', reserve: 'n/a', color: '#4A2C2A' },
+      { tier: 'Standard', ficoMin: 500, ficoMax: 599, rate: '29.95%', maxLTV: '125%', maxPayCall: '$950', reserve: '$250', color: '#4A2C2A' },
     ],
     minIncome: 3000, maxKm: 168000, maxTerm: 84,
     special: ['GPS/Starter interrupter on Drive Plan', 'Banking verification via Flinks', '5-10% discount on Drive Plan'],
@@ -122,8 +122,10 @@ export function scoreLender(lender: Lender, profile: ScoringProfile): ScoredResu
       break;
     }
   }
-  if (!matchedTier && lender.tiers.length > 0) {
-    matchedTier = lender.tiers[lender.tiers.length - 1];
+  if (!matchedTier) {
+    // No tier matched — this customer falls outside all defined ranges
+    warnings.push(`No matching tier for FICO ${profile.fico}`);
+    return { score: 0, tier: null, reasons: [], warnings, lender: lender.name };
   }
 
   if (matchedTier) {
@@ -165,8 +167,15 @@ export function scoreLender(lender: Lender, profile: ScoringProfile): ScoredResu
 
   if (profile.selfEmployed) {
     if (lender.name === 'AutoCapital Canada') { score += 20; reasons.push('P4E self-employed program (full/alt/lite doc)'); }
+    else if (lender.name === 'Santander Consumer') { score += 20; reasons.push('Easy Income instant verification for self-employed'); }
     else if (lender.name === 'iA Auto Finance') { score += 15; reasons.push('iA Fast Income verification'); }
     else if (lender.name === 'Rifco') { score += 10; reasons.push('Flinks banking verification'); }
+  }
+
+  // Santander bonuses — generous Carfax policy and Easy Income
+  if (lender.name === 'Santander Consumer' && matchedTier) {
+    score += 10;
+    reasons.push('Easy Income verification + generous Carfax (35% BBV)');
   }
 
   return { score, tier: matchedTier, reasons, warnings, lender: lender.name };
@@ -181,7 +190,7 @@ export function tierColor(fico: number): string {
 }
 
 export function tierLabel(fico: number): string {
-  if (fico >= 750) return 'NEAR-PRIME (A)';
+  if (fico >= 750) return 'PRIME (A)';
   if (fico >= 700) return 'NEAR-PRIME (B)';
   if (fico >= 600) return 'LIGHT SUBPRIME';
   if (fico >= 500) return 'MID SUBPRIME';

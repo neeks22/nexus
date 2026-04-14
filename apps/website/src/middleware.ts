@@ -78,7 +78,7 @@ async function verifySession(cookie: string): Promise<SessionPayload | null> {
 /* ----- Protected paths ----- */
 
 const PROTECTED_PAGE_PATHS = ['/inbox', '/readycar', '/readyride', '/dashboard'];
-const PROTECTED_API_PATHS = ['/api/leads', '/api/messages', '/api/dashboard', '/api/inventory', '/api/appointments', '/api/deals', '/api/import-leads', '/api/check-duplicates', '/api/credit-analyze'];
+const PROTECTED_API_PATHS = ['/api/leads', '/api/messages', '/api/dashboard', '/api/inventory', '/api/appointments', '/api/deals', '/api/import-leads', '/api/check-duplicates', '/api/credit-analyze', '/api/parse-pdf-contacts', '/api/auth/users'];
 
 function isProtectedRoute(path: string): boolean {
   return PROTECTED_PAGE_PATHS.some(p => path.startsWith(p)) ||
@@ -173,40 +173,6 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
       else if (path.startsWith('/readyride')) verifiedTenant = 'readyride';
     }
 
-    // Sliding session renewal: re-issue cookie when <12h remaining
-    const timeLeft = session.exp - Date.now();
-    if (timeLeft > 0 && timeLeft < 43200000) {
-      const renewed = {
-        user_id: session.user_id,
-        email: session.email,
-        name: session.name,
-        tenant_id: session.tenant_id,
-        role: session.role,
-        exp: Date.now() + 86400000,
-      };
-      const renewedB64 = btoa(JSON.stringify(renewed))
-        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-      const renewedSig = await computeHmac(AUTH_SECRET, renewedB64);
-      const renewedToken = `${renewedB64}.${renewedSig}`;
-
-      // Inject session context into request headers for route handlers
-      const requestHeaders = new Headers(request.headers);
-      requestHeaders.set('x-session-tenant', verifiedTenant);
-      requestHeaders.set('x-session-role', verifiedRole);
-      requestHeaders.set('x-session-user-id', verifiedUserId);
-
-      const res = NextResponse.next({ request: { headers: requestHeaders } });
-      res.cookies.set('nexus_session', renewedToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        path: '/',
-        maxAge: 86400,
-      });
-
-      setSecurityHeaders(res, path);
-      return res;
-    }
   }
 
   // ----- CSRF: validate Origin on mutating requests to /api/* -----
@@ -242,6 +208,48 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
           { error: 'Forbidden — invalid origin' },
           { status: 403 }
         );
+      }
+    }
+  }
+
+  // ----- Sliding session renewal: re-issue cookie when <12h remaining -----
+  if (verifiedTenant && verifiedRole && verifiedUserId) {
+    const sessionCookie = request.cookies.get('nexus_session')?.value;
+    if (sessionCookie) {
+      const session = await verifySession(sessionCookie);
+      if (session) {
+        const timeLeft = session.exp - Date.now();
+        if (timeLeft > 0 && timeLeft < 43200000) {
+          const renewed = {
+            user_id: session.user_id,
+            email: session.email,
+            name: session.name,
+            tenant_id: session.tenant_id,
+            role: session.role,
+            exp: Date.now() + 86400000,
+          };
+          const renewedB64 = btoa(JSON.stringify(renewed))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+          const renewedSig = await computeHmac(AUTH_SECRET, renewedB64);
+          const renewedToken = `${renewedB64}.${renewedSig}`;
+
+          const requestHeaders = new Headers(request.headers);
+          requestHeaders.set('x-session-tenant', verifiedTenant);
+          requestHeaders.set('x-session-role', verifiedRole);
+          requestHeaders.set('x-session-user-id', verifiedUserId);
+
+          const res = NextResponse.next({ request: { headers: requestHeaders } });
+          res.cookies.set('nexus_session', renewedToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'lax',
+            path: '/',
+            maxAge: 86400,
+          });
+
+          setSecurityHeaders(res, path);
+          return res;
+        }
       }
     }
   }

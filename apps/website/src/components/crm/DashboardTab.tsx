@@ -22,11 +22,15 @@ const EMPTY: DashboardData = {
 };
 
 export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps): React.ReactElement {
-  const { data, isLoading } = useDashboard(tenant);
+  const { data, isLoading, isError } = useDashboard(tenant);
   const isMobile = useIsMobile();
 
   if (isLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading dashboard...</div>;
+  }
+
+  if (isError) {
+    return <div style={{ padding: '40px', textAlign: 'center' }}><div style={{ color: '#ef4444', fontSize: '16px', marginBottom: '8px' }}>Failed to load dashboard</div><div style={{ color: '#8888a0', fontSize: '13px' }}>Check your connection and try refreshing.</div></div>;
   }
 
   const d = data || EMPTY;

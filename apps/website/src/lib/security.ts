@@ -259,7 +259,9 @@ export function sanitizeInput(input: string, maxLength: number = 500): string {
 }
 
 export function validateTenant(tenant: string | null): string {
-  if (!tenant || !VALID_TENANTS.includes(tenant)) return 'readycar';
+  if (!tenant || !VALID_TENANTS.includes(tenant)) {
+    throw new Error(`Invalid tenant: ${tenant}`);
+  }
   return tenant;
 }
 

@@ -36,10 +36,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const anonH = supaAnonHeaders(tenant);
     const paginatedHeaders = { ...anonH, Range: `${offset}-${offset + limit - 1}`, Prefer: 'count=exact' };
 
-    const [leads, messages, allLeadsRes, recentMessages, hotLeadRows, todayAppts, activeDealsRows, monthDealsRows] = await Promise.all([
+    const [leads, messages, allLeadsRes, _pipelineStatusRows, recentMessages, hotLeadRows, todayAppts, activeDealsRows, monthDealsRows] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&created_at=gte.${todayISO}&select=phone`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&created_at=gte.${todayISO}&select=lead_id`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&select=phone,first_name,last_name,status&order=created_at.desc`, { headers: paginatedHeaders }),
+      // Separate unpaginated query for accurate pipeline counts (only fetches status field)
+      fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&select=status`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&select=lead_id,content,role,channel,created_at&order=created_at.desc&limit=20`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&status=in.(appointment,showed)&select=phone,first_name,last_name,status,created_at&order=created_at.desc&limit=20`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/appointments?tenant_id=eq.${tenant}&scheduled_at=gte.${todayISO}&scheduled_at=lt.${tomorrowISO}&status=in.(scheduled,confirmed)&select=id,lead_phone,lead_name,appointment_type,scheduled_at,status,reminder_sent&order=scheduled_at.asc&limit=50`, { headers: anonH }).then(r => r.ok ? r.json() : []),
@@ -54,7 +56,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const totalLeads = totalMatch ? parseInt(totalMatch[1]) : allLeads.length;
 
     const pipelineCounts: Record<string, number> = {};
-    for (const lead of allLeads) { const s = lead.status || 'new'; pipelineCounts[s] = (pipelineCounts[s] || 0) + 1; }
+    const pipelineData = _pipelineStatusRows as Array<{ status: string }>;
+    for (const lead of pipelineData) { const s = lead.status || 'new'; pipelineCounts[s] = (pipelineCounts[s] || 0) + 1; }
 
     const recentActivity = recentMessages.slice(0, 10).map((msg: Record<string, unknown>) => ({
       time: msg.created_at as string,

@@ -79,25 +79,27 @@ function computeAvgResponseTime(transcripts: TranscriptRow[]): number {
 export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElement {
   const isMobile = useIsMobile();
 
-  const { data: dashData, isLoading: dashLoading } = useQuery({
+  const { data: dashData, isLoading: dashLoading, isError: dashError } = useQuery({
     queryKey: ['reports-dashboard', tenant],
     queryFn: () => apiGet<DashboardResponse>('/api/dashboard', { tenant }),
   });
 
-  const { data: leadsData, isLoading: leadsLoading } = useQuery({
+  const { data: leadsData, isLoading: leadsLoading, isError: leadsError } = useQuery({
     queryKey: ['reports-leads', tenant],
     queryFn: () => apiGet<LeadsResponse>('/api/leads', { tenant, limit: '200' }),
   });
 
-  const { data: transcriptsData, isLoading: transcriptsLoading } = useQuery({
+  const { data: transcriptsData, isLoading: transcriptsLoading, isError: transcriptsError } = useQuery({
     queryKey: ['reports-transcripts', tenant],
     queryFn: () => apiGet<TranscriptsResponse>('/api/leads', { tenant, mode: 'activity', limit: '500' }),
   });
 
+  const hasError = dashError || leadsError || transcriptsError;
+
   const { pipelineData, funnelData, stats } = useMemo(() => {
     const counts = dashData?.pipelineCounts || {};
     const pipeline = STAGES.map((s) => ({
-      name: s.replace('_', ' ').replace(/^\w/, (c: string) => c.toUpperCase()),
+      name: s.replace(/_/g, ' ').replace(/^\w/, (c: string) => c.toUpperCase()),
       count: counts[s] || 0,
     }));
 
@@ -106,7 +108,7 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
       funnelStages.slice(i).reduce((sum, s) => sum + (counts[s] || 0), 0)
     );
     const funnel = funnelStages.map((s, i) => ({
-      name: s.replace('_', ' ').replace(/^\w/, (c: string) => c.toUpperCase()),
+      name: s.replace(/_/g, ' ').replace(/^\w/, (c: string) => c.toUpperCase()),
       value: funnelValues[i] || 0,
       fill: COLORS[i % COLORS.length],
     }));
@@ -162,6 +164,10 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
 
   if (dashLoading || leadsLoading || transcriptsLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading reports...</div>;
+  }
+
+  if (hasError) {
+    return <div style={{ padding: '40px', textAlign: 'center' }}><div style={{ color: '#ef4444', fontSize: '16px', marginBottom: '8px' }}>Failed to load reports</div><div style={{ color: '#8888a0', fontSize: '13px' }}>Check your connection and try refreshing.</div></div>;
   }
 
   function formatResponseTime(sec: number): string {

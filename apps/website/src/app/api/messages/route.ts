@@ -141,28 +141,45 @@ function twilioHeaders(): HeadersInit {
   };
 }
 
-async function fetchAllMessages(): Promise<TwilioMessage[]> {
+async function fetchAllMessages(tenantNumber?: string): Promise<TwilioMessage[]> {
   const allMessages: TwilioMessage[] = [];
-  let url: string | null = `${TWILIO_BASE_URL}/Messages.json?PageSize=200`;
+  // Only fetch last 30 days + filter by tenant number to avoid loading entire account history
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const params = new URLSearchParams({ PageSize: '200', 'DateSent>': since });
+  if (tenantNumber) params.set('From', tenantNumber);
 
+  // Fetch sent messages (From=tenant)
+  let url: string | null = `${TWILIO_BASE_URL}/Messages.json?${params}`;
   while (url) {
     const res = await fetch(url, {
       headers: twilioHeaders(),
       signal: AbortSignal.timeout(15000),
     });
-
     if (!res.ok) {
       console.error(`[messages] Twilio API error: ${res.status}`);
       break;
     }
-
     const data = (await res.json()) as TwilioResponse;
     allMessages.push(...data.messages);
+    url = data.next_page_uri ? `https://api.twilio.com${data.next_page_uri}` : null;
+  }
 
-    if (data.next_page_uri) {
-      url = `https://api.twilio.com${data.next_page_uri}`;
-    } else {
-      url = null;
+  // Fetch received messages (To=tenant)
+  if (tenantNumber) {
+    const inParams = new URLSearchParams({ PageSize: '200', 'DateSent>': since, To: tenantNumber });
+    let inUrl: string | null = `${TWILIO_BASE_URL}/Messages.json?${inParams}`;
+    while (inUrl) {
+      const res = await fetch(inUrl, {
+        headers: twilioHeaders(),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) {
+        console.error(`[messages] Twilio API error (inbound): ${res.status}`);
+        break;
+      }
+      const data = (await res.json()) as TwilioResponse;
+      allMessages.push(...data.messages);
+      inUrl = data.next_page_uri ? `https://api.twilio.com${data.next_page_uri}` : null;
     }
   }
 
@@ -429,7 +446,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const [messages, leads] = await Promise.all([fetchAllMessages(), fetchLeads(tenant)]);
+    const [messages, leads] = await Promise.all([fetchAllMessages(fromNumber), fetchLeads(tenant)]);
     const conversations = groupIntoConversations(messages, leads, fromNumber);
 
     return NextResponse.json(

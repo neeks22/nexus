@@ -80,8 +80,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       model: sanitizeInput(model, 50),
       trim: body.trim ? sanitizeInput(body.trim, 50) : null,
       color: body.color ? sanitizeInput(body.color, 30) : null,
-      price: body.price ? parseFloat(body.price) : null,
-      mileage: body.mileage ? parseInt(body.mileage) : null,
+      price: body.price !== undefined && body.price !== '' ? parseFloat(body.price) : null,
+      mileage: body.mileage !== undefined && body.mileage !== '' ? parseInt(body.mileage) : null,
       stock_number: body.stock_number ? sanitizeInput(body.stock_number, 30) : null,
       vin: body.vin ? sanitizeInput(body.vin, 17) : null,
       status: body.status && VALID_STATUSES.includes(body.status) ? body.status : 'available',
@@ -133,8 +133,8 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     if (body.model) updates.model = sanitizeInput(body.model, 50);
     if (body.trim !== undefined) updates.trim = body.trim ? sanitizeInput(body.trim, 50) : null;
     if (body.color !== undefined) updates.color = body.color ? sanitizeInput(body.color, 30) : null;
-    if (body.price !== undefined) updates.price = body.price ? parseFloat(body.price) : null;
-    if (body.mileage !== undefined) updates.mileage = body.mileage ? parseInt(body.mileage) : null;
+    if (body.price !== undefined) updates.price = body.price !== '' ? parseFloat(body.price) : null;
+    if (body.mileage !== undefined) updates.mileage = body.mileage !== '' ? parseInt(body.mileage) : null;
     if (body.stock_number !== undefined) updates.stock_number = body.stock_number ? sanitizeInput(body.stock_number, 30) : null;
     if (body.vin !== undefined) updates.vin = body.vin ? sanitizeInput(body.vin, 17) : null;
     if (body.status && VALID_STATUSES.includes(body.status)) updates.status = body.status;

@@ -73,11 +73,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       lead_name: body.lead_name ? sanitizeInput(body.lead_name, 100) : null,
       vehicle_id: body.vehicle_id || null,
       vehicle_description: body.vehicle_description ? sanitizeInput(body.vehicle_description, 200) : null,
-      sale_price: body.sale_price ? parseFloat(body.sale_price) : null,
-      trade_in_value: body.trade_in_value ? parseFloat(body.trade_in_value) : null,
-      down_payment: body.down_payment ? parseFloat(body.down_payment) : null,
-      monthly_payment: body.monthly_payment ? parseFloat(body.monthly_payment) : null,
-      term_months: body.term_months ? parseInt(body.term_months) : null,
+      sale_price: body.sale_price !== undefined && body.sale_price !== '' ? parseFloat(body.sale_price) : null,
+      trade_in_value: body.trade_in_value !== undefined && body.trade_in_value !== '' ? parseFloat(body.trade_in_value) : null,
+      down_payment: body.down_payment !== undefined && body.down_payment !== '' ? parseFloat(body.down_payment) : null,
+      monthly_payment: body.monthly_payment !== undefined && body.monthly_payment !== '' ? parseFloat(body.monthly_payment) : null,
+      term_months: body.term_months !== undefined && body.term_months !== '' ? parseInt(body.term_months) : null,
       lender: body.lender ? sanitizeInput(body.lender, 100) : null,
       status: body.status && VALID_STATUSES.includes(body.status) ? body.status : 'negotiating',
       notes: body.notes ? sanitizeInput(body.notes, 500) : null,
@@ -125,11 +125,11 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
 
     const updates: Record<string, unknown> = {};
     if (body.status && VALID_STATUSES.includes(body.status)) updates.status = body.status;
-    if (body.sale_price !== undefined) updates.sale_price = body.sale_price ? parseFloat(body.sale_price) : null;
-    if (body.trade_in_value !== undefined) updates.trade_in_value = body.trade_in_value ? parseFloat(body.trade_in_value) : null;
-    if (body.down_payment !== undefined) updates.down_payment = body.down_payment ? parseFloat(body.down_payment) : null;
-    if (body.monthly_payment !== undefined) updates.monthly_payment = body.monthly_payment ? parseFloat(body.monthly_payment) : null;
-    if (body.term_months !== undefined) updates.term_months = body.term_months ? parseInt(body.term_months) : null;
+    if (body.sale_price !== undefined) updates.sale_price = body.sale_price !== '' ? parseFloat(body.sale_price) : null;
+    if (body.trade_in_value !== undefined) updates.trade_in_value = body.trade_in_value !== '' ? parseFloat(body.trade_in_value) : null;
+    if (body.down_payment !== undefined) updates.down_payment = body.down_payment !== '' ? parseFloat(body.down_payment) : null;
+    if (body.monthly_payment !== undefined) updates.monthly_payment = body.monthly_payment !== '' ? parseFloat(body.monthly_payment) : null;
+    if (body.term_months !== undefined) updates.term_months = body.term_months !== '' ? parseInt(body.term_months) : null;
     if (body.lender !== undefined) updates.lender = body.lender ? sanitizeInput(body.lender, 100) : null;
     if (body.vehicle_id !== undefined) updates.vehicle_id = body.vehicle_id || null;
     if (body.vehicle_description !== undefined) updates.vehicle_description = body.vehicle_description ? sanitizeInput(body.vehicle_description, 200) : null;

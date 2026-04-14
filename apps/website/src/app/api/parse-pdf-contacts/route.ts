@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { callClaude, rateLimit, getClientIp } from '@/lib/security';
+import { callClaude, rateLimit, getClientIp, requireRole, isAuthError } from '@/lib/security';
 import { z } from 'zod';
 
 const RequestSchema = z.object({
@@ -14,6 +14,9 @@ const ContactSchema = z.array(z.object({
 }));
 
 export async function POST(request: NextRequest) {
+  const session = requireRole(request, 'manager');
+  if (isAuthError(session)) return session;
+
   const ip = getClientIp(request);
   if (await rateLimit(ip, 5, 60000)) {
     return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
