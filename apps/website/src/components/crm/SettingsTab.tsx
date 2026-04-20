@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 
 interface UserInfo {
   name: string;
@@ -62,10 +63,12 @@ export default function SettingsTab({ user }: SettingsTabProps): React.ReactElem
         setMessage({ type: 'error', text: data.error || 'Failed to change password' });
       }
     } catch (err) {
-      console.error('Password change error:', err);
+      console.error('Password change error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       setMessage({ type: 'error', text: 'Something went wrong' });
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
   return (

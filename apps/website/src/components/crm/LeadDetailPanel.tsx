@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import ActivityTimeline from './ActivityTimeline';
 import {
   useLeadDetail, useSendSMS, useSendEmail, useUpdateLeadStatus,
@@ -41,6 +42,10 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
     successTimerRef.current = setTimeout(() => setSendSuccess(''), 3000);
   }, []);
 
+  useEffect(() => () => {
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
+  }, []);
+
   async function sendSMS(): Promise<void> {
     if (!messageText.trim() || sending) return;
     try {
@@ -48,7 +53,11 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
       showSuccess('SMS sent!');
       setMessageText('');
       setActiveAction('none');
-    } catch (err) { console.error('[LeadDetail] SMS send error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to send SMS'); }
+    } catch (err) {
+      console.error('[LeadDetail] SMS send error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to send SMS');
+    }
   }
 
   async function sendEmail(): Promise<void> {
@@ -59,13 +68,20 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
       setEmailSubject('');
       setEmailBody('');
       setActiveAction('none');
-    } catch (err) { console.error('[LeadDetail] Email send error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to send email'); }
+    } catch (err) {
+      console.error('[LeadDetail] Email send error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to send email');
+    }
   }
 
   async function updateStatus(newStatus: string): Promise<void> {
     try {
       await statusMutation.mutateAsync({ phone, status: newStatus });
-    } catch (err) { console.error('[LeadDetail] Status update error:', err instanceof Error ? err.message : 'unknown'); }
+    } catch (err) {
+      console.error('[LeadDetail] Status update error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+    }
   }
 
   // Check if agent is paused for this lead (HOT_PAUSED or manually AGENT_PAUSED)
@@ -90,6 +106,8 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
       showSuccess('Agent paused — manual mode');
     } catch (err) {
       console.error('[LeadDetail] Pause Agent error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to pause agent');
     }
   }
 
@@ -106,6 +124,8 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
       showSuccess('Agent resumed — auto-replies are back on');
     } catch (err) {
       console.error('[LeadDetail] Resume Agent error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to resume agent');
     }
   }
 
@@ -324,7 +344,11 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
                   await deleteMutation.mutateAsync(phone);
                   alert('All customer data has been permanently deleted.');
                   onClose();
-                } catch (err) { console.error('[LeadDetail] Delete error:', err instanceof Error ? err.message : 'unknown'); alert('Failed to delete data.'); }
+                } catch (err) {
+                  console.error('[LeadDetail] Delete error:', err instanceof Error ? err.message : 'unknown');
+                  Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+                  alert('Failed to delete data.');
+                }
               }}
               style={{
                 padding: '8px 14px', borderRadius: '6px', fontSize: '12px',
