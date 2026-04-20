@@ -29,17 +29,28 @@ async function isRevoked(signaturePrefix: string): Promise<boolean> {
 const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '').replace(/\/+$/, '');
 
 // Accept apex + www variants of the allowed host — prevents CSRF 403s
-// when the cookie domain and the Origin header disagree on www.
+// when the cookie domain and the Origin header disagree on www, or when the
+// Vercel env value has a stray scheme/trailing-slash variant.
 function hostFromUrl(url: string): string {
   try { return new URL(url).host.toLowerCase(); } catch { return ''; }
 }
+function toHost(val: string): string {
+  if (!val) return '';
+  if (val.startsWith('http://') || val.startsWith('https://')) return hostFromUrl(val);
+  return val.toLowerCase().replace(/\/+$/, '');
+}
 const ALLOWED_HOSTS = (() => {
-  const base = hostFromUrl(ALLOWED_ORIGIN);
   const set = new Set<string>();
-  if (base) {
-    set.add(base);
-    set.add(base.startsWith('www.') ? base.slice(4) : `www.${base}`);
-  }
+  const add = (raw: string) => {
+    const h = toHost(raw);
+    if (!h) return;
+    set.add(h);
+    set.add(h.startsWith('www.') ? h.slice(4) : `www.${h}`);
+  };
+  // Known production hosts — hardcoded so an env misconfiguration can't lock users out.
+  add('nexusagents.ca');
+  // Env-provided host (supports preview/staging domains).
+  add(ALLOWED_ORIGIN);
   return set;
 })();
 
