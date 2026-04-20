@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import useIsMobile from './useIsMobile';
 import { useAppointments, useCreateAppointment, useUpdateAppointment, useSendReminder, type Appointment } from '@/hooks/use-appointments';
 import { APPOINTMENT_STATUS_COLORS as STATUS_COLORS } from './tokens';
@@ -37,7 +38,7 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
   const [newAppt, setNewAppt] = useState({ lead_phone: '', lead_name: '', appointment_type: 'general', scheduled_at: '', assigned_to: '', notes: '' });
 
-  const { data: appointments = [], isLoading } = useAppointments(tenant, { view });
+  const { data: appointments = [], isLoading, isError, refetch } = useAppointments(tenant, { view });
   const createMutation = useCreateAppointment(tenant);
   const updateMutation = useUpdateAppointment(tenant);
   const reminderMutation = useSendReminder(tenant);
@@ -49,7 +50,9 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
       setShowCreate(false);
       setNewAppt({ lead_phone: '', lead_name: '', appointment_type: 'general', scheduled_at: '', assigned_to: '', notes: '' });
     } catch (err) {
-      console.error('Failed to create appointment:', err);
+      console.error('Failed to create appointment:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to create appointment');
     }
   };
 
@@ -57,7 +60,8 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
     try {
       await updateMutation.mutateAsync({ id, status });
     } catch (err) {
-      console.error('Failed to update appointment:', err);
+      console.error('Failed to update appointment:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     }
   };
 
@@ -66,15 +70,30 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
     try {
       await reminderMutation.mutateAsync(id);
     } catch (err) {
-      console.error('Failed to send reminder:', err);
+      console.error('Failed to send reminder:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+    } finally {
+      setSendingReminderId(null);
     }
-    setSendingReminderId(null);
   };
 
   const creating = createMutation.isPending;
 
   if (isLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading appointments...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <div style={{ color: '#ef4444', fontSize: '16px', marginBottom: '8px' }}>Failed to load appointments</div>
+        <div style={{ color: '#8888a0', fontSize: '13px', marginBottom: '16px' }}>Check your connection and try again.</div>
+        <button
+          onClick={() => refetch()}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#f0f0f5', cursor: 'pointer' }}
+        >Retry</button>
+      </div>
+    );
   }
 
   const counts = { scheduled: 0, confirmed: 0, completed: 0, no_show: 0, cancelled: 0 };

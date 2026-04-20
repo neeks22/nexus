@@ -45,7 +45,25 @@ export function useUpdateAppointment(tenant: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { id: string } & Record<string, unknown>) => apiPatch('/api/appointments', { tenant, ...data }),
-    onSuccess: () => {
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: ['appointments', tenant] });
+      const snapshots = qc.getQueriesData<AppointmentsResponse>({ queryKey: ['appointments', tenant] });
+      for (const [key, prev] of snapshots) {
+        if (!prev) continue;
+        qc.setQueryData<AppointmentsResponse>(key, {
+          ...prev,
+          appointments: prev.appointments.map((a) =>
+            a.id === data.id ? { ...a, ...(data as Partial<Appointment>) } : a
+          ),
+        });
+      }
+      return { snapshots };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
+      for (const [key, prev] of ctx.snapshots) qc.setQueryData(key, prev);
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['appointments', tenant] });
       qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
     },
