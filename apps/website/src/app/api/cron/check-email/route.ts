@@ -86,7 +86,10 @@ export async function POST(request: Request): Promise<NextResponse> {
     let intent = 'GENERAL';
     let shouldHandoff = false;
     if (/\b(unsubscribe|stop|remove me|not interested)\b/.test(lower)) {
-      // Send unsubscribe confirmation
+      if (!GMAIL_USER || !GMAIL_PASS) {
+        console.error('[check-email] Gmail credentials not configured — skipping unsubscribe email');
+        return NextResponse.json({ skipped: true, reason: 'email disabled', intent: 'UNSUBSCRIBE' });
+      }
       const nodemailer = await import('nodemailer');
       const transport = nodemailer.default.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_PASS } });
       const unsubMsg = `Hi,\n\nNo problem at all — I've removed you from our list. Wishing you all the best.\n\n${tenantCfg.gm}\nGeneral Sales Manager\n${tenantCfg.signoff}`;
@@ -122,7 +125,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       aiReply = `I'd love to help you find the right vehicle. What are you looking for? And are you hoping to get into something soon or just exploring?\n\nNo pressure either way — I'm here whenever you're ready.\n\n${tenantCfg.gm}\nGeneral Sales Manager\n${tenantCfg.signoff}`;
     }
 
-    // Send reply
+    if (!GMAIL_USER || !GMAIL_PASS) {
+      console.error('[check-email] Gmail credentials not configured — skipping reply send');
+      return NextResponse.json({ skipped: true, reason: 'email disabled', intent, shouldHandoff });
+    }
     const nodemailer = await import('nodemailer');
     const transport = nodemailer.default.createTransport({ service: 'gmail', auth: { user: GMAIL_USER, pass: GMAIL_PASS } });
     await transport.sendMail({
