@@ -2,6 +2,7 @@
 
 import StatCard from './StatCard';
 import TodaySchedule from './TodaySchedule';
+import HotLeadsPanel from './HotLeadsPanel';
 import useIsMobile from './useIsMobile';
 import PipelineFunnel from './PipelineFunnel';
 import { useDashboard, type DashboardData } from '@/hooks/use-dashboard';
@@ -81,24 +82,7 @@ export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps
 
       {/* Two Column: Hot Leads + Active Deals */}
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
-        {/* Hot Leads */}
-        <div style={{ flex: '1 1 300px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '20px' }}>
-          <h3 style={{ color: '#f0f0f5', fontSize: '15px', fontWeight: 600, margin: '0 0 16px' }}>Hot Leads</h3>
-          {d.hotLeads.length === 0 ? (
-            <div style={{ color: '#666', fontSize: '13px' }}>No hot leads right now</div>
-          ) : d.hotLeads.map(lead => (
-            <div key={lead.phone} onClick={() => onSelectLead(lead.phone)} style={{
-              padding: '10px 12px', borderRadius: '8px', cursor: 'pointer', marginBottom: '4px',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)',
-            }}>
-              <span style={{ color: '#f0f0f5', fontSize: '14px' }}>{lead.name || lead.phone}</span>
-              <span style={{ background: '#ef4444', color: '#fff', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600, textTransform: 'capitalize' }}>
-                {lead.status.replace('_', ' ')}
-              </span>
-            </div>
-          ))}
-        </div>
+        <HotLeadsPanel leads={d.hotLeads} onSelectLead={onSelectLead} />
 
         {/* Active Deals */}
         <div style={{ flex: '1 1 300px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '20px' }}>

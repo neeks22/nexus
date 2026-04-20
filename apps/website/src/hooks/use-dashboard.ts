@@ -25,7 +25,15 @@ interface ActiveDeal {
 export interface DashboardData {
   leadsToday: number;
   pipelineCounts: Record<string, number>;
-  hotLeads: { phone: string; name: string; status: string }[];
+  hotLeads: {
+    phone: string;
+    name: string;
+    status: string;
+    since: string;
+    lastContactAt: string | null;
+    appointmentAt: string | null;
+    appointmentConfirmed: boolean;
+  }[];
   recentActivity: { time: string; type: string; content: string; phone: string }[];
   todayAppointments: Appointment[];
   activeDeals: { deals: ActiveDeal[]; totalValue: number; byStatus: Record<string, number> };

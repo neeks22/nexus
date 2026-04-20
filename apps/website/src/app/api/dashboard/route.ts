@@ -70,20 +70,48 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       phone: (msg.lead_id as string) || '',
     }));
 
-    // Build hot leads list from appointment/showed status leads
-    const hotLeads = (hotLeadRows as Array<{ phone: string; first_name: string; last_name: string; status: string; created_at: string }>).map((lead) => ({
-      phone: lead.phone,
-      name: [lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.phone,
-      status: lead.status,
-      since: lead.created_at,
-    }));
-
-    // Build today's appointments
+    // Build today's appointments first — used both as its own widget AND to enrich hot leads
     const todayAppointments = (todayAppts as Array<{ id: string; lead_phone: string; lead_name: string | null; appointment_type: string; scheduled_at: string; status: string; reminder_sent: boolean }>).map(a => ({
       id: a.id, leadPhone: a.lead_phone, leadName: a.lead_name,
       type: a.appointment_type, scheduledAt: a.scheduled_at,
       status: a.status, reminderSent: a.reminder_sent,
     }));
+
+    // Build hot leads with enrichment: last contact time + today's appointment countdown
+    const hotRows = hotLeadRows as Array<{ phone: string; first_name: string; last_name: string; status: string; created_at: string }>;
+    const hotPhones = hotRows.map(r => r.phone).filter(Boolean);
+    // Fetch latest message per hot lead — single `in` query, then reduce to max-per-phone client-side.
+    const lastContactByPhone = new Map<string, string>();
+    if (hotPhones.length > 0) {
+      const quoted = hotPhones.map(p => `"${p}"`).join(',');
+      const hotMsgsRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=in.(${quoted})&select=lead_id,created_at&order=created_at.desc&limit=500`,
+        { headers: anonH }
+      ).then(r => r.ok ? r.json() : []);
+      for (const msg of hotMsgsRes as Array<{ lead_id: string; created_at: string }>) {
+        if (!lastContactByPhone.has(msg.lead_id)) lastContactByPhone.set(msg.lead_id, msg.created_at);
+      }
+    }
+    const apptByPhone = new Map<string, { scheduledAt: string; status: string }>();
+    for (const a of todayAppointments) {
+      // Keep soonest appointment per lead
+      const existing = apptByPhone.get(a.leadPhone);
+      if (!existing || new Date(a.scheduledAt).getTime() < new Date(existing.scheduledAt).getTime()) {
+        apptByPhone.set(a.leadPhone, { scheduledAt: a.scheduledAt, status: a.status });
+      }
+    }
+    const hotLeads = hotRows.map((lead) => {
+      const appt = apptByPhone.get(lead.phone);
+      return {
+        phone: lead.phone,
+        name: [lead.first_name, lead.last_name].filter(Boolean).join(' ') || lead.phone,
+        status: lead.status,
+        since: lead.created_at,
+        lastContactAt: lastContactByPhone.get(lead.phone) || null,
+        appointmentAt: appt?.scheduledAt || null,
+        appointmentConfirmed: appt?.status === 'confirmed',
+      };
+    });
 
     // Build active deals summary
     const adRows = activeDealsRows as Array<{ id: string; lead_phone: string; lead_name: string | null; vehicle_description: string | null; sale_price: number | null; status: string }>;
