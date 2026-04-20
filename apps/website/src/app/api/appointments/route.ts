@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/nextjs';
 import {
   SUPABASE_URL, requireSession, requireRole, isAuthError, rateLimit, getClientIp,
   sanitizeInput, supaHeaders, supaAnonHeaders, encodeSupabaseParam, sendTwilioSMS, isValidUuid,
+  checkCASLCompliance,
 } from '@/lib/security';
 
 const VALID_TYPES = ['test_drive', 'financing', 'trade_appraisal', 'general'];
@@ -124,6 +125,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const name = appt.lead_name ? appt.lead_name.split(' ')[0] : '';
       const greeting = name ? `Hi ${name}, this` : 'This';
       const smsBody = `${greeting} is a reminder about your ${typeLabel} appointment at ${dealerName} on ${dateStr} at ${timeStr}. Reply YES to confirm or give us a call!`;
+
+      // CASL pre-flight — block reminders to opted-out leads even though reminders
+      // are arguably transactional. Safer to honor the opt-out than argue about it.
+      const compliance = await checkCASLCompliance(appt.lead_phone, tenant);
+      if (!compliance.allowed) {
+        return NextResponse.json({ error: 'Lead has unsubscribed', reason: compliance.reason }, { status: 403 });
+      }
 
       const sent = await sendTwilioSMS(appt.lead_phone, fromNumber, smsBody);
       if (!sent) {

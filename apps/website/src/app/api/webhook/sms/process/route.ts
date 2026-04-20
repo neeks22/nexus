@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL, isDeduplicate, acquirePhoneLock, releasePhoneLock } from '../../../../../lib/security';
+import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL, isDeduplicate, acquirePhoneLock, releasePhoneLock, checkCASLCompliance } from '../../../../../lib/security';
 
 /* =============================================================================
    DELAYED SMS PROCESSOR — Called internally by the webhook
@@ -67,11 +67,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       intent = 'TRADE_IN';
     }
 
-    // STOP — immediate
+    // STOP — immediate. CASL-exempt confirmation, then persist opt-out flag.
     if (shouldStop) {
       const msg = 'No problem at all. Wishing you all the best.';
       await sendTwilioSMS(fromPhone, toPhone, msg);
       await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: msg, channel: 'sms', intent });
+      // Persist opt-out so future outbound sends are blocked by CASL pre-flight
+      await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'status', role: 'system', content: 'UNSUBSCRIBED', channel: 'sms' });
       return NextResponse.json({ sent: true, immediate: true });
     }
 
@@ -175,6 +177,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       aiReply = leadName
         ? `${leadName}, glad you replied! What kind of vehicle would make the biggest difference for you right now?`
         : `It's ${tenant.gm}, GM over at ${tenant.name}. What kind of vehicle are you looking for?`;
+    }
+
+    // CASL pre-flight — if this lead previously said STOP, don't auto-reply
+    // even if they text again. They must re-consent via the funnel.
+    const compliance = await checkCASLCompliance(fromPhone, tenant.tenant);
+    if (!compliance.allowed) {
+      console.warn(`[sms-process] CASL block for ***${fromPhone.slice(-4)} tenant=${tenant.tenant} reason=${compliance.reason}`);
+      await slackNotify(`CASL BLOCK — incoming SMS from opted-out lead\nPhone: ***${fromPhone.slice(-4)}\nDealer: ${tenant.name}\nMessage: ${messageBody}\nReason: ${compliance.reason}\nAI will NOT reply until they re-consent via the funnel.`);
+      await releasePhoneLock(fromPhone, tenant.tenant);
+      return NextResponse.json({ sent: false, blocked: true, reason: compliance.reason });
     }
 
     await sendTwilioSMS(fromPhone, toPhone, aiReply);

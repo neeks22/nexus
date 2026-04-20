@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
-import { supaGet, supaPost, supaPatch, sendTwilioSMS, slackNotify, callClaude } from './security';
+import { supaGet, supaPost, supaPatch, sendTwilioSMS, slackNotify, callClaude, checkCASLCompliance } from './security';
 import { TENANTS, TenantConfig } from './auto-response';
 
 /* =============================================================================
@@ -209,6 +209,14 @@ export async function processFollowUpBatch(
 
   for (const candidate of candidates) {
     try {
+      // CASL pre-flight — skip opted-out leads entirely, don't even generate copy
+      const compliance = await checkCASLCompliance(candidate.phone, tenant.tenantId);
+      if (!compliance.allowed) {
+        console.warn(`[follow-up] CASL block for ${candidate.phone.slice(-4)} tenant=${tenant.tenantId} reason=${compliance.reason}`);
+        failed++;
+        continue;
+      }
+
       const smsText = await generateFollowUpSMS(candidate, tenant);
       const newTouch = candidate.currentTouch + 1;
 

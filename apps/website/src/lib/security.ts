@@ -449,6 +449,33 @@ export async function sendTwilioSMS(to: string, from: string, body: string): Pro
   }
 }
 
+/* ---------- CASL Compliance Pre-Flight ---------- */
+
+/**
+ * Check if we're allowed to send a commercial SMS/email to this lead.
+ * Returns { allowed: false } if the lead has previously unsubscribed.
+ * Fails closed — if the lookup errors, we block the send (CASL is legal risk).
+ *
+ * Transactional/service messages (STOP confirmations, HOT handoffs) should
+ * skip this check — they are exempt under CASL.
+ */
+export async function checkCASLCompliance(
+  phone: string,
+  tenantId: string,
+): Promise<{ allowed: boolean; reason?: string }> {
+  if (!phone || !tenantId) return { allowed: false, reason: 'missing_args' };
+  try {
+    const rows = await supaGetData(
+      `lead_transcripts?tenant_id=eq.${tenantId}&lead_id=eq.${encodeURIComponent(phone)}&entry_type=eq.status&content=eq.UNSUBSCRIBED&select=id&limit=1`,
+    ) as unknown[];
+    if (rows.length > 0) return { allowed: false, reason: 'opted_out' };
+    return { allowed: true };
+  } catch (err) {
+    console.error('[casl] check failed:', err instanceof Error ? err.message : 'unknown');
+    return { allowed: false, reason: 'check_failed' };
+  }
+}
+
 /* ---------- Env Validation ---------- */
 
 export function validateRequiredEnv(...keys: string[]): string | null {
