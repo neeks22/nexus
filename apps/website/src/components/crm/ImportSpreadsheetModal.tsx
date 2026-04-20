@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react';
 import * as Papa from 'papaparse';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 interface ImportSpreadsheetModalProps {
   tenant: string;
@@ -105,13 +105,25 @@ export default function ImportSpreadsheetModal({ tenant, onClose, onComplete }: 
 
   const parseExcel = useCallback((file: File) => {
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const wb = XLSX.read(e.target?.result, { type: 'array' });
-        const rows = XLSX.utils.sheet_to_json<string[]>(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+        const buf = e.target?.result as ArrayBuffer;
+        if (!buf) throw new Error('Empty buffer');
+        const wb = new ExcelJS.Workbook();
+        await wb.xlsx.load(buf);
+        const sheet = wb.worksheets[0];
+        if (!sheet) { setError('Workbook has no sheets.'); setStep('upload'); return; }
+
+        const rows: string[][] = [];
+        sheet.eachRow({ includeEmpty: false }, (row) => {
+          // row.values is 1-indexed; slice(1) drops the leading undefined
+          const vals = (row.values as Array<unknown>).slice(1);
+          rows.push(vals.map((v) => v == null ? '' : String(v)));
+        });
+
         if (rows.length < 2) { setError('File has no data rows.'); setStep('upload'); return; }
-        const hdrs = rows[0].map(String);
-        const dataRows = rows.slice(1).map((r) => r.map(String));
+        const hdrs = rows[0];
+        const dataRows = rows.slice(1);
         const colMap = detectColumns(hdrs);
         if (colMap) {
           finishParsing(rowsToContacts(dataRows, colMap));
