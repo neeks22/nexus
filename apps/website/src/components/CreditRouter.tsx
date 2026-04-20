@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import useIsMobile from './crm/useIsMobile';
 import type { CustomerProfile, ScoredResult, ScoringProfile } from './crm/credit/types';
 import { LENDER_DB, scoreLender, computeCreditGrade } from './crm/credit/scoring-engine';
@@ -46,8 +47,10 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
             setLeadMatch({ found: false });
           }
         }
-      } catch (err) { console.error('[CreditRouter] Lead search error:', err instanceof Error ? err.message : 'unknown'); }
-      finally { setSearchingLead(false); }
+      } catch (err) {
+        console.error('[CreditRouter] Lead search error:', err instanceof Error ? err.message : 'unknown');
+        Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      } finally { setSearchingLead(false); }
     }, 500);
   };
 
@@ -86,6 +89,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
       if (data.clientInfo) fillFromClientInfo(data.clientInfo);
     } catch (err) {
       console.error('[CreditRouter] AI text analysis error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       setAiInsight('AI analysis unavailable — network error. Enter credit details manually below.');
     }
     setAnalyzing(false);
@@ -129,6 +133,7 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
           }
         } catch (err) {
           console.error('[CreditRouter] PDF analysis error:', err instanceof Error ? err.message : 'unknown');
+          Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
           setAiInsight('Could not analyze PDF — network error. Try pasting the bureau text instead.');
         }
         setAnalyzing(false);
@@ -200,12 +205,16 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
 
       const saveActivity = async (): Promise<void> => {
         try {
-          await fetch('/api/leads', {
+          const res = await fetch('/api/leads', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tenant, phone: fullPhone, type: 'credit_routing', content: JSON.stringify(routingData) }),
           });
+          if (!res.ok) throw new Error(`Save failed: ${res.status}`);
           setSaved(true);
-        } catch (err) { console.error('[CreditRouter] Activity save error:', err instanceof Error ? err.message : 'unknown'); }
+        } catch (err) {
+          console.error('[CreditRouter] Activity save error:', err instanceof Error ? err.message : 'unknown');
+          Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+        }
       };
 
       (async () => {
@@ -226,7 +235,10 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
               body: JSON.stringify({ tenant, phone: fullPhone, credit_situation: creditSituationValue }),
             });
           }
-        } catch (err) { console.error('[CreditRouter] Lead create/update error:', err instanceof Error ? err.message : 'unknown'); }
+        } catch (err) {
+          console.error('[CreditRouter] Lead create/update error:', err instanceof Error ? err.message : 'unknown');
+          Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+        }
         await saveActivity();
       })();
     }
