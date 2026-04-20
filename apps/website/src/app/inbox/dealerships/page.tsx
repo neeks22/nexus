@@ -3,8 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './page.module.css';
 
-const TENANT = 'readycar';
-
 /* ============================================
    TYPES
    ============================================ */
@@ -176,7 +174,7 @@ function InboxContent(): React.ReactElement {
   /* ---- Fetch conversations ---- */
   const fetchConversations = useCallback(async (): Promise<void> => {
     try {
-      const res = await fetch(`/api/messages?tenant=${TENANT}`);
+      const res = await fetch('/api/messages');
       if (!res.ok) throw new Error('Failed to fetch');
       const data = await res.json();
       setConversations(data.conversations || []);
@@ -235,7 +233,7 @@ function InboxContent(): React.ReactElement {
       const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: activeConversation.phone, body: composeText.trim(), tenant: TENANT }),
+        body: JSON.stringify({ to: activeConversation.phone, body: composeText.trim() }),
       });
 
       if (!res.ok) throw new Error('Failed to send');
@@ -318,7 +316,7 @@ function InboxContent(): React.ReactElement {
       const res = await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: transferPhone, body, tenant: TENANT }),
+        body: JSON.stringify({ to: transferPhone, body }),
       });
 
       if (!res.ok) throw new Error('Failed to transfer');
