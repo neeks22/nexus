@@ -162,3 +162,52 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  // Require manager+ role for deleting deals (PIPEDA right-to-be-forgotten)
+  const session = requireRole(request, 'manager');
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
+
+  const ip = getClientIp(request);
+  if (await rateLimit(ip, 20)) {
+    return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+  }
+
+  let deleteBody;
+  try {
+    deleteBody = await request.json();
+  } catch (err) {
+    console.error('[deals] DELETE parse error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  try {
+    const { id } = deleteBody as { id?: string };
+
+    if (!id || !isValidUuid(id)) {
+      return NextResponse.json({ error: 'Missing or invalid deal id' }, { status: 400 });
+    }
+
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/deals?id=eq.${id}&tenant_id=eq.${tenant}`,
+      {
+        method: 'DELETE',
+        headers: { ...supaHeaders(tenant), Prefer: 'return=minimal' },
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+
+    if (!res.ok) {
+      console.error(`[deals] DELETE failed: HTTP ${res.status}`);
+      return NextResponse.json({ error: 'Failed to delete deal' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[deals] DELETE error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}

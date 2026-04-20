@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import {
-  SUPABASE_URL, requireSession, isAuthError, rateLimit, getClientIp,
+  SUPABASE_URL, requireSession, requireRole, isAuthError, rateLimit, getClientIp,
   sanitizeInput, supaHeaders, supaAnonHeaders, encodeSupabaseParam, sendTwilioSMS, isValidUuid,
 } from '@/lib/security';
 
@@ -249,6 +249,55 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[appointments] PATCH error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  // Require manager+ role for deleting appointments (PIPEDA right-to-be-forgotten)
+  const session = requireRole(request, 'manager');
+  if (isAuthError(session)) return session;
+  const tenant = session.tenant;
+
+  const ip = getClientIp(request);
+  if (await rateLimit(ip, 20)) {
+    return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+  }
+
+  let deleteBody;
+  try {
+    deleteBody = await request.json();
+  } catch (err) {
+    console.error('[appointments] DELETE parse error:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  try {
+    const { id } = deleteBody as { id?: string };
+
+    if (!id || !isValidUuid(id)) {
+      return NextResponse.json({ error: 'Missing or invalid appointment id' }, { status: 400 });
+    }
+
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/appointments?id=eq.${id}&tenant_id=eq.${tenant}`,
+      {
+        method: 'DELETE',
+        headers: { ...supaHeaders(tenant), Prefer: 'return=minimal' },
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+
+    if (!res.ok) {
+      console.error(`[appointments] DELETE failed: HTTP ${res.status}`);
+      return NextResponse.json({ error: 'Failed to delete appointment' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error('[appointments] DELETE error:', err instanceof Error ? err.message : 'unknown');
     Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }

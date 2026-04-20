@@ -397,7 +397,7 @@ export async function callClaude(system: string, userMsg: string, maxTokens: num
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-6',
+        model: 'claude-opus-4-7',
         max_tokens: maxTokens + 4000,
         thinking: { type: 'enabled', budget_tokens: 4000 },
         system,

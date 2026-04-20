@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import * as Sentry from '@sentry/nextjs';
 import { SUPABASE_URL, CRON_SECRET, supaHeaders } from '../../../../lib/security';
 
 /* =============================================================================
@@ -47,6 +48,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     });
   } catch (error) {
     console.error('[data-retention] Error:', error);
+    Sentry.captureException(error instanceof Error ? error : new Error(String(error)));
     return NextResponse.json({ error: 'Retention job failed' }, { status: 500 });
   }
 }

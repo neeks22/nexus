@@ -169,6 +169,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
     } catch (err) {
       console.error('[email-agent] Status update error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     }
 
     return NextResponse.json({ action: 'sent', intent, shouldHandoff });

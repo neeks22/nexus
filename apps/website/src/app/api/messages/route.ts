@@ -291,10 +291,13 @@ async function fetchLeads(tenant?: string): Promise<Map<string, SupabaseLead>> {
         }
       }
     } else {
-      console.error(`[messages] Supabase view error: ${res.status} ${await res.text().catch(() => '')}`);
+      const bodyText = await res.text().catch(() => '');
+      console.error(`[messages] Supabase view error: ${res.status} ${bodyText}`);
+      Sentry.captureMessage(`[messages] Supabase view error: ${res.status} ${bodyText}`, 'error');
     }
   } catch (err) {
     console.error('[messages] Failed to fetch leads:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
   }
 
   return leadMap;

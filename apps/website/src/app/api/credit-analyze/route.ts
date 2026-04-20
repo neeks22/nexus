@@ -119,7 +119,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Build request body — extended thinking for text, standard for PDFs
     // (document content blocks may not support thinking parameter)
     const requestBody: Record<string, unknown> = {
-      model: 'claude-opus-4-6',
+      model: 'claude-opus-4-7',
       max_tokens: type === 'pdf' ? 16000 : 8000,
       messages,
     };

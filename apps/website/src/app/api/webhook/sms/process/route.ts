@@ -115,6 +115,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       } catch (err) {
         // Query failed — default to KEEP REPLYING (user wants AI active unless explicitly paused)
         console.error('[sms-process] Pause check failed for phone ...', fromPhone.slice(-4), '— defaulting to active:', err instanceof Error ? err.message : 'unknown');
+        Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       }
 
       if (isPaused) {
