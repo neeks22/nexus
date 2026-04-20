@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { rateLimit, getClientIp } from '@/lib/security';
+import { rateLimit, getClientIp, revokeSession, isSessionRevoked } from '@/lib/security';
 import { findUserByEmail, verifyPassword } from '@/lib/auth';
 
 /* =============================================================================
@@ -121,6 +121,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return res;
   }
 
+  // Check revocation denylist (logout, forced sign-out)
+  if (await isSessionRevoked(signature.slice(0, 32))) {
+    const res = NextResponse.json({ authenticated: false, reason: 'revoked' }, { status: 401 });
+    res.cookies.delete('nexus_session');
+    return res;
+  }
+
   try {
     const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
     if (payload.exp < Date.now()) {
@@ -150,8 +157,25 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-/** DELETE /api/auth — logout */
-export async function DELETE(): Promise<NextResponse> {
+/** DELETE /api/auth — logout (revokes session server-side) */
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  const sessionCookie = request.cookies.get('nexus_session')?.value;
+  if (sessionCookie) {
+    const dotIdx = sessionCookie.indexOf('.');
+    if (dotIdx !== -1) {
+      const payloadB64 = sessionCookie.substring(0, dotIdx);
+      const signature = sessionCookie.substring(dotIdx + 1);
+      try {
+        const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString());
+        const ttlMs = typeof payload.exp === 'number' ? payload.exp - Date.now() : 0;
+        if (ttlMs > 0) {
+          await revokeSession(signature.slice(0, 32), Math.ceil(ttlMs / 1000));
+        }
+      } catch (err) {
+        console.error('[auth] DELETE revoke parse error:', err instanceof Error ? err.message : 'unknown');
+      }
+    }
+  }
   const response = NextResponse.json({ success: true });
   response.cookies.delete('nexus_session');
   return response;

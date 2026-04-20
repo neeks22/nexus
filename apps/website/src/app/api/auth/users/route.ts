@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import * as Sentry from '@sentry/nextjs';
-import { SUPABASE_URL, SUPABASE_KEY, rateLimit, getClientIp, VALID_TENANTS } from '@/lib/security';
+import { SUPABASE_URL, SUPABASE_KEY, rateLimit, getClientIp, VALID_TENANTS, supaPost } from '@/lib/security';
 import { hashPassword, verifyPassword, findUserByEmail } from '@/lib/auth';
 
 function cleanEnv(val: string | undefined): string {
@@ -125,6 +125,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const created = await res.json();
+
+    // Audit log — admin-created accounts (especially other admins) are high-signal events
+    try {
+      await supaPost('lead_transcripts', {
+        tenant_id,
+        lead_id: 'audit:user-create',
+        entry_type: 'status',
+        role: 'system',
+        content: `USER_CREATED by_admin=${admin.tenant_id} new_user=${email.toLowerCase().trim()} role=${userRole} tenant=${tenant_id}`,
+        channel: 'crm',
+      });
+    } catch (err) {
+      console.error('[users] audit log failed:', err instanceof Error ? err.message : 'unknown');
+    }
+
     return NextResponse.json({ success: true, user: { id: created[0]?.id, email, name, tenant_id, role: userRole } }, { status: 201 });
   } catch (err) {
     console.error('[users] POST error:', err instanceof Error ? err.message : 'unknown');

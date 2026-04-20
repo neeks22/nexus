@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL, isDeduplicate, acquirePhoneLock, releasePhoneLock, checkCASLCompliance } from '../../../../../lib/security';
+import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNotify, callClaude, rateLimit, getClientIp, SUPABASE_URL, isDeduplicate, acquirePhoneLock, releasePhoneLock, checkCASLCompliance, scrubPromptInjection } from '../../../../../lib/security';
 
 /* =============================================================================
    DELAYED SMS PROCESSOR — Called internally by the webhook
@@ -159,16 +159,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       entry_type: 'message', role: 'customer', content: messageBody, channel: 'sms',
     });
 
-    // Sanitize customer message to prevent prompt injection
-    const safeMessage = messageBody
-      .replace(/ignore.*(?:previous|above|all).*(?:instructions?|prompts?|rules?)/gi, '[message filtered]')
-      .replace(/you are now|act as|pretend to be|system prompt|reveal.*prompt/gi, '[message filtered]')
-      .replace(/\{[^}]*\}/g, '') // strip JSON-like injections
-      .substring(0, 500);
+    // Sanitize customer message AND conversation history — both are attacker-controlled
+    const safeMessage = scrubPromptInjection(messageBody).replace(/\{[^}]*\}/g, '').substring(0, 500);
+    const safeHistory = conversationHistory ? scrubPromptInjection(conversationHistory) : '';
 
     // Build NESB prompt
     const systemPrompt = buildNESBPrompt(tenant);
-    const userMsg = (conversationHistory ? `Conversation so far:\n${conversationHistory}\n\n` : '') +
+    const userMsg = (safeHistory ? `Conversation so far:\n${safeHistory}\n\n` : '') +
       `Customer ${leadName || 'unknown'} just texted: "${safeMessage}"\n\nReply as ${tenant.gm}. 2-3 sentences max. End with a question. You contacted them first — do NOT thank them for reaching out. Apply NESB principles.\n\n${conversationHistory ? 'This is an ONGOING conversation — do NOT introduce yourself again.' : 'This is the FIRST reply — introduce yourself briefly: "It\'s ' + tenant.gm + ', GM over at ' + tenant.name + '." Then get into it.'}`;
 
     let aiReply = await callClaude(systemPrompt, userMsg);

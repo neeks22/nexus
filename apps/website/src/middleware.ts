@@ -1,4 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Redis } from '@upstash/redis';
+
+const revokeRedis = process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN
+  ? new Redis({ url: process.env.UPSTASH_REDIS_REST_URL, token: process.env.UPSTASH_REDIS_REST_TOKEN })
+  : null;
+
+async function isRevoked(signaturePrefix: string): Promise<boolean> {
+  if (!revokeRedis || !signaturePrefix) return false;
+  try {
+    const hit = await revokeRedis.get(`revoke:${signaturePrefix}`);
+    return hit !== null;
+  } catch (err) {
+    console.error('[middleware] revoke check error:', err instanceof Error ? err.message : 'unknown');
+    return false;
+  }
+}
 
 /**
  * Next.js Middleware — runs on every request before route handlers.
@@ -156,6 +172,13 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
     const session = await verifySession(sessionCookie);
     if (!session) {
       return unauthorizedResponse(path, request, 'Invalid or expired session');
+    }
+
+    // Check server-side revocation denylist (logout, forced sign-out)
+    const dotIdx = sessionCookie.indexOf('.');
+    const sigPrefix = dotIdx !== -1 ? sessionCookie.substring(dotIdx + 1, dotIdx + 33) : '';
+    if (await isRevoked(sigPrefix)) {
+      return unauthorizedResponse(path, request, 'Session revoked');
     }
 
     // Tenant scope check: staff/manager can only access their own tenant

@@ -1,52 +1,58 @@
 import crypto from 'crypto';
 import { SUPABASE_URL, SUPABASE_KEY } from './security';
 
-/* ---------- Password Hashing (scrypt — no external deps) ---------- */
+/* ---------- Password Hashing (scrypt — no external deps) ----------
+
+   New hashes: `v2$<N>:<salt>:<key>` (OWASP-recommended N=131072)
+   Legacy hashes: `<salt>:<key>` (N=16384) — still verified for backward-compat
+*/
 
 const SCRYPT_KEYLEN = 64;
-const SCRYPT_COST = 16384;
+const SCRYPT_COST_V2 = 131072;
+const SCRYPT_COST_LEGACY = 16384;
 const SCRYPT_BLOCK_SIZE = 8;
 const SCRYPT_PARALLELIZATION = 1;
+const SCRYPT_MAXMEM = 256 * 1024 * 1024; // 256MB — required for N=131072 (default 32MB is too small)
 
-export async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.randomBytes(16).toString('hex');
+function scryptAsync(password: string, salt: string, N: number): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     crypto.scrypt(
       password,
       salt,
       SCRYPT_KEYLEN,
-      { N: SCRYPT_COST, r: SCRYPT_BLOCK_SIZE, p: SCRYPT_PARALLELIZATION },
-      (err, derivedKey) => {
-        if (err) reject(err);
-        else resolve(`${salt}:${derivedKey.toString('hex')}`);
-      }
+      { N, r: SCRYPT_BLOCK_SIZE, p: SCRYPT_PARALLELIZATION, maxmem: SCRYPT_MAXMEM },
+      (err, derivedKey) => err ? reject(err) : resolve(derivedKey)
     );
   });
 }
 
+export async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.randomBytes(16).toString('hex');
+  const derivedKey = await scryptAsync(password, salt, SCRYPT_COST_V2);
+  return `v2$${SCRYPT_COST_V2}:${salt}:${derivedKey.toString('hex')}`;
+}
+
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  const [salt, key] = hash.split(':');
+  let N: number;
+  let salt: string;
+  let key: string;
+
+  if (hash.startsWith('v2$')) {
+    const [nPart, saltPart, keyPart] = hash.slice(3).split(':');
+    N = parseInt(nPart, 10);
+    if (!Number.isFinite(N) || N < 1024 || N > 2 ** 22) return false;
+    salt = saltPart;
+    key = keyPart;
+  } else {
+    [salt, key] = hash.split(':');
+    N = SCRYPT_COST_LEGACY;
+  }
   if (!salt || !key) return false;
-  return new Promise((resolve, reject) => {
-    crypto.scrypt(
-      password,
-      salt,
-      SCRYPT_KEYLEN,
-      { N: SCRYPT_COST, r: SCRYPT_BLOCK_SIZE, p: SCRYPT_PARALLELIZATION },
-      (err, derivedKey) => {
-        if (err) reject(err);
-        else {
-          const keyBuf = Buffer.from(key, 'hex');
-          const derivedBuf = derivedKey;
-          if (keyBuf.length !== derivedBuf.length) {
-            resolve(false);
-            return;
-          }
-          resolve(crypto.timingSafeEqual(keyBuf, derivedBuf));
-        }
-      }
-    );
-  });
+
+  const derivedKey = await scryptAsync(password, salt, N);
+  const keyBuf = Buffer.from(key, 'hex');
+  if (keyBuf.length !== derivedKey.length) return false;
+  return crypto.timingSafeEqual(keyBuf, derivedKey);
 }
 
 /* ---------- User Lookup ---------- */

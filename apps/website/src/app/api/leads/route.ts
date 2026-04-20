@@ -258,9 +258,12 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
       console.error('[leads] DELETE lookup error:', err instanceof Error ? err.message : 'unknown');
     }
 
+    // PIPEDA full erasure — wipe all tables that reference this lead
     const deletePromises = [
       fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
       fetch(`${SUPABASE_URL}/rest/v1/consent_records?tenant_id=eq.${tenant}&lead_id=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
+      fetch(`${SUPABASE_URL}/rest/v1/deals?tenant_id=eq.${tenant}&lead_phone=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
+      fetch(`${SUPABASE_URL}/rest/v1/appointments?tenant_id=eq.${tenant}&lead_phone=eq.${encodedPhone}`, { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=minimal' } }),
     ];
     // Delete funnel_submission by ID (phone column is encrypted)
     if (leadId) {

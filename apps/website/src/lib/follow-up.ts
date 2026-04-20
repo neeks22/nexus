@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/nextjs';
-import { supaGet, supaPost, supaPatch, sendTwilioSMS, slackNotify, callClaude, checkCASLCompliance } from './security';
+import { supaGet, supaPost, supaPatch, sendTwilioSMS, slackNotify, callClaude, checkCASLCompliance, scrubPromptInjection } from './security';
 import { TENANTS, TenantConfig } from './auto-response';
 
 /* =============================================================================
@@ -179,6 +179,8 @@ export async function generateFollowUpSMS(candidate: FollowUpCandidate, tenant: 
   const touchNumber = candidate.currentTouch + 1;
 
   const systemPrompt = buildFollowUpPrompt(tenant, touchNumber);
+  const safeHistory = scrubPromptInjection(candidate.conversationHistory);
+
   const userMsg = `Lead profile:
 - Name: ${safeName}
 - Vehicle interest: ${safeVehicle}
@@ -186,7 +188,7 @@ export async function generateFollowUpSMS(candidate: FollowUpCandidate, tenant: 
 - Employment: ${safeEmployment}
 
 Previous messages:
-${candidate.conversationHistory}
+${safeHistory}
 
 Write your follow-up SMS. 1-2 sentences. End with a question.`;
 

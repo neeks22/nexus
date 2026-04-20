@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, supaGetData, supaHeaders, SUPABASE_URL, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput } from '../../../../lib/security';
+import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, supaGetData, supaHeaders, SUPABASE_URL, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput, scrubPromptInjection } from '../../../../lib/security';
 
 /* ---------- Tenant email config ---------- */
 const TENANT_EMAIL_CONFIG: Record<string, { fromName: string; gm: string; phone: string; signoff: string }> = {
@@ -131,7 +131,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // AI reply
     const systemPrompt = `You are ${tenantCfg.gm}, General Sales Manager at ${tenant === 'readyride' ? 'ReadyRide' : 'ReadyCar'} in Ottawa. Reply to customer emails. Warm, personal, professional. 3-5 short paragraphs. NEVER discuss pricing/payments/rates. NEVER guarantee approval. Ask 1-2 follow-up questions. Do NOT start with Hey. Do NOT sign off with "- ${tenantCfg.gm}". End naturally. Sign off as ${tenantCfg.gm}, General Sales Manager, ${tenantCfg.signoff}`;
-    const userMsg = `Customer ${senderName} (${senderEmail}) replied. Intent: ${intent}. Message:\n\n"${emailBody.substring(0, 1000)}"\n\nWrite a personalized reply. You reached out first — do NOT thank them for reaching out.`;
+    const safeEmailBody = scrubPromptInjection(emailBody).substring(0, 1000);
+    const userMsg = `Customer ${senderName} (${senderEmail}) replied. Intent: ${intent}. Message:\n\n"${safeEmailBody}"\n\nWrite a personalized reply. You reached out first — do NOT thank them for reaching out.`;
 
     let aiReply = await callClaude(systemPrompt, userMsg, 500);
     if (!aiReply) {

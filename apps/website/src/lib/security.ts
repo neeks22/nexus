@@ -296,6 +296,65 @@ export async function releasePhoneLock(phone: string, tenant: string): Promise<v
   }
 }
 
+/* ---------- Session Revocation (Redis denylist) ----------
+   On logout, we deny the signature of the cookie until its natural expiry.
+   Middleware and /api/auth GET check the denylist; revoked cookies fail auth
+   even if the HMAC still validates. Keyed by signature prefix (unique per cookie).
+*/
+
+export async function revokeSession(signaturePrefix: string, ttlSeconds: number): Promise<void> {
+  if (!redis) return;
+  if (!signaturePrefix || ttlSeconds <= 0) return;
+  try {
+    await redis.set(`revoke:${signaturePrefix}`, '1', { ex: Math.min(ttlSeconds, 86400) });
+  } catch (err) {
+    console.error('[revoke] Redis set error:', err instanceof Error ? err.message : 'unknown');
+  }
+}
+
+export async function isSessionRevoked(signaturePrefix: string): Promise<boolean> {
+  if (!redis || !signaturePrefix) return false;
+  try {
+    const hit = await redis.get(`revoke:${signaturePrefix}`);
+    return hit !== null;
+  } catch (err) {
+    console.error('[revoke] Redis get error:', err instanceof Error ? err.message : 'unknown');
+    return false; // fail open — don't lock users out of their own sessions on Redis errors
+  }
+}
+
+/* ---------- Prompt Injection Defense ----------
+   Customers inject "ignore previous instructions" into SMS/email replies. Before
+   feeding message bodies into a system+user prompt, strip known attack patterns
+   and wrap user content so the model treats it as data, not instructions.
+*/
+
+const PROMPT_INJECTION_PATTERNS = [
+  /ignore\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions|prompts|messages|rules)/gi,
+  /disregard\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions|prompts|messages|rules)/gi,
+  /forget\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions|prompts|messages|rules)/gi,
+  /(?:new|updated|different)\s+(?:instructions|rules|prompts?)\s*[:]/gi,
+  /system\s*(?:prompt|message|instructions?)\s*[:]/gi,
+  /you\s+are\s+now\s+(?:a|an|the)\s+/gi,
+  /\bact\s+as\s+(?:a|an|the)\s+/gi,
+  /\bpretend\s+(?:to\s+be|you're|you\s+are)/gi,
+  /\brole[-_\s]?play\b/gi,
+  /\breveal\s+(?:your|the)\s+(?:prompt|instructions|system)/gi,
+  /\bshow\s+me\s+(?:your|the)\s+(?:prompt|instructions|system)/gi,
+  /<\|.*?\|>/g,                    // special tokens (<|im_start|>, etc.)
+  /\[INST\]|\[\/INST\]/gi,          // Llama-style instruction markers
+  /<<SYS>>|<<\/SYS>>/gi,
+];
+
+export function scrubPromptInjection(input: string): string {
+  if (!input) return '';
+  let out = input;
+  for (const pattern of PROMPT_INJECTION_PATTERNS) {
+    out = out.replace(pattern, '[filtered]');
+  }
+  return out;
+}
+
 /* ---------- Input Sanitization ---------- */
 
 export function sanitizeInput(input: string, maxLength: number = 500): string {
