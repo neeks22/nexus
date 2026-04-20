@@ -4,6 +4,7 @@ import StatCard from './StatCard';
 import TodaySchedule from './TodaySchedule';
 import HotLeadsPanel from './HotLeadsPanel';
 import ActiveDealsPanel from './ActiveDealsPanel';
+import RecentActivityFeed from './RecentActivityFeed';
 import useIsMobile from './useIsMobile';
 import PipelineFunnel from './PipelineFunnel';
 import { useDashboard, type DashboardData } from '@/hooks/use-dashboard';
@@ -97,20 +98,7 @@ export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps
         <PipelineFunnel pipelineCounts={d.pipelineCounts} />
       </div>
 
-      {/* Recent Activity */}
-      <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '20px' }}>
-        <h3 style={{ color: '#f0f0f5', fontSize: '15px', fontWeight: 600, margin: '0 0 16px' }}>Recent Activity</h3>
-        {d.recentActivity.length === 0 ? (
-          <div style={{ color: '#666', fontSize: '13px' }}>No activity yet today</div>
-        ) : d.recentActivity.slice(0, 10).map((item, i) => (
-          <div key={i} onClick={() => onSelectLead(item.phone)} style={{ padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.04)', cursor: 'pointer' }}>
-            <div style={{ color: '#8888a0', fontSize: '11px' }}>{new Date(item.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</div>
-            <div style={{ color: '#ccc', fontSize: '13px', marginTop: '2px' }}>
-              {item.content.substring(0, 80)}{item.content.length > 80 ? '...' : ''}
-            </div>
-          </div>
-        ))}
-      </div>
+      <RecentActivityFeed items={d.recentActivity} onSelectLead={onSelectLead} />
     </div>
   );
 }

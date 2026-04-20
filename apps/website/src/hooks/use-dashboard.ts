@@ -37,7 +37,14 @@ export interface DashboardData {
     appointmentAt: string | null;
     appointmentConfirmed: boolean;
   }[];
-  recentActivity: { time: string; type: string; content: string; phone: string }[];
+  recentActivity: {
+    time: string;
+    channel: string;
+    role: string;
+    content: string;
+    phone: string;
+    leadName: string | null;
+  }[];
   todayAppointments: Appointment[];
   activeDeals: { deals: ActiveDeal[]; totalValue: number; byStatus: Record<string, number> };
   monthlyDeals: { count: number; totalValue: number; funded: number; delivered: number };

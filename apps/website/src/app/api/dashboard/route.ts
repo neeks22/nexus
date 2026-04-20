@@ -63,12 +63,23 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const pipelineData = _pipelineStatusRows as Array<{ status: string }>;
     for (const lead of pipelineData) { const s = lead.status || 'new'; pipelineCounts[s] = (pipelineCounts[s] || 0) + 1; }
 
-    const recentActivity = recentMessages.slice(0, 10).map((msg: Record<string, unknown>) => ({
-      time: msg.created_at as string,
-      type: msg.channel || 'sms',
-      content: ((msg.content as string) || '').substring(0, 100),
-      phone: (msg.lead_id as string) || '',
-    }));
+    // Build name lookup from paginated leads list (covers recent-activity lead names in ~all cases).
+    const nameByPhone = new Map<string, string>();
+    for (const l of allLeads as Array<{ phone: string; first_name?: string; last_name?: string }>) {
+      const full = [l.first_name, l.last_name].filter(Boolean).join(' ');
+      if (full) nameByPhone.set(l.phone, full);
+    }
+    const recentActivity = recentMessages.slice(0, 10).map((msg: Record<string, unknown>) => {
+      const phone = (msg.lead_id as string) || '';
+      return {
+        time: msg.created_at as string,
+        channel: (msg.channel as string) || 'sms',
+        role: (msg.role as string) || 'user',
+        content: ((msg.content as string) || '').substring(0, 140),
+        phone,
+        leadName: nameByPhone.get(phone) || null,
+      };
+    });
 
     // Build today's appointments first — used both as its own widget AND to enrich hot leads
     const todayAppointments = (todayAppts as Array<{ id: string; lead_phone: string; lead_name: string | null; appointment_type: string; scheduled_at: string; status: string; reminder_sent: boolean }>).map(a => ({
