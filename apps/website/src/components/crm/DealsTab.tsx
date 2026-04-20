@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import useIsMobile from './useIsMobile';
 import { useDeals, useCreateDeal, useUpdateDeal } from '@/hooks/use-deals';
 import { DEAL_STATUS_COLORS as STATUS_COLORS } from './tokens';
@@ -23,7 +24,7 @@ export default function DealsTab({ tenant, onSelectLead }: DealsTabProps): React
     monthly_payment: '', term_months: '', lender: '', notes: '',
   });
 
-  const { data: deals = [], isLoading: loading } = useDeals(tenant, { status: filterStatus });
+  const { data: deals = [], isLoading: loading, isError, refetch } = useDeals(tenant, { status: filterStatus });
   const createMutation = useCreateDeal(tenant);
   const updateMutation = useUpdateDeal(tenant);
   const creating = createMutation.isPending;
@@ -46,7 +47,9 @@ export default function DealsTab({ tenant, onSelectLead }: DealsTabProps): React
       setShowCreate(false);
       setNewDeal({ lead_phone: '', lead_name: '', vehicle_description: '', sale_price: '', trade_in_value: '', down_payment: '', monthly_payment: '', term_months: '', lender: '', notes: '' });
     } catch (err) {
-      console.error('Failed to create deal:', err);
+      console.error('Failed to create deal:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to create deal');
     }
   };
 
@@ -54,12 +57,26 @@ export default function DealsTab({ tenant, onSelectLead }: DealsTabProps): React
     try {
       await updateMutation.mutateAsync({ id, status });
     } catch (err) {
-      console.error('Failed to update deal:', err);
+      console.error('Failed to update deal:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     }
   };
 
   if (loading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading deals...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <div style={{ color: '#ef4444', fontSize: '16px', marginBottom: '8px' }}>Failed to load deals</div>
+        <div style={{ color: '#8888a0', fontSize: '13px', marginBottom: '16px' }}>Check your connection and try again.</div>
+        <button
+          onClick={() => refetch()}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#f0f0f5', cursor: 'pointer' }}
+        >Retry</button>
+      </div>
+    );
   }
 
   const counts: Record<string, number> = { negotiating: 0, approved: 0, funded: 0, delivered: 0, lost: 0 };

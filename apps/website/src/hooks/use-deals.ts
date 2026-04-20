@@ -48,7 +48,25 @@ export function useUpdateDeal(tenant: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { id: string } & Record<string, unknown>) => apiPatch('/api/deals', { tenant, ...data }),
-    onSuccess: () => {
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: ['deals', tenant] });
+      const snapshots = qc.getQueriesData<DealsResponse>({ queryKey: ['deals', tenant] });
+      for (const [key, prev] of snapshots) {
+        if (!prev) continue;
+        qc.setQueryData<DealsResponse>(key, {
+          ...prev,
+          deals: prev.deals.map((d) =>
+            d.id === data.id ? { ...d, ...(data as Partial<Deal>) } : d
+          ),
+        });
+      }
+      return { snapshots };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
+      for (const [key, prev] of ctx.snapshots) qc.setQueryData(key, prev);
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['deals', tenant] });
       qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
     },
