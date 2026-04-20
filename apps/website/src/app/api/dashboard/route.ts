@@ -46,7 +46,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&select=lead_id,content,role,channel,created_at&order=created_at.desc&limit=20`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&status=in.(appointment,showed)&select=phone,first_name,last_name,status,created_at&order=created_at.desc&limit=20`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/appointments?tenant_id=eq.${tenant}&scheduled_at=gte.${todayISO}&scheduled_at=lt.${tomorrowISO}&status=in.(scheduled,confirmed)&select=id,lead_phone,lead_name,appointment_type,scheduled_at,status,reminder_sent&order=scheduled_at.asc&limit=50`, { headers: anonH }).then(r => r.ok ? r.json() : []),
-      fetch(`${SUPABASE_URL}/rest/v1/deals?tenant_id=eq.${tenant}&status=in.(negotiating,approved,funded)&select=id,lead_phone,lead_name,vehicle_description,sale_price,status&order=created_at.desc&limit=100`, { headers: anonH }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPABASE_URL}/rest/v1/deals?tenant_id=eq.${tenant}&status=in.(negotiating,approved,funded)&select=id,lead_phone,lead_name,vehicle_description,sale_price,status,lender,updated_at,created_at&order=updated_at.asc&limit=100`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/deals?tenant_id=eq.${tenant}&status=in.(funded,delivered)&created_at=gte.${monthStartISO}&select=sale_price,status&limit=500`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       // For response-time median: leads + first outbound message per lead, last 7 days
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&created_at=gte.${sevenDaysAgoISO}&select=phone,created_at`, { headers: anonH }).then(r => r.ok ? r.json() : []),
@@ -113,10 +113,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       };
     });
 
-    // Build active deals summary
-    const adRows = activeDealsRows as Array<{ id: string; lead_phone: string; lead_name: string | null; vehicle_description: string | null; sale_price: number | null; status: string }>;
+    // Build active deals summary — includes lender + updatedAt so client can flag stalled deals.
+    const adRows = activeDealsRows as Array<{ id: string; lead_phone: string; lead_name: string | null; vehicle_description: string | null; sale_price: number | null; status: string; lender: string | null; updated_at: string; created_at: string }>;
     const activeDeals = {
-      deals: adRows.map(d => ({ id: d.id, leadPhone: d.lead_phone, leadName: d.lead_name, vehicle: d.vehicle_description, salePrice: d.sale_price, status: d.status })),
+      deals: adRows.map(d => ({
+        id: d.id, leadPhone: d.lead_phone, leadName: d.lead_name,
+        vehicle: d.vehicle_description, salePrice: d.sale_price, status: d.status,
+        lender: d.lender, updatedAt: d.updated_at, createdAt: d.created_at,
+      })),
       totalValue: adRows.reduce((sum, d) => sum + (d.sale_price || 0), 0),
       byStatus: {
         negotiating: adRows.filter(d => d.status === 'negotiating').length,

@@ -20,6 +20,9 @@ interface ActiveDeal {
   vehicle: string | null;
   salePrice: number | null;
   status: string;
+  lender: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 
 export interface DashboardData {

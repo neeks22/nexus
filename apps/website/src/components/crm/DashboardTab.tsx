@@ -3,10 +3,11 @@
 import StatCard from './StatCard';
 import TodaySchedule from './TodaySchedule';
 import HotLeadsPanel from './HotLeadsPanel';
+import ActiveDealsPanel from './ActiveDealsPanel';
 import useIsMobile from './useIsMobile';
 import PipelineFunnel from './PipelineFunnel';
 import { useDashboard, type DashboardData } from '@/hooks/use-dashboard';
-import { DEAL_STATUS_COLORS, MONTHLY_GOALS, RESPONSE_TIME_TARGET_MIN } from './tokens';
+import { MONTHLY_GOALS, RESPONSE_TIME_TARGET_MIN } from './tokens';
 
 interface DashboardTabProps {
   tenant: string;
@@ -83,33 +84,12 @@ export default function DashboardTab({ tenant, onSelectLead }: DashboardTabProps
       {/* Two Column: Hot Leads + Active Deals */}
       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginBottom: '24px' }}>
         <HotLeadsPanel leads={d.hotLeads} onSelectLead={onSelectLead} />
-
-        {/* Active Deals */}
-        <div style={{ flex: '1 1 300px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '12px', padding: '20px' }}>
-          <h3 style={{ color: '#f0f0f5', fontSize: '15px', fontWeight: 600, margin: '0 0 16px' }}>Active Deals</h3>
-          {d.activeDeals.deals.length === 0 ? (
-            <div style={{ color: '#666', fontSize: '13px' }}>No active deals</div>
-          ) : d.activeDeals.deals.slice(0, 8).map(deal => (
-            <div key={deal.id} style={{
-              padding: '10px 12px', borderRadius: '8px', marginBottom: '4px',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
-            }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span onClick={() => onSelectLead(deal.leadPhone)} style={{ color: '#f0f0f5', fontSize: '14px', fontWeight: 500, cursor: 'pointer' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#DC2626')}
-                  onMouseLeave={e => (e.currentTarget.style.color = '#f0f0f5')}>
-                  {deal.leadName || deal.leadPhone}
-                </span>
-                {deal.vehicle && <div style={{ color: '#8888a0', fontSize: '12px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deal.vehicle}</div>}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                {deal.salePrice != null && <span style={{ color: '#f0f0f5', fontSize: '13px', fontWeight: 600 }}>{fmt(deal.salePrice)}</span>}
-                <span style={{ color: DEAL_STATUS_COLORS[deal.status] || '#666', fontSize: '11px', fontWeight: 600, textTransform: 'capitalize' }}>{deal.status}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ActiveDealsPanel
+          deals={d.activeDeals.deals}
+          totalValue={d.activeDeals.totalValue}
+          byStatus={d.activeDeals.byStatus}
+          onSelectLead={onSelectLead}
+        />
       </div>
 
       {/* Pipeline Funnel */}
