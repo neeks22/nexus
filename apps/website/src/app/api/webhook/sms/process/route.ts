@@ -9,7 +9,7 @@ import { TENANT_MAP, supaGetData, supaPost, supaHeaders, sendTwilioSMS, slackNot
 
 export const maxDuration = 60;
 
-const PROCESS_SECRET = (process.env.PROCESS_SECRET || process.env.AUTH_SECRET || '').trim();
+const PROCESS_SECRET = (process.env.PROCESS_SECRET ?? '').trim();
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   // Verify internal call — reject if secret not configured or mismatch

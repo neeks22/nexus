@@ -46,7 +46,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ error: 'Missing email or password' }, { status: 400 });
     }
 
-    const user = await findUserByEmail(email.toLowerCase().trim());
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Per-email lockout — blocks credential stuffing that rotates IPs
+    // 5 attempts per 15 minutes per email address
+    if (await rateLimit(`login:${normalizedEmail}`, 5, 900000)) {
+      console.warn(`[auth] per-email lockout triggered for ${normalizedEmail}`);
+      return NextResponse.json({ error: 'Account temporarily locked. Try again later.' }, { status: 429 });
+    }
+
+    const user = await findUserByEmail(normalizedEmail);
     if (!user) {
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
@@ -73,7 +82,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     response.cookies.set('nexus_session', token, {
       httpOnly: true,
       secure: true,
-      sameSite: 'lax',
+      sameSite: 'strict',
       path: '/',
       maxAge: 86400,
     });

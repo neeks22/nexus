@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireSession, isAuthError, rateLimit as sharedRateLimit, getClientIp } from '../../../lib/security';
+import { requireSession, isAuthError, rateLimit as sharedRateLimit, getClientIp, checkCASLCompliance } from '../../../lib/security';
 
 /* =============================================================================
    ENVIRONMENT VARIABLES — never hardcode credentials
@@ -609,6 +609,16 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const sendFromNumber = TENANT_NUMBERS[tenant] || TWILIO_FROM_NUMBER;
+
+    // CASL pre-flight — block outbound to opted-out leads (STOP, UNSUBSCRIBED)
+    const compliance = await checkCASLCompliance(toPhone, tenant);
+    if (!compliance.allowed) {
+      console.warn(`[messages] CASL block ${toPhone.slice(-4)} tenant=${tenant} reason=${compliance.reason}`);
+      return NextResponse.json(
+        { error: 'Recipient has opted out. Cannot send.', reason: compliance.reason },
+        { status: 403, headers: securityHeaders(origin) }
+      );
+    }
 
     const params = new URLSearchParams({
       To: toPhone,

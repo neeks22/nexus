@@ -53,7 +53,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   // FIRE AND FORGET — return TwiML immediately so Twilio never retries
   // Processing happens async; if it fails, Slack alert fires but customer isn't double-texted
   const baseUrl = request.nextUrl.origin || 'https://nexusagents.ca';
-  const processSecret = process.env.PROCESS_SECRET || process.env.AUTH_SECRET || '';
+  const processSecret = (process.env.PROCESS_SECRET ?? '').trim();
+  if (!processSecret) {
+    console.error('[sms-webhook] PROCESS_SECRET not configured — cannot dispatch to processor');
+    Sentry.captureException(new Error('PROCESS_SECRET missing in sms webhook'));
+    return new NextResponse(TWIML_OK, { status: 200, headers: TWIML_HEADERS });
+  }
 
   fetch(`${baseUrl}/api/webhook/sms/process`, {
     method: 'POST',

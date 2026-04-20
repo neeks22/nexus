@@ -81,7 +81,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     let query = `v_funnel_submissions?tenant_id=eq.${tenant}&select=*&order=created_at.desc&limit=${limit}`;
     if (status && VALID_STATUSES.includes(status)) query += `&status=eq.${status}`;
-    if (search) query += `&or=(first_name.ilike.*${encodeSupabaseParam(search)}*,last_name.ilike.*${encodeSupabaseParam(search)}*,phone.ilike.*${encodeSupabaseParam(search)}*,email.ilike.*${encodeSupabaseParam(search)}*)`;
+    if (search) {
+      // Cap search length and whitelist chars to block ReDoS / Postgres ilike abuse
+      const safeSearch = search.slice(0, 50).replace(/[^a-zA-Z0-9@._\-+ ]/g, '');
+      if (safeSearch.length >= 2) {
+        const enc = encodeSupabaseParam(safeSearch);
+        query += `&or=(first_name.ilike.*${enc}*,last_name.ilike.*${enc}*,phone.ilike.*${enc}*,email.ilike.*${enc}*)`;
+      }
+    }
 
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${query}`, { headers: supaAnonHeaders(tenant), signal: AbortSignal.timeout(10000) });
     if (!res.ok) return NextResponse.json({ error: 'Failed to fetch leads' }, { status: 500 });
@@ -95,7 +102,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
-  const session = requireSession(request);
+  // Status mutations change the sales pipeline — manager+ only
+  const session = requireRole(request, 'manager');
   if (isAuthError(session)) return session;
   const tenant = session.tenant;
 

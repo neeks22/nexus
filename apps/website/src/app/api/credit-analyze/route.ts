@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireSession, isAuthError, rateLimit, getClientIp } from '@/lib/security';
+import { requireRole, isAuthError, rateLimit, getClientIp } from '@/lib/security';
 
 export const maxDuration = 60;
 
@@ -44,12 +44,13 @@ Be extremely specific with numbers. This data routes to lender matching.
 ${CLIENT_INFO_BLOCK}`;
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const session = requireSession(request);
+  // Credit bureau analysis surfaces PII (PIPEDA) — manager+ only
+  const session = requireRole(request, 'manager');
   if (isAuthError(session)) return session;
 
-  // Rate limit: 10 per minute per IP
+  // Rate limit: 3 per minute per IP — credit bureau parsing is expensive + sensitive
   const ip = getClientIp(request);
-  if (await rateLimit(ip, 10)) {
+  if (await rateLimit(ip, 3)) {
     return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
   }
 

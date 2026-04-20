@@ -122,6 +122,15 @@ function setSecurityHeaders(response: NextResponse, path: string): void {
 export async function middleware(request: NextRequest): Promise<NextResponse> {
   const path = request.nextUrl.pathname;
 
+  // Strip any client-supplied session headers BEFORE anything else. A malicious
+  // client could set x-session-tenant/role/user-id and try to reach a route
+  // handler that calls getSessionContext() without being gated by the
+  // protected-paths list. Delete them here so only the middleware can set them.
+  const sanitizedHeaders = new Headers(request.headers);
+  sanitizedHeaders.delete('x-session-tenant');
+  sanitizedHeaders.delete('x-session-role');
+  sanitizedHeaders.delete('x-session-user-id');
+
   // Session data to inject into request headers for route handlers
   let verifiedTenant: string | null = null;
   let verifiedRole: string | null = null;
@@ -233,7 +242,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
           const renewedSig = await computeHmac(AUTH_SECRET, renewedB64);
           const renewedToken = `${renewedB64}.${renewedSig}`;
 
-          const requestHeaders = new Headers(request.headers);
+          const requestHeaders = new Headers(sanitizedHeaders);
           requestHeaders.set('x-session-tenant', verifiedTenant);
           requestHeaders.set('x-session-role', verifiedRole);
           requestHeaders.set('x-session-user-id', verifiedUserId);
@@ -242,7 +251,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
           res.cookies.set('nexus_session', renewedToken, {
             httpOnly: true,
             secure: true,
-            sameSite: 'lax',
+            sameSite: 'strict',
             path: '/',
             maxAge: 86400,
           });
@@ -255,7 +264,7 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
   }
 
   // Inject session context into request headers for route handlers
-  const requestHeaders = new Headers(request.headers);
+  const requestHeaders = new Headers(sanitizedHeaders);
   if (verifiedTenant) requestHeaders.set('x-session-tenant', verifiedTenant);
   if (verifiedRole) requestHeaders.set('x-session-role', verifiedRole);
   if (verifiedUserId) requestHeaders.set('x-session-user-id', verifiedUserId);
