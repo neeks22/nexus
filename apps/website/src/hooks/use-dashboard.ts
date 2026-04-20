@@ -24,13 +24,14 @@ interface ActiveDeal {
 
 export interface DashboardData {
   leadsToday: number;
-  messagesToday: number;
   pipelineCounts: Record<string, number>;
   hotLeads: { phone: string; name: string; status: string }[];
   recentActivity: { time: string; type: string; content: string; phone: string }[];
   todayAppointments: Appointment[];
   activeDeals: { deals: ActiveDeal[]; totalValue: number; byStatus: Record<string, number> };
   monthlyDeals: { count: number; totalValue: number; funded: number; delivered: number };
+  // Median response time in minutes (lead created → first outbound) over last 7 days; null when no data.
+  avgResponseTime: number | null;
   pagination?: { page: number; limit: number; total: number; pages: number };
 }
 

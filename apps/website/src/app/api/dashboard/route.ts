@@ -32,13 +32,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const tomorrowISO = new Date(tomorrowET.getTime() + etOffset).toISOString();
     const monthStartET = new Date(etMidnight.getFullYear(), etMidnight.getMonth(), 1);
     const monthStartISO = new Date(monthStartET.getTime() + etOffset).toISOString();
+    // 7-day rolling window for response-time KPI — today alone is too noisy.
+    const sevenDaysAgoISO = new Date(Date.now() - 7 * 86400000).toISOString();
 
     const anonH = supaAnonHeaders(tenant);
     const paginatedHeaders = { ...anonH, Range: `${offset}-${offset + limit - 1}`, Prefer: 'count=exact' };
 
-    const [leads, messages, allLeadsRes, _pipelineStatusRows, recentMessages, hotLeadRows, todayAppts, activeDealsRows, monthDealsRows] = await Promise.all([
+    const [leads, allLeadsRes, _pipelineStatusRows, recentMessages, hotLeadRows, todayAppts, activeDealsRows, monthDealsRows, weekLeadsRows, weekOutboundRows] = await Promise.all([
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&created_at=gte.${todayISO}&select=phone`, { headers: anonH }).then(r => r.ok ? r.json() : []),
-      fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&created_at=gte.${todayISO}&select=lead_id`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&select=phone,first_name,last_name,status&order=created_at.desc`, { headers: paginatedHeaders }),
       // Separate unpaginated query for accurate pipeline counts (only fetches status field)
       fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&select=status`, { headers: anonH }).then(r => r.ok ? r.json() : []),
@@ -47,6 +48,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       fetch(`${SUPABASE_URL}/rest/v1/appointments?tenant_id=eq.${tenant}&scheduled_at=gte.${todayISO}&scheduled_at=lt.${tomorrowISO}&status=in.(scheduled,confirmed)&select=id,lead_phone,lead_name,appointment_type,scheduled_at,status,reminder_sent&order=scheduled_at.asc&limit=50`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/deals?tenant_id=eq.${tenant}&status=in.(negotiating,approved,funded)&select=id,lead_phone,lead_name,vehicle_description,sale_price,status&order=created_at.desc&limit=100`, { headers: anonH }).then(r => r.ok ? r.json() : []),
       fetch(`${SUPABASE_URL}/rest/v1/deals?tenant_id=eq.${tenant}&status=in.(funded,delivered)&created_at=gte.${monthStartISO}&select=sale_price,status&limit=500`, { headers: anonH }).then(r => r.ok ? r.json() : []),
+      // For response-time median: leads + first outbound message per lead, last 7 days
+      fetch(`${SUPABASE_URL}/rest/v1/v_funnel_submissions?tenant_id=eq.${tenant}&created_at=gte.${sevenDaysAgoISO}&select=phone,created_at`, { headers: anonH }).then(r => r.ok ? r.json() : []),
+      fetch(`${SUPABASE_URL}/rest/v1/lead_transcripts?tenant_id=eq.${tenant}&created_at=gte.${sevenDaysAgoISO}&role=eq.assistant&select=lead_id,created_at&order=created_at.asc&limit=5000`, { headers: anonH }).then(r => r.ok ? r.json() : []),
     ]);
 
     const allLeads = allLeadsRes.ok ? await allLeadsRes.json() : [];
@@ -102,10 +106,32 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       delivered: mdRows.filter(d => d.status === 'delivered').length,
     };
 
+    // Median response time (minutes from lead creation → first outbound msg) over last 7 days
+    const weekLeads = weekLeadsRows as Array<{ phone: string; created_at: string }>;
+    const outboundMsgs = weekOutboundRows as Array<{ lead_id: string; created_at: string }>;
+    const firstOutboundByPhone = new Map<string, string>();
+    for (const msg of outboundMsgs) {
+      if (!firstOutboundByPhone.has(msg.lead_id)) firstOutboundByPhone.set(msg.lead_id, msg.created_at);
+    }
+    const responseDeltasMin: number[] = [];
+    for (const lead of weekLeads) {
+      const firstISO = firstOutboundByPhone.get(lead.phone);
+      if (!firstISO) continue;
+      const deltaMs = new Date(firstISO).getTime() - new Date(lead.created_at).getTime();
+      const deltaMin = deltaMs / 60000;
+      // Bound to sane window — drop negatives (clock skew) and >7d (stale)
+      if (deltaMin >= 0 && deltaMin <= 10080) responseDeltasMin.push(deltaMin);
+    }
+    responseDeltasMin.sort((a, b) => a - b);
+    const avgResponseTime = responseDeltasMin.length === 0
+      ? null
+      : responseDeltasMin[Math.floor(responseDeltasMin.length / 2)];
+
     return NextResponse.json({
-      leadsToday: leads.length, messagesToday: messages.length,
+      leadsToday: leads.length,
       pipelineCounts, hotLeads, recentActivity,
       todayAppointments, activeDeals, monthlyDeals,
+      avgResponseTime,
       pagination: { page, limit, total: totalLeads, pages: Math.ceil(totalLeads / limit) },
     }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (err) {

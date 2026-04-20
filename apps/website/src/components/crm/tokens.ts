@@ -64,6 +64,16 @@ export const INVENTORY_STATUS_COLORS: Record<string, string> = {
   pending: 'var(--crm-amber)',
 };
 
+// Monthly funded-units sales target per tenant — used by Dashboard "Funded This Month" goal progress.
+// Adjust per tenant business plan; falls back to 30 if tenant unknown.
+export const MONTHLY_GOALS: Record<string, number> = {
+  readycar: 30,
+  readyride: 15,
+};
+
+// Industry benchmark: first-touch response time on internet leads must be <15 min to avoid churn.
+export const RESPONSE_TIME_TARGET_MIN = 15;
+
 export const GRADE_COLORS: Record<string, string> = {
   'A+': 'var(--crm-green)', 'A': 'var(--crm-green)', 'A-': '#34d399',
   'B+': 'var(--crm-green-bright)', 'B': 'var(--crm-green-bright)', 'B-': '#86efac',
