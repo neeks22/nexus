@@ -9,7 +9,7 @@ interface PipelineTabProps {
 }
 
 export default function PipelineTab({ tenant, onSelectLead }: PipelineTabProps): React.ReactElement {
-  const { data: leads = [], isLoading } = useLeads(tenant, { search: '', status: '' });
+  const { data: leads = [], isLoading, isError, refetch } = useLeads(tenant, { search: '', status: '' });
   const updateStatus = useUpdateLeadStatus(tenant);
 
   const handleMoveLead = async (phone: string, newStatus: string): Promise<void> => {
@@ -22,6 +22,19 @@ export default function PipelineTab({ tenant, onSelectLead }: PipelineTabProps):
 
   if (isLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading pipeline...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <div style={{ color: '#ef4444', fontSize: '16px', marginBottom: '8px' }}>Failed to load pipeline</div>
+        <div style={{ color: '#8888a0', fontSize: '13px', marginBottom: '16px' }}>Check your connection and try again.</div>
+        <button
+          onClick={() => refetch()}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#f0f0f5', cursor: 'pointer' }}
+        >Retry</button>
+      </div>
+    );
   }
 
   return (

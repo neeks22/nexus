@@ -56,18 +56,21 @@ export default function KanbanBoard({ leads, onMoveLead, onSelectLead }: KanbanB
 
     const draggedPhone = active.id as string;
     const targetId = over.id as string;
+    const draggedLead = leads.find((l) => l.phone === draggedPhone);
+    const currentStatus = draggedLead?.status || 'new';
 
-    // Check if dropped on a stage column
     const targetStage = STAGES.find((s) => s.id === targetId);
     if (targetStage) {
+      if (targetStage.id === currentStatus) return;
       onMoveLead(draggedPhone, targetStage.id);
       return;
     }
 
-    // Check if dropped on another lead card — use that lead's stage
     const targetLead = leads.find((l) => l.phone === targetId);
     if (targetLead) {
-      onMoveLead(draggedPhone, targetLead.status || 'new');
+      const newStatus = targetLead.status || 'new';
+      if (newStatus === currentStatus) return;
+      onMoveLead(draggedPhone, newStatus);
     }
   }
 

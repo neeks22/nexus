@@ -41,7 +41,24 @@ export function useUpdateLeadStatus(tenant: string) {
   return useMutation({
     mutationFn: ({ phone, status }: { phone: string; status: string }) =>
       apiPatch('/api/leads', { tenant, phone, status }),
-    onSuccess: () => {
+    // Optimistic: move card to new column instantly; rollback on error.
+    onMutate: async ({ phone, status }) => {
+      await qc.cancelQueries({ queryKey: ['leads', tenant] });
+      const snapshots = qc.getQueriesData<LeadsResponse>({ queryKey: ['leads', tenant] });
+      for (const [key, prev] of snapshots) {
+        if (!prev) continue;
+        qc.setQueryData<LeadsResponse>(key, {
+          ...prev,
+          leads: prev.leads.map((l) => (l.phone === phone ? { ...l, status } : l)),
+        });
+      }
+      return { snapshots };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
+      for (const [key, prev] of ctx.snapshots) qc.setQueryData(key, prev);
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['leads', tenant] });
       qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
     },
