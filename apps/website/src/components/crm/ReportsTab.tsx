@@ -79,22 +79,30 @@ function computeAvgResponseTime(transcripts: TranscriptRow[]): number {
 export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElement {
   const isMobile = useIsMobile();
 
-  const { data: dashData, isLoading: dashLoading, isError: dashError } = useQuery({
+  const dashQuery = useQuery({
     queryKey: ['reports-dashboard', tenant],
     queryFn: () => apiGet<DashboardResponse>('/api/dashboard', { tenant }),
   });
+  const { data: dashData, isLoading: dashLoading, isError: dashError } = dashQuery;
 
-  const { data: leadsData, isLoading: leadsLoading, isError: leadsError } = useQuery({
+  const leadsQuery = useQuery({
     queryKey: ['reports-leads', tenant],
     queryFn: () => apiGet<LeadsResponse>('/api/leads', { tenant, limit: '200' }),
   });
+  const { data: leadsData, isLoading: leadsLoading, isError: leadsError } = leadsQuery;
 
-  const { data: transcriptsData, isLoading: transcriptsLoading, isError: transcriptsError } = useQuery({
+  const transcriptsQuery = useQuery({
     queryKey: ['reports-transcripts', tenant],
     queryFn: () => apiGet<TranscriptsResponse>('/api/leads', { tenant, mode: 'activity', limit: '500' }),
   });
+  const { data: transcriptsData, isLoading: transcriptsLoading, isError: transcriptsError } = transcriptsQuery;
 
   const hasError = dashError || leadsError || transcriptsError;
+  const retryAll = (): void => {
+    dashQuery.refetch();
+    leadsQuery.refetch();
+    transcriptsQuery.refetch();
+  };
 
   const { pipelineData, funnelData, stats } = useMemo(() => {
     const counts = dashData?.pipelineCounts || {};
@@ -167,7 +175,16 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
   }
 
   if (hasError) {
-    return <div style={{ padding: '40px', textAlign: 'center' }}><div style={{ color: '#ef4444', fontSize: '16px', marginBottom: '8px' }}>Failed to load reports</div><div style={{ color: '#8888a0', fontSize: '13px' }}>Check your connection and try refreshing.</div></div>;
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <div style={{ color: '#ef4444', fontSize: '16px', marginBottom: '8px' }}>Failed to load reports</div>
+        <div style={{ color: '#8888a0', fontSize: '13px', marginBottom: '16px' }}>Check your connection and try again.</div>
+        <button
+          onClick={retryAll}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#f0f0f5', cursor: 'pointer' }}
+        >Retry</button>
+      </div>
+    );
   }
 
   function formatResponseTime(sec: number): string {
