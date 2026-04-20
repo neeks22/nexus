@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import useIsMobile from './useIsMobile';
-import { useInventory, useCreateVehicle, useUpdateVehicle, useDeleteVehicle, type Vehicle } from '@/hooks/use-inventory';
+import { useInventory, useCreateVehicle, useUpdateVehicle, useDeleteVehicle } from '@/hooks/use-inventory';
+import { useDebounce } from '@/hooks/use-debounce';
 import { INVENTORY_STATUS_COLORS as STATUS_COLORS } from './tokens';
 import { inputStyle } from './styles';
 
@@ -21,7 +23,8 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
   const [showCreate, setShowCreate] = useState(false);
   const [newV, setNewV] = useState({ year: '', make: '', model: '', trim: '', color: '', price: '', mileage: '', stock_number: '', vin: '' });
 
-  const { data: vehicles = [], isLoading, refetch } = useInventory(tenant, { search, status: filterStatus });
+  const debouncedSearch = useDebounce(search, 300);
+  const { data: vehicles = [], isLoading, isError, refetch } = useInventory(tenant, { search: debouncedSearch, status: filterStatus });
   const createMutation = useCreateVehicle(tenant);
   const updateMutation = useUpdateVehicle(tenant);
   const deleteMutation = useDeleteVehicle(tenant);
@@ -33,7 +36,9 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
       setShowCreate(false);
       setNewV({ year: '', make: '', model: '', trim: '', color: '', price: '', mileage: '', stock_number: '', vin: '' });
     } catch (err) {
-      console.error('Failed to create vehicle:', err);
+      console.error('Failed to create vehicle:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to add vehicle');
     }
   };
 
@@ -41,7 +46,8 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
     try {
       await updateMutation.mutateAsync({ id, status });
     } catch (err) {
-      console.error('Failed to update vehicle:', err);
+      console.error('Failed to update vehicle:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     }
   };
 
@@ -50,7 +56,8 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
     try {
       await deleteMutation.mutateAsync(id);
     } catch (err) {
-      console.error('Failed to delete vehicle:', err);
+      console.error('Failed to delete vehicle:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
     }
   };
 
@@ -58,6 +65,19 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
 
   if (isLoading) {
     return <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading inventory...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center' }}>
+        <div style={{ color: '#ef4444', fontSize: '16px', marginBottom: '8px' }}>Failed to load inventory</div>
+        <div style={{ color: '#8888a0', fontSize: '13px', marginBottom: '16px' }}>Check your connection and try again.</div>
+        <button
+          onClick={() => refetch()}
+          style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#f0f0f5', cursor: 'pointer' }}
+        >Retry</button>
+      </div>
+    );
   }
 
   const counts = { available: 0, pending: 0, sold: 0 };
