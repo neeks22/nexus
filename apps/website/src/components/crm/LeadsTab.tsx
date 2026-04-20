@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import useIsMobile from './useIsMobile';
-import { useLeads, useCreateLead, type Lead } from '@/hooks/use-leads';
-import { colors, STATUS_COLORS, GRADE_COLORS } from './tokens';
+import { useLeads, useCreateLead } from '@/hooks/use-leads';
+import { useDebounce } from '@/hooks/use-debounce';
+import { STATUS_COLORS, GRADE_COLORS } from './tokens';
 import { inputStyle as sharedInputStyle } from './styles';
 
 interface LeadsTabProps {
@@ -30,7 +32,9 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
   const [newLead, setNewLead] = useState({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
   const isMobile = useIsMobile();
 
-  const { data: leads = [], isLoading: loading, refetch } = useLeads(tenant, { search, status: filterStatus });
+  // Debounce search so we don't hit /api/leads on every keystroke (60 req/min rate limit).
+  const debouncedSearch = useDebounce(search, 300);
+  const { data: leads = [], isLoading: loading, isError, refetch } = useLeads(tenant, { search: debouncedSearch, status: filterStatus });
   const createMutation = useCreateLead(tenant);
 
   const createLead = async (): Promise<void> => {
@@ -39,7 +43,9 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
       await createMutation.mutateAsync(newLead);
       setShowCreate(false);
       setNewLead({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
-    } catch {
+    } catch (err) {
+      console.error('[leads] Create error:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
       alert('Failed to create lead');
     }
   };
@@ -198,6 +204,15 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
         {/* Rows */}
         {loading ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>Loading...</div>
+        ) : isError ? (
+          <div style={{ padding: '40px', textAlign: 'center' }}>
+            <div style={{ color: '#ef4444', fontSize: '14px', marginBottom: '8px' }}>Failed to load leads</div>
+            <div style={{ color: '#666', fontSize: '13px', marginBottom: '12px' }}>Check your connection and try again.</div>
+            <button
+              onClick={() => refetch()}
+              style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#f0f0f5', cursor: 'pointer' }}
+            >Retry</button>
+          </div>
         ) : leads.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#666' }}>No leads found</div>
         ) : isMobile ? (
