@@ -163,7 +163,8 @@ export function validateTwilioSignature(request: NextRequest, params: Record<str
 
 /* ---------- API Key Authentication ---------- */
 
-function isValidOrigin(o: string): boolean {
+export function isValidOrigin(o: string | null | undefined): boolean {
+  if (!o) return false;
   try {
     const hostname = new URL(o).hostname;
     return hostname === 'nexusagents.ca' || hostname.endsWith('.nexusagents.ca');

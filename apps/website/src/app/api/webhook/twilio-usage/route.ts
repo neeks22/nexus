@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
+import { validateTwilioSignature, rateLimit, getClientIp } from '../../../../lib/security';
 
 /* =============================================================================
    TWILIO USAGE TRIGGER WEBHOOK
    Receives notifications when SMS spending hits thresholds.
    - $75/month: warning notification via Slack
    - $400/month: hard block — suspends SMS sending via agent_toggles table
+   Security: Twilio signature validation + rate limiting
    ============================================================================= */
 
 const SUPABASE_URL = (process.env.SUPABASE_URL ?? '').trim();
@@ -33,8 +35,24 @@ async function slackNotify(message: string): Promise<void> {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const ip = getClientIp(request);
+
+  // Rate limit: 20 requests/min per IP (trigger fires rarely — anything more is abuse)
+  if (await rateLimit(ip, 20)) {
+    return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
+  }
+
   try {
     const formData = await request.formData();
+
+    // Validate Twilio signature — rejects forged requests that would otherwise disable SMS
+    const params: Record<string, string> = {};
+    formData.forEach((value, key) => { params[key] = value.toString(); });
+    if (!validateTwilioSignature(request, params)) {
+      console.warn('[twilio-usage] Invalid Twilio signature from', ip);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const triggerValue = formData.get('TriggerValue')?.toString() ?? '0';
     const currentValue = formData.get('CurrentValue')?.toString() ?? '0';
     const friendlyName = formData.get('FriendlyName')?.toString() ?? '';

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, supaGetData, supaHeaders, SUPABASE_URL, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput } from '../../../../lib/security';
+import { NEXUS_API_KEY, GMAIL_USER, GMAIL_PASS, supaPost, supaGetData, supaHeaders, SUPABASE_URL, slackNotify, callClaude, rateLimit, getClientIp, sanitizeInput, isValidOrigin } from '../../../../lib/security';
 
 /* ---------- Tenant email config ---------- */
 const TENANT_EMAIL_CONFIG: Record<string, { fromName: string; gm: string; phone: string; signoff: string }> = {
@@ -21,12 +21,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: 'Rate limited' }, { status: 429 });
   }
 
-  // Auth: require API key OR same-origin
+  // Auth: require API key OR same-origin (hostname-exact, not substring)
   const authHeader = request.headers.get('authorization');
   const apiKey = authHeader?.replace('Bearer ', '');
   const origin = request.headers.get('origin');
   const referer = request.headers.get('referer');
-  const isSameOrigin = origin?.includes('nexusagents.ca') || referer?.includes('nexusagents.ca');
+  const isSameOrigin = isValidOrigin(origin) || isValidOrigin(referer);
 
   if (!isSameOrigin && apiKey !== NEXUS_API_KEY) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
