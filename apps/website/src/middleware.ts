@@ -26,7 +26,34 @@ async function isRevoked(signaturePrefix: string): Promise<boolean> {
  * 4. Block non-browser automated probing on sensitive routes
  */
 
-const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '');
+const ALLOWED_ORIGIN = (process.env.ALLOWED_ORIGIN ?? 'https://nexusagents.ca').trim().replace(/\\n$/, '').replace(/\/+$/, '');
+
+// Accept apex + www variants of the allowed host — prevents CSRF 403s
+// when the cookie domain and the Origin header disagree on www.
+function hostFromUrl(url: string): string {
+  try { return new URL(url).host.toLowerCase(); } catch { return ''; }
+}
+const ALLOWED_HOSTS = (() => {
+  const base = hostFromUrl(ALLOWED_ORIGIN);
+  const set = new Set<string>();
+  if (base) {
+    set.add(base);
+    set.add(base.startsWith('www.') ? base.slice(4) : `www.${base}`);
+  }
+  return set;
+})();
+
+function originOrRefererAllowed(origin: string | null, referer: string | null): boolean {
+  if (origin) {
+    const h = hostFromUrl(origin);
+    if (h && ALLOWED_HOSTS.has(h)) return true;
+  }
+  if (referer) {
+    const h = hostFromUrl(referer);
+    if (h && ALLOWED_HOSTS.has(h)) return true;
+  }
+  return false;
+}
 
 function cleanEnv(val: string | undefined): string {
   if (!val) return '';
@@ -225,17 +252,14 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
         );
       }
 
-      const originOk =
-        !origin ||
-        origin === ALLOWED_ORIGIN ||
-        (isDev && origin.includes('localhost'));
+      const devLocal = isDev && (
+        (origin?.includes('localhost') ?? false) ||
+        (referer?.includes('localhost') ?? false)
+      );
 
-      const refererOk =
-        !referer ||
-        referer.startsWith(ALLOWED_ORIGIN) ||
-        (isDev && referer.includes('localhost'));
-
-      if (!originOk && !refererOk) {
+      // Webhooks / cron have their own auth (Twilio signature, API keys) and
+      // routinely arrive with no browser Origin/Referer — skip CSRF for them.
+      if (!devLocal && !isWebhookOrCron && !originOrRefererAllowed(origin, referer)) {
         return NextResponse.json(
           { error: 'Forbidden — invalid origin' },
           { status: 403 }
