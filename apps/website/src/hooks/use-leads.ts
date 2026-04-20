@@ -27,11 +27,17 @@ export function useLeads(tenant: string, params?: { search?: string; status?: st
   });
 }
 
+interface CreateLeadResponse {
+  success: boolean;
+  existing: boolean;
+  lead?: Lead;
+}
+
 export function useCreateLead(tenant: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (lead: Record<string, string>) =>
-      apiPost('/api/leads', { tenant, type: 'create_lead', content: JSON.stringify(lead) }),
+      apiPost<CreateLeadResponse>('/api/leads', { tenant, type: 'create_lead', content: JSON.stringify(lead) }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['leads', tenant] }),
   });
 }

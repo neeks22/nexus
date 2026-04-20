@@ -40,7 +40,14 @@ export default function LeadsTab({ tenant, onSelectLead }: LeadsTabProps): React
   const createLead = async (): Promise<void> => {
     if (!newLead.first_name || !newLead.phone) return;
     try {
-      await createMutation.mutateAsync(newLead);
+      const result = await createMutation.mutateAsync(newLead);
+      if (result.existing) {
+        alert('A lead with this phone number already exists. Opening the existing record.');
+        setShowCreate(false);
+        setNewLead({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
+        if (result.lead?.phone) onSelectLead(result.lead.phone);
+        return;
+      }
       setShowCreate(false);
       setNewLead({ first_name: '', last_name: '', phone: '', email: '', vehicle_type: '', credit_situation: '' });
     } catch (err) {
