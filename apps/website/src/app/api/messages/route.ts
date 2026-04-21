@@ -646,8 +646,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (!res.ok) {
       const errorText = await res.text().catch(() => 'no body');
       console.error(`[messages] Twilio send error: ${res.status} — ${errorText}`);
+      // Surface Twilio's actual error message so users can self-diagnose
+      // (e.g. auth token invalid, from-number not owned, geographic restriction).
+      let twilioMsg = errorText;
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed.message) twilioMsg = parsed.message;
+      } catch { /* keep raw */ }
+      const humanErr = res.status === 401
+        ? 'Twilio authentication failed. Check TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN in Vercel env (look for encrypted-blob corruption).'
+        : res.status === 403
+          ? `Twilio rejected the request: ${twilioMsg}`
+          : res.status === 400
+            ? `Twilio rejected the message: ${twilioMsg}`
+            : `Twilio error ${res.status}: ${twilioMsg}`;
       return NextResponse.json(
-        { error: 'Failed to send message' },
+        { error: humanErr },
         { status: 500, headers: securityHeaders(origin) }
       );
     }

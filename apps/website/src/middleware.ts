@@ -132,7 +132,7 @@ async function verifySession(cookie: string): Promise<SessionPayload | null> {
 /* ----- Protected paths ----- */
 
 const PROTECTED_PAGE_PATHS = ['/inbox', '/readycar', '/readyride', '/dashboard'];
-const PROTECTED_API_PATHS = ['/api/leads', '/api/messages', '/api/dashboard', '/api/inventory', '/api/appointments', '/api/deals', '/api/import-leads', '/api/check-duplicates', '/api/credit-analyze', '/api/parse-pdf-contacts', '/api/auth/users'];
+const PROTECTED_API_PATHS = ['/api/leads', '/api/messages', '/api/dashboard', '/api/inventory', '/api/appointments', '/api/deals', '/api/import-leads', '/api/check-duplicates', '/api/credit-analyze', '/api/parse-pdf-contacts', '/api/auth/users', '/api/health/messaging'];
 
 function isProtectedRoute(path: string): boolean {
   return PROTECTED_PAGE_PATHS.some(p => path.startsWith(p)) ||
