@@ -258,7 +258,7 @@ export default function ReportsTab({ tenant }: ReportsTabProps): React.ReactElem
                 cx="50%"
                 cy="50%"
                 outerRadius={isMobile ? 70 : 90}
-                label={isMobile ? false : ((props: Record<string, unknown>) => `${props.name || ''}: ${props.value || 0}`) as any}
+                label={isMobile ? false : (props: { name?: string; value?: number }) => `${props.name ?? ''}: ${props.value ?? 0}`}
               >
                 {(sourceData.length > 0 ? sourceData : [{ name: 'Direct', count: 1 }]).map((_, i) => (
                   <Cell key={i} fill={COLORS[i % COLORS.length]} />
