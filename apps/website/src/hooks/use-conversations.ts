@@ -58,6 +58,10 @@ export function useSendMessage(tenant: string) {
   return useMutation({
     mutationFn: (data: { to: string; body: string; channel?: string; email?: string; subject?: string }) =>
       apiPost('/api/messages', { tenant, ...data }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['conversations', tenant] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['conversations', tenant] });
+      qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
+      qc.invalidateQueries({ queryKey: ['lead-activity', tenant] });
+    },
   });
 }

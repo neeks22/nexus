@@ -109,6 +109,8 @@ export function useSendSMS(tenant: string) {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['lead-conversation', tenant, variables.to] });
       qc.invalidateQueries({ queryKey: ['lead-activity', tenant, variables.to] });
+      qc.invalidateQueries({ queryKey: ['conversations', tenant] });
+      qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
     },
   });
 }
@@ -121,6 +123,8 @@ export function useSendEmail(tenant: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['lead-conversation', tenant] });
       qc.invalidateQueries({ queryKey: ['lead-activity', tenant] });
+      qc.invalidateQueries({ queryKey: ['conversations', tenant] });
+      qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
     },
   });
 }

@@ -38,7 +38,11 @@ export function useCreateLead(tenant: string) {
   return useMutation({
     mutationFn: (lead: Record<string, string>) =>
       apiPost<CreateLeadResponse>('/api/leads', { tenant, type: 'create_lead', content: JSON.stringify(lead) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads', tenant] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['leads', tenant] });
+      qc.invalidateQueries({ queryKey: ['conversations', tenant] });
+      qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
+    },
   });
 }
 
@@ -67,6 +71,7 @@ export function useUpdateLeadStatus(tenant: string) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['leads', tenant] });
       qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
+      qc.invalidateQueries({ queryKey: ['lead-detail', tenant] });
     },
   });
 }

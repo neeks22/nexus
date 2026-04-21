@@ -37,6 +37,8 @@ export function useCreateAppointment(tenant: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['appointments', tenant] });
       qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
+      qc.invalidateQueries({ queryKey: ['lead-activity', tenant] });
+      qc.invalidateQueries({ queryKey: ['lead-detail', tenant] });
     },
   });
 }
@@ -66,6 +68,8 @@ export function useUpdateAppointment(tenant: string) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['appointments', tenant] });
       qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
+      qc.invalidateQueries({ queryKey: ['lead-activity', tenant] });
+      qc.invalidateQueries({ queryKey: ['lead-detail', tenant] });
     },
   });
 }

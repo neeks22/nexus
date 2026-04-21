@@ -69,6 +69,8 @@ export function useUpdateDeal(tenant: string) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['deals', tenant] });
       qc.invalidateQueries({ queryKey: ['dashboard', tenant] });
+      qc.invalidateQueries({ queryKey: ['leads', tenant] });
+      qc.invalidateQueries({ queryKey: ['lead-detail', tenant] });
     },
   });
 }
