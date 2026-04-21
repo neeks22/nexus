@@ -1,5 +1,6 @@
 'use client';
 
+import * as Sentry from '@sentry/nextjs';
 import KanbanBoard from './KanbanBoard';
 import { useLeads, useUpdateLeadStatus } from '@/hooks/use-leads';
 
@@ -17,6 +18,8 @@ export default function PipelineTab({ tenant, onSelectLead }: PipelineTabProps):
       await updateStatus.mutateAsync({ phone, status: newStatus });
     } catch (err) {
       console.error('Failed to update lead status:', err);
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to move lead — reverted. Please retry.');
     }
   };
 

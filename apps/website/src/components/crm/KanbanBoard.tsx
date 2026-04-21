@@ -137,7 +137,7 @@ export default function KanbanBoard({ leads, onMoveLead, onSelectLead }: KanbanB
                         name={[lead.first_name, lead.last_name].filter(Boolean).join(' ')}
                         phone={lead.phone}
                         vehicle={lead.vehicle_type || ''}
-                        daysInStage={daysSince}
+                        daysSinceCreated={daysSince}
                         onClick={() => onSelectLead(lead.phone)}
                       />
                     );

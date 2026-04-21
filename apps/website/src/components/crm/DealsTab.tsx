@@ -59,6 +59,7 @@ export default function DealsTab({ tenant, onSelectLead }: DealsTabProps): React
     } catch (err) {
       console.error('Failed to update deal:', err instanceof Error ? err.message : 'unknown');
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to update deal — status reverted. Please retry.');
     }
   };
 

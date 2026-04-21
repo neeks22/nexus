@@ -62,6 +62,7 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
     } catch (err) {
       console.error('Failed to update appointment:', err instanceof Error ? err.message : 'unknown');
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to update appointment — status reverted. Please retry.');
     }
   };
 
@@ -69,9 +70,11 @@ export default function AppointmentsTab({ tenant, onSelectLead }: AppointmentsTa
     setSendingReminderId(id);
     try {
       await reminderMutation.mutateAsync(id);
+      alert('Reminder SMS sent.');
     } catch (err) {
       console.error('Failed to send reminder:', err instanceof Error ? err.message : 'unknown');
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to send reminder. Please retry.');
     } finally {
       setSendingReminderId(null);
     }

@@ -81,6 +81,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
     } catch (err) {
       console.error('[LeadDetail] Status update error:', err instanceof Error ? err.message : 'unknown');
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to update status — reverted. Please retry.');
     }
   }
 

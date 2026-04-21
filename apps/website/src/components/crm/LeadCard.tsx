@@ -8,11 +8,11 @@ interface LeadCardProps {
   name: string;
   phone: string;
   vehicle: string;
-  daysInStage: number;
+  daysSinceCreated: number;
   onClick: () => void;
 }
 
-export default function LeadCard({ id, name, phone, vehicle, daysInStage, onClick }: LeadCardProps): React.ReactElement {
+export default function LeadCard({ id, name, phone, vehicle, daysSinceCreated, onClick }: LeadCardProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
 
   const style = {
@@ -42,7 +42,7 @@ export default function LeadCard({ id, name, phone, vehicle, daysInStage, onClic
       </div>
       {vehicle && <div style={{ color: '#8888a0', fontSize: '12px', marginBottom: '4px' }}>{vehicle}</div>}
       <div style={{ color: '#666', fontSize: '11px' }}>
-        {daysInStage === 0 ? 'Today' : `${daysInStage}d in stage`}
+        {daysSinceCreated === 0 ? 'Today' : `${daysSinceCreated}d in system`}
       </div>
     </div>
   );

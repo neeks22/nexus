@@ -47,6 +47,7 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
     } catch (err) {
       console.error('Failed to update vehicle:', err instanceof Error ? err.message : 'unknown');
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to update vehicle — status reverted. Please retry.');
     }
   };
 
@@ -57,6 +58,7 @@ export default function InventoryTab({ tenant }: InventoryTabProps): React.React
     } catch (err) {
       console.error('Failed to delete vehicle:', err instanceof Error ? err.message : 'unknown');
       Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+      alert('Failed to delete vehicle. Please retry.');
     }
   };
 
