@@ -213,10 +213,17 @@ export default function ImportSpreadsheetModal({ tenant, onClose, onComplete }: 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contacts: newContacts, tenant }),
       });
-      if (!res.ok || !res.body) throw new Error('Import request failed');
+      if (!res.ok || !res.body) {
+        let serverMsg = `Import request failed (${res.status})`;
+        try {
+          const errBody = await res.json();
+          if (errBody?.error) serverMsg = errBody.error;
+        } catch { /* not JSON */ }
+        throw new Error(serverMsg);
+      }
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
-      let imported = 0, failed = 0, buffer = '';
+      let imported = 0, failed = 0, skippedDup = 0, buffer = '';
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -227,16 +234,23 @@ export default function ImportSpreadsheetModal({ tenant, onClose, onComplete }: 
           if (!line.trim()) continue;
           try {
             const ev = JSON.parse(line);
-            if (ev.status === 'ok') imported++;
+            // Final summary frame — skip counting, it's not a contact event
+            if (ev.done) continue;
+            if (ev.status === 'sent' || ev.status === 'imported') imported++;
+            else if (ev.status === 'duplicate') skippedDup++;
             else failed++;
-            setProgress({ current: imported + failed, total: newContacts.length, status: `${ev.name || ev.phone}: ${ev.status}` });
+            setProgress({
+              current: imported + failed + skippedDup,
+              total: newContacts.length,
+              status: `${ev.phone || ''}: ${ev.status}`,
+            });
           } catch { /* skip malformed line */ }
         }
       }
-      setSummary({ imported, skipped: dupCount, failed });
+      setSummary({ imported, skipped: dupCount + skippedDup, failed });
     } catch (err) {
       console.error('Import failed:', err);
-      setError('Import failed. Please try again.');
+      setError(`Import failed: ${err instanceof Error ? err.message : 'unknown error'}`);
       setSummary({ imported: 0, skipped: dupCount, failed: newContacts.length });
     }
   };

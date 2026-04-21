@@ -287,11 +287,9 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
         body: JSON.stringify({ to: activeConversation.phone, body: composeText.trim(), tenant }),
       });
 
-      if (!res.ok) throw new Error('Failed to send');
-
-      const data = await res.json();
-      if (!data.success || !data.message) {
-        throw new Error(data.error || 'Send failed');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success || !data.message) {
+        throw new Error(data.error || `Send failed (${res.status})`);
       }
       const newMsg: Message = {
         sid: data.message.sid,
@@ -373,9 +371,10 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
         body: JSON.stringify({ to: transferPhone, body, tenant }),
       });
 
-      if (!res.ok) throw new Error('Failed to transfer');
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Transfer failed');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Transfer failed (${res.status})`);
+      }
       setTransferSuccess(true);
       setTimeout(() => {
         setTransferSuccess(false);
@@ -383,7 +382,7 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
       }, 2000);
     } catch (err) {
       console.error('Failed to transfer conversation:', err);
-      alert('Failed to send transfer. Please try again.');
+      alert(`Failed to send transfer: ${err instanceof Error ? err.message : 'unknown error'}`);
     } finally {
       setTransferring(false);
     }
@@ -398,16 +397,17 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ to: newMessagePhone.trim(), body: newMessageText.trim(), tenant }),
       });
-      if (!res.ok) throw new Error('Failed to send');
-      const data = await res.json();
-      if (!data.success) throw new Error(data.error || 'Send failed');
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Send failed (${res.status})`);
+      }
       setNewMessagePhone('');
       setNewMessageText('');
       setShowNewMessage(false);
       fetchConversations();
     } catch (err) {
       console.error('Failed to send new message:', err);
-      alert('Failed to send message. Check the phone number and try again.');
+      alert(`Failed to send message: ${err instanceof Error ? err.message : 'unknown error'}`);
     } finally {
       setSendingNew(false);
     }
