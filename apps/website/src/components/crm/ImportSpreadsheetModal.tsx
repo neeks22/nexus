@@ -29,8 +29,15 @@ const NAME_PATTERNS: Record<string, RegExp> = {
   phone: /phone|cell|mobile|tel|téléphone|number/i,
 };
 
+// Matches server-side normalizePhone in src/lib/auto-response.ts so the
+// check-duplicates query compares apples to apples (E.164 vs E.164).
 function normalizePhone(raw: string): string {
-  return raw.replace(/[^\d+]/g, '');
+  const digits = raw.replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  if (digits.length >= 7) return `+${digits}`;
+  return '';
 }
 
 function detectColumns(headers: string[]): Record<string, number> | null {

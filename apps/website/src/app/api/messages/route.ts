@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
 import { requireSession, isAuthError, rateLimit as sharedRateLimit, getClientIp, checkCASLCompliance } from '../../../lib/security';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
 /* =============================================================================
    ENVIRONMENT VARIABLES — never hardcode credentials
    ============================================================================= */
@@ -486,11 +490,17 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 
-  // Credential check
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_FROM_NUMBER) {
-    console.error('[messages] Twilio credentials not configured');
+  // Credential check — tenant-specific number OR global fallback must exist.
+  const hasSenderNumber = Boolean(TENANT_NUMBERS[session.tenant] || TWILIO_FROM_NUMBER);
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !hasSenderNumber) {
+    console.error('[messages] Twilio credentials not configured', {
+      hasSid: Boolean(TWILIO_ACCOUNT_SID),
+      hasToken: Boolean(TWILIO_AUTH_TOKEN),
+      hasSenderNumber,
+      tenant: session.tenant,
+    });
     return NextResponse.json(
-      { error: 'Server configuration error' },
+      { error: 'Server configuration error — Twilio credentials missing or corrupted' },
       { status: 500, headers: securityHeaders(origin) }
     );
   }

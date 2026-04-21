@@ -4,6 +4,11 @@ import { FunnelLead, TENANTS, normalizePhone, insertLead, sendSMS } from '@/lib/
 import { rateLimit, getClientIp, supaGet, requireRole, isAuthError } from '@/lib/security';
 import { z } from 'zod';
 
+// Streaming import can exceed default Vercel timeout; Pro tier allows up to 300s.
+export const maxDuration = 300;
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const ImportSchema = z.object({
   contacts: z.array(z.object({
     firstName: z.string().min(1),
@@ -13,12 +18,12 @@ const ImportSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
-  // Require manager+ role for imports
-  const session = requireRole(request, 'manager');
+  // Any authenticated staff can import — salespeople are the intended users.
+  const session = requireRole(request, 'staff');
   if (isAuthError(session)) return session;
 
   const ip = getClientIp(request);
-  if (await rateLimit(ip, 2, 60000)) {
+  if (await rateLimit(ip, 10, 60000)) {
     return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429 });
   }
 
@@ -97,19 +102,12 @@ export async function POST(request: NextRequest) {
           utmCampaign: '',
         };
 
+        let inserted = false;
         try {
           await insertLead(lead, normalizedPhone, tenant);
-
-          if (autoResponseEnabled) {
-            await sendSMS(lead, normalizedPhone, tenant);
-          }
-
-          sent++;
-          controller.enqueue(encoder.encode(JSON.stringify({
-            processed: i + 1, total: body.contacts.length, phone: normalizedPhone, status: autoResponseEnabled ? 'sent' : 'imported'
-          }) + '\n'));
+          inserted = true;
         } catch (err) {
-          console.error('[import-leads] Error processing contact:', err instanceof Error ? err.message : 'unknown');
+          console.error('[import-leads] insertLead error:', err instanceof Error ? err.message : 'unknown');
           Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
           failed++;
           controller.enqueue(encoder.encode(JSON.stringify({
@@ -117,8 +115,24 @@ export async function POST(request: NextRequest) {
           }) + '\n'));
         }
 
+        if (inserted) {
+          if (autoResponseEnabled) {
+            try {
+              await sendSMS(lead, normalizedPhone, tenant);
+            } catch (err) {
+              // Lead is saved; SMS failure is non-fatal. Log and continue.
+              console.error('[import-leads] sendSMS error:', err instanceof Error ? err.message : 'unknown');
+              Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+            }
+          }
+          sent++;
+          controller.enqueue(encoder.encode(JSON.stringify({
+            processed: i + 1, total: body.contacts.length, phone: normalizedPhone, status: autoResponseEnabled ? 'sent' : 'imported'
+          }) + '\n'));
+        }
+
         if (i < body.contacts.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1200));
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
       }
 
