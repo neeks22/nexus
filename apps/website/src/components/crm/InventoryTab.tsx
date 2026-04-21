@@ -10,7 +10,6 @@ import { inputStyle } from './styles';
 
 interface InventoryTabProps {
   tenant: string;
-  onSelectLead: (phone: string) => void;
 }
 
 const fmt = (n: number | null): string => n != null ? `$${n.toLocaleString()}` : '—';

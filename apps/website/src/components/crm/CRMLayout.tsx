@@ -237,7 +237,7 @@ export default function CRMLayout({
               {creditRouterContent}
             </div>
           )}
-          {activeTab === 'inventory' && <InventoryTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
+          {activeTab === 'inventory' && <InventoryTab tenant={tenant} />}
           {activeTab === 'appointments' && <AppointmentsTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
           {activeTab === 'deals' && <DealsTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
           {activeTab === 'reports' && <ReportsTab tenant={tenant} />}

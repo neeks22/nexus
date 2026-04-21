@@ -43,7 +43,25 @@ export function useUpdateVehicle(tenant: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: { id: string } & Record<string, unknown>) => apiPatch('/api/inventory', { tenant, ...data }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', tenant] }),
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: ['inventory', tenant] });
+      const snapshots = qc.getQueriesData<InventoryResponse>({ queryKey: ['inventory', tenant] });
+      for (const [key, prev] of snapshots) {
+        if (!prev) continue;
+        qc.setQueryData<InventoryResponse>(key, {
+          ...prev,
+          vehicles: prev.vehicles.map((v) =>
+            v.id === data.id ? { ...v, ...(data as Partial<Vehicle>) } : v
+          ),
+        });
+      }
+      return { snapshots };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
+      for (const [key, prev] of ctx.snapshots) qc.setQueryData(key, prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['inventory', tenant] }),
   });
 }
 
@@ -51,6 +69,22 @@ export function useDeleteVehicle(tenant: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => apiDelete('/api/inventory', { tenant, id }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory', tenant] }),
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ['inventory', tenant] });
+      const snapshots = qc.getQueriesData<InventoryResponse>({ queryKey: ['inventory', tenant] });
+      for (const [key, prev] of snapshots) {
+        if (!prev) continue;
+        qc.setQueryData<InventoryResponse>(key, {
+          ...prev,
+          vehicles: prev.vehicles.filter((v) => v.id !== id),
+        });
+      }
+      return { snapshots };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (!ctx) return;
+      for (const [key, prev] of ctx.snapshots) qc.setQueryData(key, prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['inventory', tenant] }),
   });
 }
