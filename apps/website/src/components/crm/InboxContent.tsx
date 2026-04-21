@@ -175,6 +175,11 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
 
   const threadEndRef = useRef<HTMLDivElement>(null);
   const composeRef = useRef<HTMLInputElement>(null);
+  // Ref mirrors activeConversation so poll callback always sees current state,
+  // not a snapshot from when useCallback last memoized. Without this, a poll
+  // after a manual send compared against stale state and could drop new inbound.
+  const activeConvRef = useRef<Conversation | null>(null);
+  activeConvRef.current = activeConversation;
 
   const fetchConversations = useCallback(async (): Promise<void> => {
     try {
@@ -183,11 +188,12 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
       const data = await res.json();
       setConversations(data.conversations || []);
 
-      if (activeConversation) {
+      const current = activeConvRef.current;
+      if (current) {
         const updated = (data.conversations || []).find(
-          (c: Conversation) => c.phone === activeConversation.phone
+          (c: Conversation) => c.phone === current.phone
         );
-        if (updated && updated.messages.length !== activeConversation.messages.length) {
+        if (updated && updated.messages.length !== current.messages.length) {
           setActiveConversation(updated);
         }
       }
@@ -196,8 +202,7 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConversation?.phone, tenant]);
+  }, [tenant]);
 
   useEffect(() => {
     fetchConversations();
@@ -226,19 +231,22 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
     setAgentToggling(true);
     try {
       const newContent = agentPaused ? 'AI_RESUMED' : 'AGENT_PAUSED';
-      await fetch('/api/leads', {
+      const statusRes = await fetch('/api/leads', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tenant, phone: activeConversation.phone, type: 'status', content: newContent }),
       });
+      if (!statusRes.ok) throw new Error(`status write failed (${statusRes.status})`);
       if (agentPaused) {
-        await fetch('/api/leads', {
+        const patchRes = await fetch('/api/leads', {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ tenant, phone: activeConversation.phone, status: 'contacted' }),
         });
+        if (!patchRes.ok) throw new Error(`status patch failed (${patchRes.status})`);
       }
       setAgentPaused(!agentPaused);
     } catch (err) {
       console.error(`[${tenant}] Agent toggle error:`, err instanceof Error ? err.message : 'unknown');
+      alert('Failed to toggle agent. Please refresh to confirm state and try again.');
     }
     setAgentToggling(false);
   }
@@ -282,39 +290,41 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
       if (!res.ok) throw new Error('Failed to send');
 
       const data = await res.json();
-      if (data.success && data.message) {
-        const newMsg: Message = {
-          sid: data.message.sid,
-          body: composeText.trim(),
-          from: data.message.from,
-          to: activeConversation.phone,
-          dateSent: new Date().toISOString(),
-          status: data.message.status || 'queued',
-          direction: 'outbound',
-        };
-
-        setActiveConversation((prev) => {
-          if (!prev) return prev;
-          return { ...prev, messages: [...prev.messages, newMsg] };
-        });
-
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.phone === activeConversation.phone
-              ? {
-                  ...c,
-                  messages: [...c.messages, newMsg],
-                  lastMessage: composeText.trim(),
-                  lastMessageTime: new Date().toISOString(),
-                }
-              : c
-          )
-        );
-
-        setComposeText('');
+      if (!data.success || !data.message) {
+        throw new Error(data.error || 'Send failed');
       }
+      const newMsg: Message = {
+        sid: data.message.sid,
+        body: composeText.trim(),
+        from: data.message.from,
+        to: activeConversation.phone,
+        dateSent: new Date().toISOString(),
+        status: data.message.status || 'queued',
+        direction: 'outbound',
+      };
+
+      setActiveConversation((prev) => {
+        if (!prev) return prev;
+        return { ...prev, messages: [...prev.messages, newMsg] };
+      });
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.phone === activeConversation.phone
+            ? {
+                ...c,
+                messages: [...c.messages, newMsg],
+                lastMessage: composeText.trim(),
+                lastMessageTime: new Date().toISOString(),
+              }
+            : c
+        )
+      );
+
+      setComposeText('');
     } catch (err) {
       console.error('Failed to send message:', err);
+      alert(`Failed to send SMS: ${err instanceof Error ? err.message : 'unknown error'}`);
     } finally {
       setSending(false);
     }
@@ -365,13 +375,12 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
 
       if (!res.ok) throw new Error('Failed to transfer');
       const data = await res.json();
-      if (data.success) {
-        setTransferSuccess(true);
-        setTimeout(() => {
-          setTransferSuccess(false);
-          setShowTransferForm(false);
-        }, 2000);
-      }
+      if (!data.success) throw new Error(data.error || 'Transfer failed');
+      setTransferSuccess(true);
+      setTimeout(() => {
+        setTransferSuccess(false);
+        setShowTransferForm(false);
+      }, 2000);
     } catch (err) {
       console.error('Failed to transfer conversation:', err);
       alert('Failed to send transfer. Please try again.');
@@ -391,12 +400,11 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
       });
       if (!res.ok) throw new Error('Failed to send');
       const data = await res.json();
-      if (data.success) {
-        setNewMessagePhone('');
-        setNewMessageText('');
-        setShowNewMessage(false);
-        fetchConversations();
-      }
+      if (!data.success) throw new Error(data.error || 'Send failed');
+      setNewMessagePhone('');
+      setNewMessageText('');
+      setShowNewMessage(false);
+      fetchConversations();
     } catch (err) {
       console.error('Failed to send new message:', err);
       alert('Failed to send message. Check the phone number and try again.');

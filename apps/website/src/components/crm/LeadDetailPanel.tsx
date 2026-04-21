@@ -96,13 +96,7 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
 
   async function pauseAgent(): Promise<void> {
     try {
-      const promises: Promise<unknown>[] = [
-        postStatusMutation.mutateAsync({ phone, type: 'status', content: 'AGENT_PAUSED' }),
-      ];
-      if (lead?.email) {
-        promises.push(postStatusMutation.mutateAsync({ phone: lead.email, type: 'status', content: 'AGENT_PAUSED' }));
-      }
-      await Promise.all(promises);
+      await postStatusMutation.mutateAsync({ phone, type: 'status', content: 'AGENT_PAUSED' });
       showSuccess('Agent paused — manual mode');
     } catch (err) {
       console.error('[LeadDetail] Pause Agent error:', err instanceof Error ? err.message : 'unknown');
@@ -113,14 +107,10 @@ export default function LeadDetailPanel({ tenant, phone, onClose }: LeadDetailPa
 
   async function resumeAgent(): Promise<void> {
     try {
-      const promises: Promise<unknown>[] = [
-        postStatusMutation.mutateAsync({ phone, type: 'status', content: 'AI_RESUMED' }),
-        statusMutation.mutateAsync({ phone, status: 'contacted' }),
-      ];
-      if (lead?.email) {
-        promises.push(postStatusMutation.mutateAsync({ phone: lead.email, type: 'status', content: 'AI_RESUMED' }));
-      }
-      await Promise.all(promises);
+      // Sequence: write status timeline first, then flip the lead status.
+      // If the first call fails, the lead status shouldn't flip to 'contacted'.
+      await postStatusMutation.mutateAsync({ phone, type: 'status', content: 'AI_RESUMED' });
+      await statusMutation.mutateAsync({ phone, status: 'contacted' });
       showSuccess('Agent resumed — auto-replies are back on');
     } catch (err) {
       console.error('[LeadDetail] Resume Agent error:', err instanceof Error ? err.message : 'unknown');

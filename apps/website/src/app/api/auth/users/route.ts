@@ -156,7 +156,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/crm_users?select=id,email,name,tenant_id,role,is_active,created_at&order=created_at.desc`,
+      `${SUPABASE_URL}/rest/v1/crm_users?select=id,email,name,tenant_id,role,is_active,created_at&tenant_id=eq.${encodeURIComponent(admin.tenant_id)}&order=created_at.desc`,
       {
         headers: {
           apikey: SUPABASE_KEY,

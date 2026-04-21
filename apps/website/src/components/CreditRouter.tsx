@@ -227,13 +227,15 @@ export default function CreditRouter({ tenant, customerPhone }: { tenant?: strin
                 content: JSON.stringify({ first_name: customerInfo.first_name, last_name: customerInfo.last_name, phone: customerInfo.phone, email: customerInfo.email, credit_situation: creditSituationValue, vehicle_type: '' }),
               }),
             });
+            if (!res.ok) throw new Error(`lead create failed: ${res.status}`);
             const data = await res.json();
             if (data.success) setLeadMatch({ found: true, name: `${customerInfo.first_name} ${customerInfo.last_name}`.trim(), phone: fullPhone });
           } else if (leadMatch?.found && fullPhone !== 'unknown') {
-            await fetch('/api/leads/credit', {
+            const res = await fetch('/api/leads/credit', {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ tenant, phone: fullPhone, credit_situation: creditSituationValue }),
             });
+            if (!res.ok) throw new Error(`credit update failed: ${res.status}`);
           }
         } catch (err) {
           console.error('[CreditRouter] Lead create/update error:', err instanceof Error ? err.message : 'unknown');
