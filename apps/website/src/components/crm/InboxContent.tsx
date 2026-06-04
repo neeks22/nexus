@@ -172,6 +172,7 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
   const [sendingNew, setSendingNew] = useState(false);
   const [agentPaused, setAgentPaused] = useState(false);
   const [agentToggling, setAgentToggling] = useState(false);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
 
   const threadEndRef = useRef<HTMLDivElement>(null);
   const composeRef = useRef<HTMLInputElement>(null);
@@ -268,6 +269,32 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
     setMobileThreadOpen(true);
     setShowTransferForm(false);
     setTransferSuccess(false);
+
+    // Reset prior draft state on new selection
+    setActiveDraftId(null);
+
+    // Phase 2: if the AI prepared a reply for this lead, drop it into the
+    // composer so the user can review/edit/send instead of typing from scratch.
+    // We only pre-fill when the composer is empty so we never clobber the
+    // user's in-progress text.
+    void (async () => {
+      try {
+        const res = await fetch(`/api/messages/drafts?phone=${encodeURIComponent(conv.phone)}`);
+        if (!res.ok) return;
+        const data = (await res.json().catch(() => ({}))) as { draft?: { id: string; content: string } | null };
+        const draft = data.draft;
+        if (!draft) return;
+        // Avoid race: only fill if user hasn't started typing AND is still
+        // viewing this same conversation.
+        if (composeRef.current?.value?.trim()) return;
+        if (activeConvRef.current?.phone !== conv.phone) return;
+        setComposeText(draft.content);
+        setActiveDraftId(draft.id);
+      } catch (err) {
+        console.error('[inbox] Failed to fetch draft:', err);
+      }
+    })();
+
     setTimeout(() => {
       if (threadEndRef.current) {
         threadEndRef.current.scrollIntoView({ behavior: 'auto' });
@@ -320,6 +347,15 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
       );
 
       setComposeText('');
+
+      // If this send was approving an AI draft, clear it from the DB so the
+      // composer doesn't re-fill on the next selection.
+      if (activeDraftId) {
+        const draftIdToClear = activeDraftId;
+        setActiveDraftId(null);
+        fetch(`/api/messages/drafts?id=${encodeURIComponent(draftIdToClear)}`, { method: 'DELETE' })
+          .catch((err) => console.error('[inbox] Failed to clear draft:', err));
+      }
     } catch (err) {
       console.error('Failed to send message:', err);
       alert(`Failed to send SMS: ${err instanceof Error ? err.message : 'unknown error'}`);
@@ -806,6 +842,51 @@ export default function InboxContent({ tenant, dealerName, defaultTransferPhone 
                     }}
                   >{agentPaused ? 'Resume Agent' : 'Pause Agent'}</button>
                 </div>
+
+                {activeDraftId && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      padding: '8px 14px',
+                      margin: '0 0 8px',
+                      borderRadius: 8,
+                      background: 'rgba(251, 191, 36, 0.08)',
+                      border: '1px solid rgba(251, 191, 36, 0.25)',
+                      color: '#fbbf24',
+                      fontSize: 12,
+                      fontWeight: 500,
+                    }}
+                  >
+                    <span>🤖 AI drafted this reply — review, edit if needed, then send.</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const id = activeDraftId;
+                        setActiveDraftId(null);
+                        setComposeText('');
+                        if (id) {
+                          fetch(`/api/messages/drafts?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
+                            .catch((err) => console.error('[inbox] Failed to discard draft:', err));
+                        }
+                      }}
+                      style={{
+                        background: 'transparent',
+                        border: '1px solid rgba(251, 191, 36, 0.4)',
+                        color: '#fbbf24',
+                        borderRadius: 6,
+                        padding: '4px 10px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Discard
+                    </button>
+                  </div>
+                )}
 
                 <div className={styles.composeBar}>
                   <input

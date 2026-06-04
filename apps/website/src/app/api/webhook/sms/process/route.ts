@@ -196,13 +196,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       intent: 'draft',
       metadata: { trigger: 'reply', source_intent: intent, drafted_at: new Date().toISOString() },
     });
+    // Lightweight ping — full draft text lives in the inbox composer, not Slack.
     await slackNotify(
-      `🤖 *Draft reply awaiting approval* — ${tenant.name}\n` +
-      `*Lead replied — proposed answer*${leadName ? ` — ${leadName}` : ''}\n` +
-      `*From:* ***${fromPhone.slice(-4)}\n\n` +
-      `*Customer said:*\n> ${messageBody}\n\n` +
-      `*Proposed reply:*\n> ${aiReply}\n\n` +
-      `Review and send from the CRM inbox.`
+      `📥 Lead replied — draft ready in inbox · ${tenant.name}` +
+      `${leadName ? ` · ${leadName}` : ''} · ***${fromPhone.slice(-4)}`
     );
 
     // Update lead status to 'contacted' if still 'new' — via RPC (phone column is encrypted)
