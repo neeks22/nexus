@@ -3,14 +3,6 @@
 import { useState } from 'react';
 import styles from './page.module.css';
 
-// ---------------------------------------------------------------------------
-// TODO: Replace the localStorage fallback with a real submission endpoint.
-// Options:
-//   - Formspree:  POST to https://formspree.io/f/<your-id>
-//   - Supabase:   insert into a `contact_submissions` table via supabase-js
-//   - Custom API: POST to /api/contact (a Next.js Route Handler)
-// ---------------------------------------------------------------------------
-
 interface FormFields {
   name: string;
   email: string;
@@ -38,6 +30,7 @@ export function ContactForm() {
   const [errors, setErrors] = useState<Partial<FormFields>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const isSubmittable = fields.name.trim() !== '' && fields.email.trim() !== '';
 
@@ -75,34 +68,25 @@ export function ContactForm() {
     if (!validate()) return;
 
     setIsLoading(true);
-
-    // Simulate network latency so the loading state is perceptible
-    await new Promise((resolve) => setTimeout(resolve, 900));
+    setSubmitError(null);
 
     try {
-      // ---------------------------------------------------------------------------
-      // FALLBACK: persist to localStorage until a real endpoint exists.
-      // Remove this block once the API is wired up.
-      // ---------------------------------------------------------------------------
-      const submission = {
-        ...fields,
-        submittedAt: new Date().toISOString(),
-      };
-      const existing = JSON.parse(
-        localStorage.getItem('nexus_contact_submissions') ?? '[]'
-      ) as unknown[];
-      existing.push(submission);
-      localStorage.setItem('nexus_contact_submissions', JSON.stringify(existing));
-      // ---------------------------------------------------------------------------
+      const res = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? 'Submission failed. Please try again.');
+      }
 
       setIsSuccess(true);
       setFields(EMPTY_FIELDS);
       setErrors({});
-    } catch {
-      // Even if localStorage fails (private-browsing / storage full), show success —
-      // the form will be wired to a real backend before going to production.
-      setIsSuccess(true);
-      setFields(EMPTY_FIELDS);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Submission failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -248,6 +232,12 @@ export function ContactForm() {
             <option>$100,000+</option>
           </select>
         </div>
+
+        {submitError && (
+          <div className={styles.errorMsg} role="alert" style={{ marginBottom: 12 }}>
+            {submitError}
+          </div>
+        )}
 
         <button
           type="submit"
