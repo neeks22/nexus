@@ -53,6 +53,41 @@ function detectColumns(headers: string[]): Record<string, number> | null {
   return map;
 }
 
+function parseTextContacts(text: string): Contact[] {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      // Accept any reasonable separator: tab, 2+ spaces, comma, semicolon, pipe
+      const parts = line.split(/\t|,|;|\||  +/).map((s) => s.trim()).filter(Boolean);
+      if (parts.length < 2) return null;
+
+      // Find phone: scan right-to-left for the first token with >= 7 digits
+      let phoneIdx = -1;
+      for (let i = parts.length - 1; i >= 0; i--) {
+        if (parts[i].replace(/\D/g, '').length >= 7) {
+          phoneIdx = i;
+          break;
+        }
+      }
+      if (phoneIdx === -1) return null;
+
+      const phone = normalizePhone(parts[phoneIdx]);
+      if (!phone) return null;
+
+      const nameTokens = parts.slice(0, phoneIdx);
+      if (nameTokens.length === 0) return null;
+
+      const firstName = nameTokens[0];
+      const lastName = nameTokens.slice(1).join(' ');
+      if (!firstName) return null;
+
+      return { firstName, lastName, phone };
+    })
+    .filter((c): c is Contact => c !== null);
+}
+
 function rowsToContacts(rows: string[][], colMap: Record<string, number>): Contact[] {
   return rows
     .map((row) => {
@@ -85,6 +120,7 @@ export default function ImportSpreadsheetModal({ tenant, onClose, onComplete }: 
   const [progress, setProgress] = useState({ current: 0, total: 0, status: '' });
   const [summary, setSummary] = useState({ imported: 0, skipped: 0, failed: 0 });
   const [isDragging, setIsDragging] = useState(false);
+  const [pasteText, setPasteText] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const parseCSV = useCallback((file: File) => {
@@ -206,6 +242,19 @@ export default function ImportSpreadsheetModal({ tenant, onClose, onComplete }: 
     finishParsing(rowsToContacts(rawRows, colMapping));
   };
 
+  const handlePasteParse = () => {
+    setError('');
+    const trimmed = pasteText.trim();
+    if (!trimmed) { setError('Paste some contacts first.'); return; }
+    const parsed = parseTextContacts(trimmed);
+    if (parsed.length === 0) {
+      setError('Could not parse any contacts. Each line needs a name and a phone number.');
+      return;
+    }
+    setStep('parsing');
+    finishParsing(parsed);
+  };
+
   const removeContact = (idx: number) => setContacts((c) => c.filter((_, i) => i !== idx));
 
   const newContacts = contacts.filter((c) => !c.isDuplicate);
@@ -314,6 +363,37 @@ export default function ImportSpreadsheetModal({ tenant, onClose, onComplete }: 
               <p style={{ color: '#8888a0', fontSize: 12, margin: '6px 0 0' }}>CSV, Excel, PDF, TXT — Max 5MB</p>
             </div>
             <input ref={fileRef} type="file" accept={ACCEPTED} hidden onChange={(e) => { if (e.target.files?.[0]) handleFile(e.target.files[0]); }} />
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0 12px' }}>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+              <span style={{ color: '#8888a0', fontSize: 12 }}>OR PASTE AS TEXT</span>
+              <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+            </div>
+            <textarea
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              placeholder={'One contact per line. Any of these formats work:\n\nSherry  A LeDrew  17059299361\nAndrew Reynolds, 5483283440\nJohn,McAllister,+16133313268'}
+              style={{
+                ...inputStyle,
+                minHeight: 110,
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+                fontSize: 13,
+                lineHeight: 1.5,
+                resize: 'vertical',
+              }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
+              <span style={{ color: '#8888a0', fontSize: 12 }}>
+                Tabs, commas, or multiple spaces all work as separators.
+              </span>
+              <button
+                style={{ ...btnPrimary, opacity: pasteText.trim() ? 1 : 0.4 }}
+                disabled={!pasteText.trim()}
+                onClick={handlePasteParse}
+              >
+                Parse Contacts
+              </button>
+            </div>
           </>
         )}
 
