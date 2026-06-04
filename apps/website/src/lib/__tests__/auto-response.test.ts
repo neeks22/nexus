@@ -154,9 +154,10 @@ describe('handleAutoResponse', () => {
 
     // Should persist a DRAFT to lead_transcripts (entry_type='draft', role='agent')
     expect(mockSupaPost).toHaveBeenCalledWith('lead_transcripts', expect.objectContaining({
-      entry_type: 'draft',
-      role: 'agent',
+      entry_type: 'message',
+      role: 'ai',
       channel: 'sms',
+      intent: 'draft',
     }));
 
     // Should still log the welcome email transcript
@@ -202,7 +203,7 @@ describe('handleAutoResponse', () => {
 
     // The draft persisted to lead_transcripts should carry the fallback text
     const draftCall = mockSupaPost.mock.calls.find(
-      ([table, payload]) => table === 'lead_transcripts' && (payload as { entry_type?: string }).entry_type === 'draft'
+      ([table, payload]) => table === 'lead_transcripts' && (payload as { intent?: string }).intent === 'draft'
     );
     expect(draftCall).toBeDefined();
     const draftContent = (draftCall?.[1] as { content: string }).content;
@@ -224,7 +225,7 @@ describe('handleAutoResponse', () => {
 
     // No draft should have been written
     const draftCall = mockSupaPost.mock.calls.find(
-      ([table, payload]) => table === 'lead_transcripts' && (payload as { entry_type?: string }).entry_type === 'draft'
+      ([table, payload]) => table === 'lead_transcripts' && (payload as { intent?: string }).intent === 'draft'
     );
     expect(draftCall).toBeUndefined();
 

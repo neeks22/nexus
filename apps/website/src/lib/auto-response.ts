@@ -25,15 +25,21 @@ export async function persistOutboundDraft(
   text: string,
   options: PersistDraftOptions
 ): Promise<void> {
+  // lead_transcripts.entry_type has a CHECK constraint limiting it to a fixed
+  // set of values, so we mark drafts via intent='draft' on a normal 'message'
+  // row. Phase 2's inbox UI queries `intent=eq.draft` to surface pending
+  // drafts; once approved + sent, intent flips to 'sent_from_draft'.
   try {
     await supaPost('lead_transcripts', {
       tenant_id: tenantConfig.tenantId,
       lead_id: toPhone,
-      entry_type: 'draft',
-      role: 'agent',
+      entry_type: 'message',
+      role: 'ai',
       content: text,
       channel: 'sms',
       touch_number: options.touchNumber ?? null,
+      intent: 'draft',
+      metadata: { trigger: options.trigger, drafted_at: new Date().toISOString() },
     });
   } catch (err) {
     console.error('[draft] persist failed:', err instanceof Error ? err.message : 'unknown');

@@ -188,9 +188,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // No auto-send — write the proposed reply as a draft and notify Slack.
     // Human approves and fires the actual send from the CRM inbox.
+    // Marker: entry_type='message' with intent='draft' (CHECK constraint
+    // limits entry_type to {message, status}; intent is a free-text column).
     await supaPost('lead_transcripts', {
       tenant_id: tenant.tenant, lead_id: fromPhone,
-      entry_type: 'draft', role: 'agent', content: aiReply, channel: 'sms', intent,
+      entry_type: 'message', role: 'ai', content: aiReply, channel: 'sms',
+      intent: 'draft',
+      metadata: { trigger: 'reply', source_intent: intent, drafted_at: new Date().toISOString() },
     });
     await slackNotify(
       `🤖 *Draft reply awaiting approval* — ${tenant.name}\n` +
