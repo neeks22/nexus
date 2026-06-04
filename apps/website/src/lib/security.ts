@@ -458,7 +458,11 @@ export async function callClaude(system: string, userMsg: string, maxTokens: num
       body: JSON.stringify({
         model: 'claude-opus-4-7',
         max_tokens: maxTokens + 4000,
-        thinking: { type: 'enabled', budget_tokens: 4000 },
+        // claude-opus-4-7 dropped the old {type:'enabled', budget_tokens}
+        // format. Adaptive thinking with explicit medium effort gives the
+        // same depth without us pre-budgeting tokens.
+        thinking: { type: 'adaptive' },
+        output_config: { effort: 'medium' },
         system,
         messages: [{ role: 'user', content: userMsg }],
       }),
