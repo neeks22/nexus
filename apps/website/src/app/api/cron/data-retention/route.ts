@@ -29,13 +29,11 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     );
     results.creditBureauPurge = creditRes.ok ? 'done' : 'failed';
 
-    // Delete orphaned transcripts older than 6 months
-    const sixMonthsAgo = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
-    const transcriptRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/lead_transcripts?created_at=lt.${sixMonthsAgo}`,
-      { method: 'DELETE', headers: { ...supaHeaders(), Prefer: 'return=headers-only' }, signal: AbortSignal.timeout(10000) }
-    );
-    results.oldTranscriptPurge = transcriptRes.ok ? 'done' : 'failed';
+    // Transcript purge intentionally disabled. SMS conversation history is the
+    // dealership's record of customer communication and must be preserved.
+    // The credit_routing purge above handles PIPEDA compliance for sensitive
+    // bureau data; general messages are retained indefinitely.
+    results.oldTranscriptPurge = 'disabled-by-policy';
 
     return NextResponse.json({
       success: true,

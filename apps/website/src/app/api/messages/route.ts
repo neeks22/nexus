@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as Sentry from '@sentry/nextjs';
-import { requireSession, isAuthError, rateLimit as sharedRateLimit, getClientIp, checkCASLCompliance } from '../../../lib/security';
+import { requireSession, isAuthError, rateLimit as sharedRateLimit, getClientIp, checkCASLCompliance, supaPost } from '../../../lib/security';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -147,8 +147,9 @@ function twilioHeaders(): HeadersInit {
 
 async function fetchAllMessages(tenantNumber?: string): Promise<TwilioMessage[]> {
   const allMessages: TwilioMessage[] = [];
-  // Only fetch last 30 days + filter by tenant number to avoid loading entire account history
-  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // Fetch up to last 365 days. Twilio retains messages ~13 months by default;
+  // pagination keeps memory bounded even when the account has thousands.
+  const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const params = new URLSearchParams({ PageSize: '200', 'DateSent>': since });
   if (tenantNumber) params.set('From', tenantNumber);
 
@@ -667,6 +668,22 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const sentMessage = await res.json();
+
+    // Persist outbound SMS to lead_transcripts so the conversation survives
+    // even if Twilio's retention window drops the message later.
+    try {
+      await supaPost('lead_transcripts', {
+        tenant_id: tenant,
+        lead_id: toPhone,
+        entry_type: 'message',
+        role: 'agent',
+        content: messageBody,
+        channel: 'sms',
+      });
+    } catch (err) {
+      console.error('[messages] outbound persist failed:', err instanceof Error ? err.message : 'unknown');
+      Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+    }
 
     // Update lead status to 'contacted' if still 'new' — manual SMS send
     const smsTenant = tenant;
