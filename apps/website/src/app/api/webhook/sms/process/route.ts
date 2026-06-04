@@ -186,9 +186,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       return NextResponse.json({ sent: false, blocked: true, reason: compliance.reason });
     }
 
-    await sendTwilioSMS(fromPhone, toPhone, aiReply);
-    await supaPost('lead_transcripts', { tenant_id: tenant.tenant, lead_id: fromPhone, entry_type: 'message', role: 'ai', content: aiReply, channel: 'sms', intent });
-    await slackNotify(`SMS REPLY (${tenant.name})\nTo: ***${fromPhone.slice(-4)}\nReply: ${aiReply.substring(0, 100)}...`);
+    // No auto-send — write the proposed reply as a draft and notify Slack.
+    // Human approves and fires the actual send from the CRM inbox.
+    await supaPost('lead_transcripts', {
+      tenant_id: tenant.tenant, lead_id: fromPhone,
+      entry_type: 'draft', role: 'agent', content: aiReply, channel: 'sms', intent,
+    });
+    await slackNotify(
+      `🤖 *Draft reply awaiting approval* — ${tenant.name}\n` +
+      `*Lead replied — proposed answer*${leadName ? ` — ${leadName}` : ''}\n` +
+      `*From:* ***${fromPhone.slice(-4)}\n\n` +
+      `*Customer said:*\n> ${messageBody}\n\n` +
+      `*Proposed reply:*\n> ${aiReply}\n\n` +
+      `Review and send from the CRM inbox.`
+    );
 
     // Update lead status to 'contacted' if still 'new' — via RPC (phone column is encrypted)
     try {
@@ -210,7 +221,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     await releasePhoneLock(fromPhone, tenant.tenant);
-    return NextResponse.json({ sent: true, delayed: true });
+    return NextResponse.json({ drafted: true });
   } catch (error: unknown) {
     // Lock will auto-expire via 30s TTL — no need to manually release in catch
     console.error('[sms-process] Error:', error);

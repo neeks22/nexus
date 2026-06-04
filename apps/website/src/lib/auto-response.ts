@@ -1,5 +1,64 @@
 import * as Sentry from '@sentry/nextjs';
-import { supaGet, supaPost, supaInsert, supaPatch, sendTwilioSMS, slackNotify, callClaude, GMAIL_USER, GMAIL_PASS, isDeduplicate } from './security';
+import { supaGet, supaPost, supaInsert, supaPatch, slackNotify, callClaude, GMAIL_USER, GMAIL_PASS, isDeduplicate } from './security';
+
+/* =============================================================================
+   OUTBOUND DRAFT HELPER
+
+   As of June 2026, the agent never auto-sends SMS. Every proposed outbound
+   message — initial outreach, inbound-reply, and scheduled follow-up — is
+   written into lead_transcripts as entry_type='draft' and surfaced to
+   Slack with the full text. A human approves and fires the actual send
+   from the CRM inbox.
+   ============================================================================= */
+
+export type DraftTrigger = 'first_contact' | 'reply' | 'follow_up';
+
+export interface PersistDraftOptions {
+  trigger: DraftTrigger;
+  touchNumber?: number;
+  leadName?: string;
+}
+
+export async function persistOutboundDraft(
+  tenantConfig: TenantConfig,
+  toPhone: string,
+  text: string,
+  options: PersistDraftOptions
+): Promise<void> {
+  try {
+    await supaPost('lead_transcripts', {
+      tenant_id: tenantConfig.tenantId,
+      lead_id: toPhone,
+      entry_type: 'draft',
+      role: 'agent',
+      content: text,
+      channel: 'sms',
+      touch_number: options.touchNumber ?? null,
+    });
+  } catch (err) {
+    console.error('[draft] persist failed:', err instanceof Error ? err.message : 'unknown');
+    Sentry.captureException(err instanceof Error ? err : new Error(String(err)));
+  }
+
+  const triggerLabel =
+    options.trigger === 'first_contact' ? 'New lead — initial SMS' :
+    options.trigger === 'reply' ? 'Lead replied — proposed answer' :
+    'Follow-up SMS';
+  const leadLabel = options.leadName ? ` — ${options.leadName}` : '';
+
+  try {
+    await slackNotify(
+      `🤖 *Draft awaiting approval* — ${tenantConfig.name}\n` +
+      `*${triggerLabel}*${leadLabel}\n` +
+      `*To:* ***${toPhone.slice(-4)}\n\n` +
+      `*Proposed message:*\n` +
+      `> ${text}\n\n` +
+      `Review and send from the CRM inbox.`
+    );
+  } catch (err) {
+    console.error('[draft] slack notify failed:', err instanceof Error ? err.message : 'unknown');
+  }
+}
 
 /* =============================================================================
    AUTO-RESPONSE — Instant SMS + email when a lead submits the funnel
@@ -181,26 +240,16 @@ Write your first SMS to them. 2-3 sentences. End with a question.`;
   return `${lead.firstName}, it's ${tenant.gm} from ${tenant.name}. I just saw your application come through — I've got a few options that could work perfectly for your situation. What kind of vehicle would make the biggest difference for you right now?`;
 }
 
+/**
+ * Generate the initial-contact SMS via Claude and persist as a draft.
+ * NEVER sends — human approval required from the CRM inbox.
+ */
 export async function sendSMS(lead: FunnelLead, normalizedPhone: string, tenant: TenantConfig): Promise<void> {
   const smsText = await generateSMS(lead, tenant);
-
-  const sent = await sendTwilioSMS(normalizedPhone, tenant.fromPhone, smsText);
-
-  if (!sent) {
-    console.error('[auto-response] Twilio SMS failed for', normalizedPhone);
-    Sentry.captureException(new Error(`[auto-response] Twilio SMS failed for ${normalizedPhone}`));
-    await slackNotify(`AUTO-RESPONSE SMS FAILED\nLead: ${lead.firstName} ${lead.lastName}\nPhone: ***${normalizedPhone.slice(-4)}\nPlease follow up manually.`);
-    return;
-  }
-
-  await supaPost('lead_transcripts', {
-    tenant_id: tenant.tenantId,
-    lead_id: normalizedPhone,
-    entry_type: 'message',
-    role: 'ai',
-    content: smsText,
-    channel: 'sms',
-    touch_number: 1,
+  await persistOutboundDraft(tenant, normalizedPhone, smsText, {
+    trigger: 'first_contact',
+    touchNumber: 1,
+    leadName: `${lead.firstName} ${lead.lastName}`.trim(),
   });
 }
 
@@ -376,15 +425,15 @@ export async function handleAutoResponse(lead: FunnelLead, tenantId: string = 'r
     }
 
     await slackNotify(
-      `NEW FUNNEL LEAD — AUTO-RESPONDED\n` +
+      `NEW FUNNEL LEAD — Draft + welcome email queued\n` +
       `Name: ${lead.firstName} ${lead.lastName}\n` +
       `Vehicle: ${lead.vehicleType}\n` +
       `Credit: ${lead.creditSituation}\n` +
       `Employment: ${lead.employment}\n` +
-      `SMS + Email sent automatically.`
+      `SMS draft awaiting approval; welcome email sent.`
     );
 
-    console.log(`[auto-response] Lead processed: ${lead.firstName} — SMS + email sent`);
+    console.log(`[auto-response] Lead processed: ${lead.firstName} — SMS drafted (awaits approval), email sent`);
   } catch (err) {
     console.error('[auto-response] Fatal error:', err instanceof Error ? err.message : 'unknown');
     Sentry.captureException(err instanceof Error ? err : new Error(String(err)));

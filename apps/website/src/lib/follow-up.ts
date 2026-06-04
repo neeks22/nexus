@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nextjs';
-import { supaGet, supaPost, supaPatch, sendTwilioSMS, slackNotify, callClaude, checkCASLCompliance, scrubPromptInjection } from './security';
-import { TENANTS, TenantConfig } from './auto-response';
+import { supaGet, supaPost, supaPatch, slackNotify, callClaude, checkCASLCompliance, scrubPromptInjection } from './security';
+import { TENANTS, TenantConfig, persistOutboundDraft } from './auto-response';
 
 /* =============================================================================
    FOLLOW-UP ENGINE — Automated SMS follow-up sequences for unresponsive leads
@@ -222,35 +222,24 @@ export async function processFollowUpBatch(
       const smsText = await generateFollowUpSMS(candidate, tenant);
       const newTouch = candidate.currentTouch + 1;
 
-      const ok = await sendTwilioSMS(candidate.phone, tenant.fromPhone, smsText);
+      // Persist as draft — never auto-send. Human approves from CRM inbox.
+      await persistOutboundDraft(tenant, candidate.phone, smsText, {
+        trigger: 'follow_up',
+        touchNumber: newTouch,
+        leadName: `${candidate.firstName} ${candidate.lastName}`.trim(),
+      });
+      sent++;
 
-      if (ok) {
-        sent++;
-
-        // Log transcript
-        await supaPost('lead_transcripts', {
-          tenant_id: tenant.tenantId,
-          lead_id: candidate.phone,
-          entry_type: 'message',
-          role: 'ai',
-          content: smsText,
-          channel: 'sms',
-          touch_number: newTouch,
-        });
-
-        // If final touch, mark lead as lost
-        if (newTouch >= MAX_TOUCHES) {
-          await supaPatch(
-            'funnel_submissions',
-            `phone=eq.${encodeURIComponent(candidate.phone)}&tenant_id=eq.${tenant.tenantId}`,
-            { status: 'lost' }
-          );
-          cold++;
-        }
-      } else {
-        failed++;
-        console.error(`[follow-up] SMS send failed for ${candidate.phone}`);
-        Sentry.captureException(new Error(`Follow-up SMS send failed for ${candidate.phone} tenant=${tenant.tenantId}`));
+      // If this WOULD have been the final touch had we sent, still flag the
+      // lead as cold so the dashboard reflects pipeline reality — the human
+      // can still send the draft if they want one last try.
+      if (newTouch >= MAX_TOUCHES) {
+        await supaPatch(
+          'funnel_submissions',
+          `phone=eq.${encodeURIComponent(candidate.phone)}&tenant_id=eq.${tenant.tenantId}`,
+          { status: 'lost' }
+        );
+        cold++;
       }
     } catch (err) {
       failed++;

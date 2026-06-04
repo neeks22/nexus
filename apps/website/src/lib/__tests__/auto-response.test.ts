@@ -21,13 +21,16 @@ vi.mock('../security', () => ({
   supaPost: (...args: unknown[]) => mockSupaPost(...args),
   supaInsert: (...args: unknown[]) => mockSupaInsert(...args),
   supaPatch: (...args: unknown[]) => mockSupaPatch(...args),
-  sendTwilioSMS: (...args: unknown[]) => mockSendTwilioSMS(...args),
   slackNotify: (...args: unknown[]) => mockSlackNotify(...args),
   callClaude: (...args: unknown[]) => mockCallClaude(...args),
   isDeduplicate: (...args: unknown[]) => mockIsDeduplicate(...args),
   GMAIL_USER: 'test@gmail.com',
   GMAIL_PASS: 'test-pass',
 }));
+// sendTwilioSMS no longer imported by auto-response (draft-only mode).
+// Kept as a no-op so the test still verifies it's never invoked.
+const _unusedSendTwilioRef = mockSendTwilioSMS;
+void _unusedSendTwilioRef;
 
 // Mock nodemailer
 const mockSendMail = vi.fn().mockResolvedValue({ messageId: 'test-id' });
@@ -119,7 +122,7 @@ describe('handleAutoResponse', () => {
     mockSlackNotify.mockResolvedValue(undefined);
   });
 
-  it('processes a new lead end-to-end (insert, SMS, email, slack)', async () => {
+  it('processes a new lead end-to-end (insert lead, draft SMS, send welcome email, slack)', async () => {
     const lead = makeLead();
     await handleAutoResponse(lead, 'readycar');
 
@@ -140,32 +143,30 @@ describe('handleAutoResponse', () => {
     // Should call Claude for SMS generation
     expect(mockCallClaude).toHaveBeenCalledTimes(1);
 
-    // Should send SMS via Twilio
-    expect(mockSendTwilioSMS).toHaveBeenCalledWith(
-      '+16135551234',
-      '+13433125045', // readycar from phone
-      expect.any(String),
-    );
+    // Should NEVER call Twilio — drafts only
+    expect(mockSendTwilioSMS).not.toHaveBeenCalled();
 
-    // Should send welcome email via nodemailer
+    // Should send welcome email via nodemailer (email auto-send still allowed)
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({
       to: 'john@example.com',
     }));
 
-    // Should log SMS transcript to Supabase
+    // Should persist a DRAFT to lead_transcripts (entry_type='draft', role='agent')
     expect(mockSupaPost).toHaveBeenCalledWith('lead_transcripts', expect.objectContaining({
+      entry_type: 'draft',
+      role: 'agent',
       channel: 'sms',
-      role: 'ai',
     }));
 
-    // Should log email transcript to Supabase
+    // Should still log the welcome email transcript
     expect(mockSupaPost).toHaveBeenCalledWith('lead_transcripts', expect.objectContaining({
       channel: 'email',
       role: 'ai',
     }));
 
-    // Should send Slack notification
+    // Should slack-notify the draft + the lead summary
+    expect(mockSlackNotify).toHaveBeenCalledWith(expect.stringContaining('Draft awaiting approval'));
     expect(mockSlackNotify).toHaveBeenCalledWith(expect.stringContaining('NEW FUNNEL LEAD'));
   });
 
@@ -196,41 +197,36 @@ describe('handleAutoResponse', () => {
     const lead = makeLead();
     await handleAutoResponse(lead, 'readycar');
 
-    // Should still send SMS with fallback template
-    expect(mockSendTwilioSMS).toHaveBeenCalledWith(
-      '+16135551234',
-      '+13433125045',
-      expect.stringContaining('John'),
-    );
+    // Should NEVER call Twilio
+    expect(mockSendTwilioSMS).not.toHaveBeenCalled();
 
-    // Fallback should mention the tenant GM name
-    const smsBody = mockSendTwilioSMS.mock.calls[0][2] as string;
-    expect(smsBody).toContain('Nico');
-    expect(smsBody).toContain('ReadyCar');
+    // The draft persisted to lead_transcripts should carry the fallback text
+    const draftCall = mockSupaPost.mock.calls.find(
+      ([table, payload]) => table === 'lead_transcripts' && (payload as { entry_type?: string }).entry_type === 'draft'
+    );
+    expect(draftCall).toBeDefined();
+    const draftContent = (draftCall?.[1] as { content: string }).content;
+    expect(draftContent).toContain('John');
+    expect(draftContent).toContain('Nico');
+    expect(draftContent).toContain('ReadyCar');
   });
 
-  it('sends Slack failure alert when Twilio SMS fails', async () => {
-    mockSendTwilioSMS.mockResolvedValue(false);
-
-    const lead = makeLead();
-    await handleAutoResponse(lead, 'readycar');
-
-    // Should notify Slack about SMS failure
-    expect(mockSlackNotify).toHaveBeenCalledWith(
-      expect.stringContaining('SMS FAILED'),
-    );
-  });
-
-  it('aborts SMS + email when insertLead fails (prevents orphaned messages that bypass dedup)', async () => {
+  it('aborts everything when insertLead fails (prevents orphaned messages that bypass dedup)', async () => {
     mockSupaInsert.mockRejectedValue(new Error('Supabase insert failed'));
 
     const lead = makeLead();
     await handleAutoResponse(lead, 'readycar');
 
-    // Should NOT send SMS or email — aborting prevents future dedup bypass
+    // Should NOT generate Claude content, draft, or email — abort the whole flow
     expect(mockCallClaude).not.toHaveBeenCalled();
     expect(mockSendTwilioSMS).not.toHaveBeenCalled();
     expect(mockSendMail).not.toHaveBeenCalled();
+
+    // No draft should have been written
+    const draftCall = mockSupaPost.mock.calls.find(
+      ([table, payload]) => table === 'lead_transcripts' && (payload as { entry_type?: string }).entry_type === 'draft'
+    );
+    expect(draftCall).toBeUndefined();
 
     // Should notify Slack about the blocked send
     expect(mockSlackNotify).toHaveBeenCalledWith(
@@ -242,23 +238,17 @@ describe('handleAutoResponse', () => {
     const lead = makeLead();
     await handleAutoResponse(lead, 'invalid-tenant');
 
-    // Should use readycar's fromPhone
-    expect(mockSendTwilioSMS).toHaveBeenCalledWith(
-      expect.any(String),
-      '+13433125045', // readycar fromPhone
-      expect.any(String),
-    );
+    // Twilio never called; the draft slack notification should mention ReadyCar
+    expect(mockSendTwilioSMS).not.toHaveBeenCalled();
+    expect(mockSlackNotify).toHaveBeenCalledWith(expect.stringContaining('ReadyCar'));
   });
 
   it('uses readyride tenant config when specified', async () => {
     const lead = makeLead();
     await handleAutoResponse(lead, 'readyride');
 
-    // Should use readyride's fromPhone
-    expect(mockSendTwilioSMS).toHaveBeenCalledWith(
-      expect.any(String),
-      '+13433412797', // readyride fromPhone
-      expect.any(String),
-    );
+    // Twilio never called; slack notification names ReadyRide
+    expect(mockSendTwilioSMS).not.toHaveBeenCalled();
+    expect(mockSlackNotify).toHaveBeenCalledWith(expect.stringContaining('ReadyRide'));
   });
 });
