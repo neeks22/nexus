@@ -3,8 +3,9 @@
  * Import cleaned campaign contacts into email_campaign_contacts.
  *
  * Usage:
- *   node scripts/import-campaign-contacts.mjs ~/Desktop/readycar-email-batch/01-SEND-clean.csv [tenant]
+ *   node scripts/import-campaign-contacts.mjs <csv> [tenant] [--dry-run]
  *
+ * --dry-run parses and reports without writing anything.
  * Reads SUPABASE_URL and SUPABASE_SERVICE_KEY from the environment.
  * Upserts on (tenant_id, email), so re-running is safe and idempotent.
  *
@@ -19,14 +20,17 @@ const BATCH_SIZE = 500;
 /** CASL: implied consent from an inquiry lapses 6 months after the inquiry. */
 const CONSENT_WINDOW_DAYS = 183;
 
-const [, , csvPath, tenantArg] = process.argv;
+const args = process.argv.slice(2);
+const dryRun = args.includes('--dry-run');
+const positional = args.filter((a) => !a.startsWith('--'));
+const [csvPath, tenantArg] = positional;
 const tenant = tenantArg || 'readycar';
 
 if (!csvPath) {
-  console.error('Usage: node scripts/import-campaign-contacts.mjs <csv-path> [tenant]');
+  console.error('Usage: node scripts/import-campaign-contacts.mjs <csv-path> [tenant] [--dry-run]');
   process.exit(1);
 }
-if (!SUPABASE_URL || !SUPABASE_KEY) {
+if (!dryRun && (!SUPABASE_URL || !SUPABASE_KEY)) {
   console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY in environment.');
   process.exit(1);
 }
@@ -92,6 +96,16 @@ const active = contacts.filter((c) => c.consent_basis === 'implied_active').leng
 console.log(`Parsed ${contacts.length} contacts for tenant "${tenant}"`);
 console.log(`  CASL implied-consent active: ${active}`);
 console.log(`  CASL implied-consent lapsed: ${contacts.length - active}`);
+
+if (dryRun) {
+  console.log('\n--dry-run: nothing written. Sample of first 3 rows:');
+  for (const c of contacts.slice(0, 3)) console.log(' ', JSON.stringify(c));
+  const missingName = contacts.filter((c) => !c.first_name).length;
+  const missingDate = contacts.filter((c) => !c.lead_created_at).length;
+  console.log(`\n  rows without a first name: ${missingName} (these render as "there")`);
+  console.log(`  rows without a parseable date: ${missingDate} (treated as consent lapsed)`);
+  process.exit(0);
+}
 
 let imported = 0;
 for (let i = 0; i < contacts.length; i += BATCH_SIZE) {
