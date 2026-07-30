@@ -43,67 +43,55 @@ export const INVENTORY_COUNT = '500+';
  */
 export const DAILY_SEND_CAP = 200;
 
-const SIGNATURE = `— ${SENDER_NAME}
-${DEALER_NAME} · ${SENDER_EMAIL} · ${SENDER_PHONE}
+/**
+ * Deliberately plain. These read like a busy salesperson typed them between
+ * calls, because that is who they are supposed to be from — polish reads as
+ * marketing, and marketing is what this audience has learned to ignore.
+ */
+const SIGNATURE = `Nicolas
+ReadyCar
+${SENDER_PHONE}
 
-Reply "STOP" and I'll take you off my list.`;
+Don't want these? Just reply STOP.`;
 
 export const TEMPLATES: CampaignTemplate[] = [
   {
     id: 'C',
     name: 'Personal letter',
     day: 0,
-    subject: '{{first}} — did you ever sort out the vehicle?',
-    body: `{{first}},
+    subject: 'quick question',
+    body: `Hi {{first}},
 
-This is Nicolas. I sell cars at ReadyCar and I'm writing you because your file has been sitting on my desk since {{applied}} and it's been bugging me.
+Nicolas here from ReadyCar. You applied with us back in {{applied}} and I don't think anyone ever got back to you. Sorry about that.
 
-Here's the honest version of why.
+Are you still looking for a vehicle?
 
-When you applied, you got put in a queue with a few thousand other people. Somebody was supposed to call you. Judging by the fact that you're still in my "no answer" pile, either nobody did, or they called once at a bad time and gave up. Either way you got the short end of it.
+If you are, I can tell you what you're approved for in about 20 minutes on the phone. No credit check to find out. I just need two things: what you take home, and what you can put down.
 
-So I'm doing it the old way and writing to you directly.
+About ${APPROVAL_RATE} of people who apply with us get approved. And we've got over 500 vehicles, so you pick what you actually want — it's not a case of taking whatever's left.
 
-I'd like 20 minutes on the phone. In that time I can tell you the exact dollar amount a lender will approve you for — without pulling your credit, without your SIN, and without you driving anywhere. I need two numbers from you: your take-home pay, and what you can put down.
+If you've already sorted something out, just tell me and I'll leave you alone.
 
-For what it's worth: ${APPROVAL_RATE} of the people who apply with me get approved. And we've got over 500 vehicles on the lot, so this isn't a case of taking whatever's left — you pick the one you want and I make the financing work around it. That's the part most people don't expect.
-
-On rate: we write the lowest in the country and I don't expect you to take my word for it. Get a quote from anywhere else in Canada and bring it to me. If theirs is better, I'll tell you to sign it.
-
-That's it. If the number works for you, we go find something. If it doesn't, I'll tell you precisely what to change and roughly how long it takes, and I'll leave you alone until you tell me otherwise.
-
-I'd rather give you a straight answer today than have you wonder about it for another six months.
-
-${SENDER_PHONE}. Or reply to this and tell me when.
-
-${SIGNATURE}
-
-P.S. If you already bought something — tell me and I'll take you off my list personally. I'd rather know than keep bothering you.`,
+${SIGNATURE}`,
   },
   {
     id: 'A',
     name: 'Value stack',
     day: 3,
-    subject: '500 cars. You pick.',
-    body: `{{first}},
+    subject: '500 cars, you pick',
+    body: `Hi {{first}},
 
-Nicolas from ReadyCar. You looked into financing with us a while back and I never got you an answer. That's on me.
+Nicolas from ReadyCar again. Following up on my last email.
 
-Here's what I can do today:
+Here's the short version of what I can do:
 
-  → Your exact approved amount — in 20 minutes, over the phone
-  → Then you pick. ${INVENTORY_COUNT} vehicles on the ground. Not "whatever we can get you into" — the one you actually want.
-  → ${APPROVAL_RATE} of people who apply with me get approved
-  → No credit check to find out. No SIN. Nothing that touches your score.
-  → Two questions: what you take home, and what you can put down
-  → Keys in your hand in 48 hours
-  → And the rate will be the lowest in the country. Bring me a written quote from anywhere in Canada — if it beats mine, I'll tell you to take it.
+Tell me what you take home and what you can put down, and I'll tell you what you're approved for. Takes about 20 minutes. No credit check to find out.
 
-Good credit, bruised credit, no credit, consumer proposal, first-time buyer — I've placed all of it. If you've been turned down before, that was them. It isn't a verdict.
+${APPROVAL_RATE} of people who apply get approved. We've got ${INVENTORY_COUNT} vehicles, so you pick the one you want. And our rates are the lowest you'll find — if you've got a quote from somewhere else, bring it and I'll beat it or tell you to take it.
 
-You keep the number either way. That's the whole offer.
+Good credit, bad credit, no credit, consumer proposal, first car — I've done all of it. If you got turned down somewhere before, that was them, not you.
 
-Reply with a good time, or just call me: ${SENDER_PHONE}
+Give me a call and we'll sort it out.
 
 ${SIGNATURE}`,
   },
@@ -114,38 +102,30 @@ ${SIGNATURE}`,
     subject: 'still looking?',
     body: `{{first}} — Nicolas from ReadyCar.
 
-Still looking, or handled?
+Still looking for a vehicle, or did you get sorted?
 
 ${SENDER_PHONE}
 
-Reply "STOP" and I'll take you off my list.`,
+Don't want these? Just reply STOP.`,
   },
   {
     id: 'B',
     name: 'Emotional / identity',
     day: 12,
-    subject: 'What was the car actually for?',
-    body: `{{first}},
+    subject: 'what did you need the car for?',
+    body: `Hi {{first}},
 
-Nicolas from ReadyCar. Quick question, and it's not the one you're expecting.
+Nicolas from ReadyCar. Different question this time.
 
-What was the car actually for?
+What did you need the car for?
 
-Because in six years of doing this, nobody has ever wanted a car. They wanted the 6:45am shift they can finally take. The kid they can drive to practice instead of explaining why not. The job forty minutes out that pays eleven grand more. The Saturday that doesn't cost three bus transfers.
+I ask because nobody actually wants a car. They want the shift they can finally take. The kid they can drive to practice. The job across town that pays better. Whatever yours was, it's probably still there.
 
-Whatever yours was — it's probably still sitting there.
+Most people I talk to stopped looking for the same reason — they got told no once and figured the answer would be no again. Usually it isn't. ${APPROVAL_RATE} of people who apply with us get approved.
 
-Most people in your spot stopped at the same wall: they'd been told no before, so they assumed the answer was no again and never asked. And the assumption cost them a year.
+Twenty minutes on the phone and you'd know for sure. No credit check to find out.
 
-Here's what I'd tell you if you were sitting across from me: ${APPROVAL_RATE} of the people who apply with me get approved. You're probably fine. You've just been carrying somebody else's no.
-
-And when you are approved, you're not getting handed keys to whatever was left in the back row. There are ${INVENTORY_COUNT} vehicles here and you pick the one you actually want. That part matters more than people admit.
-
-I can tell you in 20 minutes whether it's a yes. No credit check to find out. Two questions on the phone.
-
-Picture the version of this where it's handled — you've got keys, you've got a payment you chose, and the thing you've been working around for a year is just... not a problem anymore. That's twenty minutes of phone call away.
-
-What time works?
+What time works for you?
 
 ${SIGNATURE}`,
   },
@@ -153,14 +133,14 @@ ${SIGNATURE}`,
     id: 'D',
     name: 'Close the file',
     day: 18,
-    subject: 'Should I close your file?',
-    body: `{{first}},
+    subject: 'should I close your file?',
+    body: `Hi {{first}},
 
-Have you given up on getting into a vehicle this year?
+Last one from me.
 
-If so I'll close your file and stop emailing — just say "closed" and it's done.
+Have you given up on getting a vehicle this year? If so, say "closed" and I'll stop emailing you.
 
-If not, reply with a time. Twenty minutes, no credit check, and you'll know your number — ${APPROVAL_RATE} of people who apply get approved, and you pick from ${INVENTORY_COUNT} vehicles once you are.
+If not, send me a time and I'll call. Twenty minutes and you'll know what you're approved for.
 
 ${SIGNATURE}`,
   },
