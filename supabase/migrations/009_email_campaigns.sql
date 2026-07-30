@@ -31,8 +31,11 @@ CREATE TABLE IF NOT EXISTS email_campaign_contacts (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- One row per email per tenant — re-importing the CSV must not duplicate the roster
-CREATE UNIQUE INDEX idx_campaign_contacts_email ON email_campaign_contacts(tenant_id, lower(email));
+-- One row per email per tenant — re-importing the CSV must not duplicate the roster.
+-- Plain column index, NOT lower(email): PostgREST upserts infer ON CONFLICT from the
+-- index columns, and an expression index can't be inferred. Emails are lowercased
+-- before insert by both the import script and the API route, so this is equivalent.
+CREATE UNIQUE INDEX idx_campaign_contacts_email ON email_campaign_contacts(tenant_id, email);
 CREATE INDEX idx_campaign_contacts_tenant ON email_campaign_contacts(tenant_id);
 CREATE INDEX idx_campaign_contacts_status ON email_campaign_contacts(tenant_id, status);
 -- Drives the "today's wave" query: who is due for their next touch
