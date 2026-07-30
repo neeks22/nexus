@@ -6,7 +6,7 @@ import CRMQueryProvider from '@/lib/query-provider';
 import ProfileDropdown from './ProfileDropdown';
 import useIsMobile from './useIsMobile';
 
-export type CRMTab = 'dashboard' | 'pipeline' | 'inbox' | 'leads' | 'credit' | 'reports' | 'inventory' | 'appointments' | 'deals' | 'settings';
+export type CRMTab = 'dashboard' | 'pipeline' | 'inbox' | 'leads' | 'credit' | 'reports' | 'inventory' | 'appointments' | 'deals' | 'campaign' | 'settings';
 
 const TABS: { id: CRMTab; label: string; icon: string }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊' },
@@ -16,6 +16,7 @@ const TABS: { id: CRMTab; label: string; icon: string }[] = [
   { id: 'inventory', label: 'Inventory', icon: '🚗' },
   { id: 'appointments', label: 'Appts', icon: '📅' },
   { id: 'deals', label: 'Deals', icon: '💰' },
+  { id: 'campaign', label: 'Campaign', icon: '📧' },
   { id: 'credit', label: 'Credit', icon: '💳' },
   { id: 'reports', label: 'Reports', icon: '📈' },
 ];
@@ -55,6 +56,7 @@ const ReportsTab = dynamic(() => import('./ReportsTab'), { ssr: false, loading: 
 const InventoryTab = dynamic(() => import('./InventoryTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading inventory...</div> });
 const AppointmentsTab = dynamic(() => import('./AppointmentsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading appointments...</div> });
 const DealsTab = dynamic(() => import('./DealsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading deals...</div> });
+const CampaignsTab = dynamic(() => import('./CampaignsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading campaign...</div> });
 const SettingsTab = dynamic(() => import('./SettingsTab'), { ssr: false, loading: () => <div style={{ padding: '40px', color: '#8888a0', textAlign: 'center' }}>Loading settings...</div> });
 const LeadDetailPanel = dynamic(() => import('./LeadDetailPanel'), { ssr: false });
 const InstallPrompt = dynamic(() => import('./InstallPrompt'), { ssr: false });
@@ -240,6 +242,7 @@ export default function CRMLayout({
           {activeTab === 'inventory' && <InventoryTab tenant={tenant} />}
           {activeTab === 'appointments' && <AppointmentsTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
           {activeTab === 'deals' && <DealsTab tenant={tenant} onSelectLead={(p: string) => setSelectedLead(p)} />}
+          {activeTab === 'campaign' && <CampaignsTab tenant={tenant} />}
           {activeTab === 'reports' && <ReportsTab tenant={tenant} />}
           {activeTab === 'settings' && user && <SettingsTab user={{ name: user.name, email: user.email, role: user.role, tenant }} />}
         </TabErrorBoundary>

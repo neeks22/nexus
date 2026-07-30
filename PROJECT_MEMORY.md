@@ -149,6 +149,19 @@ nexus/
 50. Outreach campaign script (scripts/outreach-campaign-apr1.js) — 33 leads imported + contacted
 51. Gmail Apps Script for email webhook forwarding (docs/gmail-apps-script.js)
 
+### Email Reactivation Campaign (Jul 30, 2026)
+52. **Campaign tab in CRM** (`/readycar` → Campaign) — tracks the 3,738-lead email reactivation
+    - `supabase/migrations/009_email_campaigns.sql` — `email_campaign_contacts` + `email_campaign_sends`, RLS per tenant
+    - `src/lib/campaign-templates.ts` — the 5 templates (C→A→E→B→D over 18 days), single source of truth for copy
+    - `src/app/api/campaigns/route.ts` — stats / queue / roster views, bulk import, mark-sent, status updates
+    - `src/components/crm/CampaignsTab.tsx` + `CampaignSendCard.tsx` — today's wave, Gmail compose deep-link, mark sent
+    - `scripts/import-campaign-contacts.mjs` — CSV → Supabase, upserts on (tenant_id, email), sets CASL consent basis
+    - Workflow is manual-send by design: replies land in plain Gmail, not the CRM inbox (Nico's call, Jul 30)
+    - Daily cap 200/day — Google Workspace throttles a user mailbox well below its 2,000 ceiling on cold mail
+    - Positioning locked: safety (95% approval) → dignity (500+ vehicles, you pick) → terms (lowest rates). Never
+      name a specific vehicle — no per-lead vehicle data exists in the source list.
+    - Send lists + full template doc live at `~/Desktop/readycar-email-batch/` (PII — deliberately outside the repo)
+
 ## WHAT IS IN PROGRESS (CURRENT SPRINT)
 
 1. **First client lead gen launch** — Getting real leads flowing for first dealership client
