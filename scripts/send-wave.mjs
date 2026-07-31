@@ -31,7 +31,27 @@ const MAX_GAP_MS = 11000;
 const args = process.argv.slice(2);
 const confirm = args.includes('--confirm');
 const allConsent = args.includes('--all-consent');
-const limit = Math.min(parseInt(args.find((a) => /^\d+$/.test(a)) ?? '10', 10), DAILY_SEND_CAP);
+/**
+ * DAILY_SEND_CAP is our own conservative ceiling, not Google's (which is
+ * 2,000/day). `--cap=N` raises it for a deliberate push. ABSOLUTE_MAX exists so
+ * a fat-fingered `--cap=4000` cannot take out nicolas@readycar.ca, which is the
+ * mailbox the dealership actually runs on.
+ */
+const ABSOLUTE_MAX = 1000;
+const capArg = args.find((a) => a.startsWith('--cap='));
+const dailyCeiling = Math.min(capArg ? parseInt(capArg.slice(6), 10) || DAILY_SEND_CAP : DAILY_SEND_CAP, ABSOLUTE_MAX);
+if (dailyCeiling > DAILY_SEND_CAP) {
+  console.log(`⚠ Daily ceiling raised to ${dailyCeiling} (default ${DAILY_SEND_CAP}).`);
+}
+
+/**
+ * Gmail signals throttling by rejecting sends, not by slowing down. Without a
+ * breaker the loop would keep hammering a mailbox that is already being limited,
+ * which is what turns a temporary block into a lasting reputation problem.
+ */
+const MAX_CONSECUTIVE_FAILURES = 5;
+
+const limit = Math.min(parseInt(args.find((a) => /^\d+$/.test(a)) ?? '10', 10), dailyCeiling);
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_KEY.');
@@ -59,9 +79,10 @@ async function sentToday() {
 }
 
 const already = await sentToday();
-const room = DAILY_SEND_CAP - already;
+const room = dailyCeiling - already;
 if (room <= 0) {
-  console.error(`Daily cap reached (${already}/${DAILY_SEND_CAP}). Stop for today.`);
+  console.error(`Daily cap reached (${already}/${dailyCeiling}). Stop for today.`);
+  console.error('Raise it deliberately with --cap=N if that is really what you want.');
   process.exit(1);
 }
 const take = Math.min(limit, room);
@@ -117,6 +138,7 @@ try {
 }
 
 let sent = 0;
+let consecutiveFailures = 0;
 const failures = [];
 
 for (const [i, c] of contacts.entries()) {
@@ -134,8 +156,16 @@ for (const [i, c] of contacts.entries()) {
   } catch (err) {
     console.error(`  ✗ ${c.email} — ${err.message}`);
     failures.push({ email: c.email, error: err.message });
+    consecutiveFailures++;
+    if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+      console.error(`\n⛔ ABORTED — ${consecutiveFailures} sends failed in a row.`);
+      console.error('That pattern means Gmail is refusing mail, not that these addresses are bad.');
+      console.error(`Stopped at ${sent} sent so the rest of the queue is untouched.`);
+      break;
+    }
     continue;
   }
+  consecutiveFailures = 0;
 
   const sentAt = new Date().toISOString();
   // Log first, then advance — a crash between the two leaves an un-advanced
@@ -167,7 +197,7 @@ for (const [i, c] of contacts.entries()) {
   }
 }
 
-console.log(`\nSent ${sent}. Failed ${failures.length}. Today's total: ${already + sent}/${DAILY_SEND_CAP}.`);
+console.log(`\nSent ${sent}. Failed ${failures.length}. Today's total: ${already + sent}/${dailyCeiling}.`);
 if (failures.length) {
   console.log('Failures:');
   for (const f of failures) console.log(`  ${f.email} — ${f.error}`);
