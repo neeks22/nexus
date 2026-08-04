@@ -7,15 +7,19 @@
  *
  * Usage:
  *   npx esbuild apps/website/src/lib/campaign-templates.ts --format=esm --outfile=/tmp/ct.mjs
- *   node scripts/send-wave.mjs 10              # dry run — shows exactly what would send
- *   node scripts/send-wave.mjs 10 --confirm    # actually sends
+ *   node scripts/send-wave.mjs 10                    # dry run — shows what would send
+ *   node scripts/send-wave.mjs 10 --confirm          # actually sends
+ *   node scripts/send-wave.mjs 50 --follow-ups       # touches 2-5 for people already in sequence
+ *   node scripts/send-wave.mjs 400 --cap=400         # raise the daily ceiling deliberately
  *
  * Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, GMAIL_USER, GMAIL_PASS
  * GMAIL_PASS must be a Google App Password, not the account password.
  */
 
 import nodemailer from 'nodemailer';
-import { templateForStep, renderTemplate, DAILY_SEND_CAP } from '/tmp/ct.mjs';
+import { templateForStep, renderTemplate, daysUntilNextStep, SEQUENCE, DAILY_SEND_CAP } from '/tmp/ct.mjs';
+
+const SEQUENCE_LENGTH = SEQUENCE.length;
 
 const SUPABASE_URL = (process.env.SUPABASE_URL ?? '').trim();
 const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_KEY ?? '').trim();
@@ -31,6 +35,12 @@ const MAX_GAP_MS = 11000;
 const args = process.argv.slice(2);
 const confirm = args.includes('--confirm');
 const allConsent = args.includes('--all-consent');
+/**
+ * Opt-in, because it targets a completely different audience: people already in
+ * the sequence rather than fresh names. Without it this script only ever sends
+ * the day-0 email, which is why touches 2-5 had never fired.
+ */
+const followUps = args.includes('--follow-ups');
 /**
  * DAILY_SEND_CAP is our own conservative ceiling, not Google's (which is
  * 2,000/day). `--cap=N` raises it for a deliberate push. ABSOLUTE_MAX exists so
@@ -89,18 +99,49 @@ const take = Math.min(limit, room);
 if (take < limit) console.log(`Trimming to ${take} — only ${room} left under today's cap.`);
 
 const consentFilter = allConsent ? '' : '&consent_basis=eq.implied_active';
-const listRes = await fetch(
-  `${SUPABASE_URL}/rest/v1/email_campaign_contacts?tenant_id=eq.${TENANT}` +
-    `&status=eq.pending&sequence_step=eq.0${consentFilter}` +
-    `&select=id,email,first_name,last_name,lead_created_at,sequence_step` +
-    `&order=lead_created_at.desc&limit=${take}`,
-  { headers }
-);
-if (!listRes.ok) {
-  console.error(`Query failed (${listRes.status}):`, (await listRes.text()).slice(0, 300));
-  process.exit(1);
+const SELECT = 'id,email,first_name,last_name,lead_created_at,sequence_step';
+
+async function query(filter, limit) {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/email_campaign_contacts?tenant_id=eq.${TENANT}${filter}` +
+      `&select=${SELECT}&limit=${limit}`,
+    { headers }
+  );
+  if (!res.ok) {
+    console.error(`Query failed (${res.status}):`, (await res.text()).slice(0, 300));
+    process.exit(1);
+  }
+  return res.json();
 }
-const contacts = await listRes.json();
+
+/** First touch: never contacted, still consent-eligible. Newest lead first. */
+function firstTouches(limit) {
+  return query(`&status=eq.pending&sequence_step=eq.0${consentFilter}&order=lead_created_at.desc`, limit);
+}
+
+/**
+ * Contacts due for touch 2+.
+ *
+ * Each step has its own waiting period (day 0 → 3 → 7 → 12 → 18), so the cutoff
+ * differs per step and cannot be expressed as one PostgREST filter — hence a
+ * query per step. Longest-waiting first, so nobody starves behind a newer cohort.
+ */
+async function dueFollowUps(limit) {
+  const out = [];
+  for (let step = 1; step < SEQUENCE_LENGTH && out.length < limit; step++) {
+    const waitDays = daysUntilNextStep(step);
+    const cutoff = new Date(Date.now() - waitDays * 86400000).toISOString();
+    const rows = await query(
+      `&status=eq.in_sequence&sequence_step=eq.${step}&last_sent_at=lte.${cutoff}` +
+        `${consentFilter}&order=last_sent_at.asc`,
+      limit - out.length
+    );
+    out.push(...rows);
+  }
+  return out;
+}
+
+const contacts = followUps ? await dueFollowUps(take) : await firstTouches(take);
 if (contacts.length === 0) {
   console.log('Nobody due.');
   process.exit(0);
@@ -182,7 +223,7 @@ for (const [i, c] of contacts.entries()) {
     method: 'PATCH',
     headers: { ...headers, Prefer: 'return=minimal' },
     body: JSON.stringify({
-      status: nextStep >= 5 ? 'closed' : 'in_sequence',
+      status: nextStep >= SEQUENCE_LENGTH ? 'closed' : 'in_sequence',
       sequence_step: nextStep,
       last_template: template.id,
       last_sent_at: sentAt,
